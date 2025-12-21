@@ -69,6 +69,16 @@ state: {
 actions: {
   pushPane(pane: Pane); // Adds a new pane to the right. Removes any existing forward history.
   popToPane(paneId: string); // Closes all panes to the right of target.
+  replacePane(index: number, pane: Pane); // Replaces the pane at index and removes all subsequent panes (Singleton Interaction).
   updatePaneData(paneId: string, newData: any);
 }
 ```
+
+### 4.3 Interaction Rules
+
+1. **Singleton Detail**: When clicking an item in a list (e.g., a specific User), do not keep stacking details. Replace the existing Detail pane at that level.
+   - Example: `[List] -> [User A]` --> Click User B --> `[List] -> [User B]` (replaces User A).
+2. **Dynamic Flex Layout**:
+   - The **last (active)** pane should expand to fill the remaining screen space (`flex-1`).
+   - Previous panes should shrink to their minimum/default width (`min-w-[450px]`).
+   - This ensures focus remains on the current task while maintaining context.

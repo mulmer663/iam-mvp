@@ -38,5 +38,10 @@ export const useMillerStore = defineStore('miller', {
                 pane.data = { ...pane.data, ...newData }
             }
         },
+        setPane(index: number, pane: Pane) {
+            // Replace the pane at index and remove all subsequent panes
+            this.panes = [...this.panes.slice(0, index), pane]
+            this.activePaneId = pane.id
+        }
     },
 })

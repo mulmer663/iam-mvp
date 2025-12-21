@@ -22,6 +22,8 @@
   - Use `hugeicons-vue` for all icons.
   - Follow Shadcn Vue patterns but override for density (px-2 instead of px-4, h-8 instead of h-10).
   - Centralize state in Pinia for Miller Column management.
+  - **Always run `pnpm run build` and ensure it passes BEFORE validating screens in the browser.**
+  - **Limit Chrome Antigraity plugin DOM verification to 3 attempts. Determine the cause by analyzing the code rather than repeatedly checking the DOM.**
 
 - **Don'ts:**
   - Do not use Options API.
