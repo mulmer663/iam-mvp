@@ -2,6 +2,11 @@
 import { ChevronRight, ChevronDown, Folder, Home } from 'lucide-vue-next'
 import { MOCK_DEPARTMENTS } from '@/mocks/data'
 import { ref, computed } from 'vue'
+import type { Department } from '@/types'
+
+defineOptions({
+  name: 'DeptTree'
+})
 
 const props = defineProps<{
   parentId: string | null
@@ -14,8 +19,8 @@ const emit = defineEmits<{
 
 const openGroups = ref<Set<string>>(new Set(['DEPT01', 'DEPT02']))
 
-const currentDepartments = computed(() => 
-  MOCK_DEPARTMENTS.filter(d => d.parentId === props.parentId)
+const currentDepartments = computed((): Department[] => 
+  MOCK_DEPARTMENTS.filter(d => d.parentId === props.parentId) as Department[]
 )
 
 function toggleGroup(id: string) {
@@ -26,7 +31,7 @@ function toggleGroup(id: string) {
   }
 }
 
-function selectDept(dept: any) {
+function selectDept(dept: Department) {
   emit('select', dept.id)
 }
 </script>
@@ -36,13 +41,14 @@ function selectDept(dept: any) {
     <div v-for="dept in currentDepartments" :key="dept.id" class="flex flex-col">
       <div 
         @click="selectDept(dept)"
-        class="flex items-center gap-1.5 p-1 px-2 rounded-sm cursor-pointer group transition-colors"
-        :class="[props.selectedId === dept.id ? 'bg-blue-100 text-blue-700' : 'hover:bg-neutral-100 text-neutral-600']"
+        class="flex items-center gap-1.5 p-1 px-2 rounded-sm cursor-pointer group transition-all relative overflow-hidden"
+        :class="[props.selectedId === dept.id ? 'bg-blue-600 text-white shadow-sm font-bold' : 'hover:bg-neutral-100 text-neutral-600']"
       >
+        <div v-if="props.selectedId === dept.id" class="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-300"></div>
         <button 
           v-if="MOCK_DEPARTMENTS.some(d => d.parentId === dept.id)"
           @click.stop="toggleGroup(dept.id)"
-          class="p-0.5 hover:bg-neutral-200 rounded shrink-0"
+          class="p-0.5 hover:bg-neutral-200 rounded-sm shrink-0"
         >
           <ChevronDown v-if="openGroups.has(dept.id)" class="size-3" />
           <ChevronRight v-else class="size-3" />
@@ -73,9 +79,3 @@ function selectDept(dept: any) {
 <style scoped>
 /* Recursive component requires name for self-reference */
 </style>
-
-<script lang="ts">
-export default {
-  name: 'DeptTree'
-}
-</script>

@@ -4,15 +4,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { ExternalLink } from 'lucide-vue-next'
 import { computed } from 'vue'
+import type { HistoryLog } from '@/types'
 
 const props = defineProps<{
   type: 'SOURCE' | 'INTEGRATION' | 'AUDIT'
 }>()
 
-const filteredHistory = computed(() => {
-  if (props.type === 'AUDIT') return MOCK_HISTORY.filter(h => h.type === 'USER_UPDATE')
-  if (props.type === 'SOURCE') return MOCK_HISTORY.filter(h => h.type === 'HR_SYNC')
-  return MOCK_HISTORY.filter(h => h.type === 'AD_PROVISION')
+const filteredHistory = computed((): HistoryLog[] => {
+  if (props.type === 'AUDIT') return MOCK_HISTORY.filter(h => h.type === 'USER_UPDATE') as HistoryLog[]
+  if (props.type === 'SOURCE') return MOCK_HISTORY.filter(h => h.type === 'HR_SYNC') as HistoryLog[]
+  return MOCK_HISTORY.filter(h => h.type === 'AD_PROVISION') as HistoryLog[]
 })
 
 const getStatusVariant = (status: string) => {
@@ -39,7 +40,11 @@ const getStatusVariant = (status: string) => {
             </TableRow>
          </TableHeader>
          <TableBody>
-            <TableRow v-for="log in filteredHistory" :key="log.id" class="h-8 hover:bg-neutral-50 transition-colors cursor-pointer group">
+            <TableRow 
+              v-for="log in filteredHistory" 
+              :key="log.id" 
+              class="h-8 hover:bg-neutral-50 transition-colors cursor-pointer group"
+            >
                <TableCell class="p-2 py-1 font-mono text-[10px] text-neutral-400">
                   <div class="flex items-center gap-1">
                      <span>{{ log.traceId }}</span>

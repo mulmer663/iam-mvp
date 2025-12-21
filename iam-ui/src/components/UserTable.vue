@@ -2,9 +2,10 @@
 import { MOCK_USERS } from '@/mocks/data'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MoreHorizontal, Mail, User } from 'lucide-vue-next'
+import { MoreHorizontal, Mail, User as LucideUser } from 'lucide-vue-next'
 import { useMillerStore } from '@/stores/miller'
 import { computed } from 'vue'
+import type { User } from '@/types'
 
 const props = defineProps<{
   deptId?: string
@@ -13,9 +14,15 @@ const props = defineProps<{
 
 const millerStore = useMillerStore()
 
-const filteredUsers = computed(() => {
-  if (!props.deptId) return MOCK_USERS
-  return MOCK_USERS.filter(u => u.deptCode === props.deptId)
+const filteredUsers = computed((): User[] => {
+  if (!props.deptId) return MOCK_USERS as User[]
+  return MOCK_USERS.filter(u => u.deptCode === props.deptId) as User[]
+})
+
+// Check if a user is "selected" (has an open detail pane in the stack)
+const selectedUserId = computed(() => {
+  const detailPane = millerStore.panes.find(p => p.type === 'UserDetail' && p.data.user)
+  return detailPane?.data.user.id
 })
 
 const getStatusVariant = (status: string) => {
@@ -26,23 +33,20 @@ const getStatusVariant = (status: string) => {
   }
 }
 
-function openUserDetail(user: any) {
+function openUserDetail(user: User) {
+  const detailPane = {
+    id: `user-detail-${user.id}`,
+    type: 'UserDetail',
+    title: `User: ${user.name}`,
+    data: { user }
+  }
+
   // If this component is in a Miller Pane (paneIndex defined), replace the NEXT pane
   if (typeof props.paneIndex === 'number') {
-     millerStore.setPane(props.paneIndex + 1, {
-        id: `user-detail-${user.id}`,
-        type: 'UserDetail',
-        title: `User: ${user.name}`,
-        data: { user }
-     })
+     millerStore.setPane(props.paneIndex + 1, detailPane)
   } else {
     // Fallback if used outside of strict Miller context (shouldn't happen in App.vue)
-    millerStore.pushPane({
-        id: `user-detail-${user.id}`,
-        type: 'UserDetail',
-        title: `User: ${user.name}`,
-        data: { user }
-    })
+    millerStore.pushPane(detailPane)
   }
 }
 </script>
@@ -65,10 +69,11 @@ function openUserDetail(user: any) {
             v-for="user in filteredUsers" 
             :key="user.id" 
             @click="openUserDetail(user)"
-            class="h-8 hover:bg-neutral-50 cursor-pointer group border-b border-neutral-50"
+            class="h-8 cursor-pointer group border-b border-neutral-50 transition-colors"
+            :class="[selectedUserId === user.id ? 'bg-blue-50/50' : 'hover:bg-neutral-50']"
           >
             <TableCell class="p-0 text-center">
-               <User class="size-3 inline-block text-neutral-300 group-hover:text-blue-500" />
+               <LucideUser class="size-3 inline-block text-neutral-300 group-hover:text-blue-500" />
             </TableCell>
             <TableCell class="p-2 py-1">
               <div class="flex flex-col">
@@ -87,11 +92,13 @@ function openUserDetail(user: any) {
                 {{ user.status }}
               </Badge>
             </TableCell>
-            <TableCell class="p-2 py-1">
+            <TableCell class="p-2 py-1 relative">
               <div class="flex items-center gap-1.5">
                  <Mail class="size-3 text-neutral-300" />
                  <span class="text-[11px] text-neutral-500">{{ user.email }}</span>
               </div>
+              <!-- Connection Indicator -->
+              <div v-if="selectedUserId === user.id" class="absolute right-0 top-0 bottom-0 w-0.5 bg-blue-600"></div>
             </TableCell>
           </TableRow>
         </TableBody>

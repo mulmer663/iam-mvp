@@ -47,8 +47,9 @@ Instead of routing (`vue-router` page transitions), use a dynamic stack of panel
 
 - **Level 1**: User List
 - **Level 2**: User Details (clicked from L1)
-- **Level 3**: Role List (clicked from L2)
-- **Level 4**: Policy Editor (clicked from L3)
+- **Level 3**: Exploratory History/Logs (clicked from L2)
+  - *Source Sync History*, *Integration Sync History*, *Modification Ledger*
+- **Level 4**: Raw Audit Data (e.g., JSON payload from L3)
 
 ### 4.2 Data Structure (Pinia Store: `useMillerStore`)
 

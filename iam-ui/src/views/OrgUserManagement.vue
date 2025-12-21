@@ -27,7 +27,7 @@ function onDeptSelect(id: string) {
           <h2 class="text-sm font-bold text-neutral-800">Account Explorer</h2>
           <div class="flex items-center gap-1 p-0.5 bg-neutral-100 rounded-sm">
              <button class="px-2 py-1 text-[10px] font-bold bg-white shadow-sm rounded-sm text-neutral-700">LIST</button>
-             <button class="px-2 py-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors">GRAPH</button>
+             <button class="px-2 py-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors rounded-sm">GRAPH</button>
           </div>
        </div>
        <div class="flex gap-1.5">

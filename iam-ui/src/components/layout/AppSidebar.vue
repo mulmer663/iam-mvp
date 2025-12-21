@@ -19,10 +19,23 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { useMillerStore } from '@/stores/miller'
+import type { Component } from 'vue'
+
+// Types
+interface SidebarSubItem {
+  title: string
+  icon: Component
+  view: string
+}
+
+interface SidebarGroupItem {
+  title: string
+  items: SidebarSubItem[]
+}
 
 const millerStore = useMillerStore()
 
-const items = [
+const items: SidebarGroupItem[] = [
   {
     title: 'Management',
     items: [
@@ -40,15 +53,17 @@ const items = [
   },
 ]
 
-function selectView(viewName: string, title: string) {
+function handleItemClick(item: SidebarSubItem) {
   // Reset stack with new root view
   millerStore.panes = []
-  millerStore.pushPane({
-    id: `root-${viewName}`,
-    type: viewName,
-    title: title,
-    data: {}
-  })
+    millerStore.pushPane({
+      id: `root-${item.view}`,
+      type: item.view,
+      title: item.title,
+      data: {},
+      width: item.view === 'OrgUserManagement' ? '800px' : undefined,
+      maxWidth: item.view === 'OrgUserManagement' ? '800px' : undefined
+    })
 }
 </script>
 
@@ -70,7 +85,7 @@ function selectView(viewName: string, title: string) {
           <SidebarMenu>
             <SidebarMenuItem v-for="item in group.items" :key="item.title">
               <SidebarMenuButton 
-                @click="selectView(item.view, item.title)"
+                @click="handleItemClick(item)"
                 class="hover:bg-neutral-50 px-4 h-8"
               >
                 <component :is="item.icon" class="size-4" />

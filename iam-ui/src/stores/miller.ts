@@ -1,47 +1,34 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type { MillerPane } from '@/types'
 
-export interface Pane {
-    id: string
-    type: string
-    title: string
-    data: any
-    width?: string
-}
+export const useMillerStore = defineStore('miller', () => {
+    const panes = ref<MillerPane[]>([])
 
-export const useMillerStore = defineStore('miller', {
-    state: () => ({
-        panes: [] as Pane[],
-        activePaneId: '' as string,
-    }),
-    actions: {
-        pushPane(pane: Pane) {
-            // If the pane is already open, focus it
-            const existingIndex = this.panes.findIndex(p => p.id === pane.id)
-            if (existingIndex !== -1) {
-                this.popToPane(pane.id)
-                return
-            }
+    function pushPane(pane: MillerPane) {
+        panes.value.push(pane)
+    }
 
-            this.panes.push(pane)
-            this.activePaneId = pane.id
-        },
-        popToPane(paneId: string) {
-            const index = this.panes.findIndex(p => p.id === paneId)
-            if (index !== -1) {
-                this.panes = this.panes.slice(0, index + 1)
-                this.activePaneId = paneId
-            }
-        },
-        updatePaneData(paneId: string, newData: any) {
-            const pane = this.panes.find(p => p.id === paneId)
-            if (pane) {
-                pane.data = { ...pane.data, ...newData }
-            }
-        },
-        setPane(index: number, pane: Pane) {
-            // Replace the pane at index and remove all subsequent panes
-            this.panes = [...this.panes.slice(0, index), pane]
-            this.activePaneId = pane.id
+    function popPane() {
+        panes.value.pop()
+    }
+
+    function popToPane(id: string) {
+        const index = panes.value.findIndex(p => p.id === id)
+        if (index !== -1) {
+            panes.value = panes.value.slice(0, index + 1)
         }
-    },
+    }
+
+    function setPane(index: number, pane: MillerPane) {
+        panes.value = [...panes.value.slice(0, index), pane]
+    }
+
+    return {
+        panes,
+        pushPane,
+        popPane,
+        popToPane,
+        setPane
+    }
 })
