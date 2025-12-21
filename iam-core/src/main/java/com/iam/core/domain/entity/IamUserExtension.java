@@ -18,7 +18,7 @@ import java.util.Map;
 public class IamUserExtension {
     @Id
     @Column(name = "user_id")
-    private String userId;
+    private Long userId;
 
     @OneToOne
     @MapsId

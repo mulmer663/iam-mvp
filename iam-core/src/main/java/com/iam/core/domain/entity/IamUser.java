@@ -12,8 +12,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class IamUser {
     @Id
-    @Column(name = "user_id", length = 36)
-    private String id; // UUID
+    @Column(name = "user_id")
+    private Long id; // TSID
 
     @Column(name = "login_id", nullable = false, unique = true)
     private String loginId; // IAM 로그인용 ID

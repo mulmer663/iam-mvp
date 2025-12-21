@@ -18,7 +18,7 @@ public class IdentityLink {
     private Long id;
 
     @Column(name = "iam_user_id", nullable = false)
-    private String iamUserId; // FK (논리적 연결)
+    private Long iamUserId; // FK (논리적 연결)
 
     @Column(name = "system_type", nullable = false)
     private String systemType; // "HR", "AD", "SAP"

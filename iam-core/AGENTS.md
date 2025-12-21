@@ -13,7 +13,8 @@
 # Implementation Patterns
 
 - **Entity Design:** Use JPA Entities with `Lombok`. Relations should be Lazy by default.
-  - `IamUser`: UUID (PK), loginId (unique), name, status.
+  - **ID Strategy:** Use **TSID (Long)** via `hypersistence-tsid` for all primary keys to ensure sortability and indexing performance.
+  - `IamUser`: Long (PK/TSID), loginId (unique), name, status.
   - `IamUserExtension`: userId (PK/FK), attributes (jsonb).
   - `IdentityLink`: systemType, externalId (Index), iamUserId.
 - **Repository:** `JpaRepository` interface based.

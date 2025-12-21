@@ -32,6 +32,7 @@ subprojects {
     }
 
     dependencies {
+        implementation 'io.hypersistence:hypersistence-tsid:2.1.2'
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
