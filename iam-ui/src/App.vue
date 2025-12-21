@@ -14,6 +14,7 @@ const VIEW_COMPONENTS: Record<string, any> = {
   IntegrationSyncHistory: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
   UserAuditLogs: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
   UserChangeHistory: defineAsyncComponent(() => import('./views/UserChangeHistory.vue')),
+  SyncDetail: defineAsyncComponent(() => import('./views/SyncDetail.vue')),
 }
 
 const millerStore = useMillerStore()
@@ -199,14 +200,14 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                       </h3>
                       <div class="grid grid-cols-1 gap-2">
                         <Button 
-                          @click="pushChildPane(index, 'SourceSyncHistory', 'Source Sync: ' + pane.data.user.name)"
+                          @click="pushChildPane(index, 'SourceSyncHistory', 'Source Sync: ' + pane.data.user.name, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
                           <span class="flex items-center gap-2"><div class="size-1 bg-blue-400 rounded-full"></div> Source Sync</span>
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                         <Button 
-                          @click="pushChildPane(index, 'IntegrationSyncHistory', 'Integration Sync: ' + pane.data.user.name)"
+                          @click="pushChildPane(index, 'IntegrationSyncHistory', 'Integration Sync: ' + pane.data.user.name, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
                           <span class="flex items-center gap-2"><div class="size-1 bg-green-400 rounded-full"></div> Integration Sync</span>

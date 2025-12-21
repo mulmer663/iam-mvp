@@ -25,6 +25,15 @@
   - Use Constructor Injection over Field Injection.
   - Use `./gradlew` for all build tasks.
   - Keep modules decoupled; `iam-core` should not depend on connectors.
+  - **Consistency & Reusability (UI):**
+    - Enforce uniform UX across all modules. If a list view is used in one module, use the same component and design tokens for similar lists in other modules (e.g., embedded history lists).
+    - Reuse components (like `SyncHistory` logic) rather than duplicating code.
+    - Ensure visual hierarchy is consistent (Level 1 -> Level 2 -> Level 3 -> Level 4).
+  - **Data Linkage (Traceability):**
+    - Data flow MUST be traceable: `HR -> IAM Core -> Prov System`.
+    - Every event must be linked via a unique `traceId` (or correlation ID) to its upstream and downstream counterparts.
+    - Change Logs must explicitly link to the `Source Sync` event that triggered them.
+    - Integration Syncs must explicitly link to the `Source Sync` or `Change Log` event that triggered them.
 
 - **Don'ts:**
   - Do not use `@Autowired` on fields.
@@ -35,7 +44,7 @@
 
 - **Code Style:** Standard Java/Spring Boot conventions.
 - **Git:** Semantic Commit Messages (`feat:`, `fix:`, `chore:`).
-- **Functional Specification:** [spec.mb](./spec.mb) — Source of truth for domain logic and data schemas.
+- **Functional Specification:** [spec.mb](./spec.md) — Source of truth for domain logic and data schemas.
 - **Maintenance Policy:** Suggest updates to this file if patterns change.
 
 # Context Map

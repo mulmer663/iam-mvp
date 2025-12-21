@@ -21,6 +21,8 @@ export interface HistoryLog {
     status: 'SUCCESS' | 'PENDING' | 'FAILURE'
     target: string
     time: string
+    userId?: string
+    syncType?: 'JOIN' | 'REJOIN' | 'UPDATE_SIMPLE' | 'UPDATE_CRITICAL' | 'LEAVE'
 }
 
 export interface MillerPane {
