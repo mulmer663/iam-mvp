@@ -62,6 +62,19 @@ services:
     networks:
       - iam-network
 
+  iam-ui:
+    build:
+      context: ./iam-ui
+      dockerfile: Dockerfile
+    image: iam-ui:latest
+    container_name: iam-ui
+    ports:
+      - "5173:5173"
+    networks:
+      - iam-network
+    environment:
+      - VITE_API_URL=http://iam-core:8081
+
   postgres:
     image: postgres:17-trixie
     container_name: postgres

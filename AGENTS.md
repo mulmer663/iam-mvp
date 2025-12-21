@@ -43,5 +43,6 @@
 - **[Core Logic (BE)](./iam-core/AGENTS.md)** — Core Identity entities, services, and business logic.
 - **[AD Connector (BE)](./iam-connector-ad/AGENTS.md)** — Active Directory integration, provisioning, and synchronization.
 - **[HR Connector (BE)](./iam-connector-hr/AGENTS.md)** — HR System source integration and events.
+- **[UI Dashboard (FE)](./iam-ui/AGENTS.md)** — High-density Vue 3 dashboard and Miller Columns.
 - **[Infrastructure (Ops)](./docker-compose.yml)** — Docker services for Postgres, RabbitMQ, and Apps.
 - **[Build Settings (Root)](./build.gradle)** — Root project configuration and dependencies.
