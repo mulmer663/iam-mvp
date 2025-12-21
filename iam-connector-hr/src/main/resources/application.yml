@@ -1,0 +1,11 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: iam-connector-hr
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest

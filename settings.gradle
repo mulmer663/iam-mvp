@@ -1,0 +1,4 @@
+rootProject.name = 'iam-mvp'
+include 'iam-core'
+include 'iam-connector-hr'
+include 'iam-connector-ad'

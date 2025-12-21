@@ -1,0 +1,97 @@
+services:
+  iam-core:
+    build:
+      context: .
+      dockerfile: iam-core/Dockerfile
+    image: iam-core:latest
+    container_name: iam-core
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
+      - SPRING_DATASOURCE_USERNAME=iam_user
+      - SPRING_DATASOURCE_PASSWORD=iam_password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    networks:
+      - iam-network
+
+  iam-connector-ad:
+    build:
+      context: .
+      dockerfile: iam-connector-ad/Dockerfile
+    image: iam-connector-ad:latest
+    container_name: iam-connector-ad
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
+      - SPRING_DATASOURCE_USERNAME=iam_user
+      - SPRING_DATASOURCE_PASSWORD=iam_password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    networks:
+      - iam-network
+
+  iam-connector-hr:
+    build:
+      context: .
+      dockerfile: iam-connector-hr/Dockerfile
+    image: iam-connector-hr:latest
+    container_name: iam-connector-hr
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
+      - SPRING_DATASOURCE_USERNAME=iam_user
+      - SPRING_DATASOURCE_PASSWORD=iam_password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    networks:
+      - iam-network
+
+  postgres:
+    image: postgres:17-trixie
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=iam_user
+      - POSTGRES_PASSWORD=iam_password
+      - POSTGRES_DB=iam_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - iam-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - iam-network
+
+volumes:
+  postgres_data:
+
+
+networks:
+  iam-network:
+    driver: bridge
