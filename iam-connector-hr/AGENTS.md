@@ -12,8 +12,8 @@
 # Implementation Patterns
 
 - **Ingestion:** Scheduled Task or Webhook Receiver.
-- **Normalization:** Convert raw HR JSON to standardized `UserSyncEvent`.
-- **Payload (SYNC_USER):** `hrEmpId` (External ID), `name`, `attributes` (deptCode, position, email).
+- **Normalization:** Convert raw HR JSON to standardized SCIM 2.0 `UserResource`.
+- **Payload:** `externalId`, `userName`, `name` (complex), and SCIM Extensions (e.g., Enterprise User).
 - **Publisher:** Send events to `iam.hr.exchange`.
 
 # Testing Strategy

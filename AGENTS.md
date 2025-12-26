@@ -4,7 +4,7 @@
 
 # Project Context & Operations
 
-- **Domain:** Identity & Access Management (IAM)
+- **Domain:** Identity & Access Management (IAM) - SCIM 2.0 Compliant
 - **Tech Stack:** Java 21, Spring Boot 3.5.8, Gradle, PostgreSQL, RabbitMQ, Docker
 - **Structure:** Multi-module Gradle project (Core, Connectors)
 - **Operational Commands:**
@@ -16,7 +16,7 @@
 # Golden Rules
 
 - **Immutable:**
-  - Strictly follow Java 21 syntax (Records, Pattern Matching).
+  - Strictly follow Java 21 syntax (Records, Pattern Matching for Switch on `ExtensionData`).
   - Ensure 12-Factor App principles for containerization.
   - Never modify `AGENTS_md_Master_Prompt_ghs8S.md`.
 
@@ -44,7 +44,7 @@
 
 - **Code Style:** Standard Java/Spring Boot conventions.
 - **Git:** Semantic Commit Messages (`feat:`, `fix:`, `chore:`).
-- **Functional Specification:** [spec.mb](./spec.md) — Source of truth for domain logic and data schemas.
+- **Functional Specification:** [spec.md](./spec.md) — Source of truth for domain logic and data schemas.
 - **Maintenance Policy:** Suggest updates to this file if patterns change.
 
 # Context Map

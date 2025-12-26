@@ -11,8 +11,8 @@
 
 # Implementation Patterns
 
-- **Listener:** `RabbitListener` consumes `UserProvisioningCommand`.
-- **Payload (CREATE_ACCOUNT):** `targetSystemId` (AD ID), `attributes` (cn, department, description).
+- **Listener:** `RabbitListener` consumes SCIM-aware `UserProvisioningCommand`.
+- **Payload:** `targetSystemId`, `attributes` (SCIM Core + Extensions mapped to LDAP).
 - **Mapping:** Map Core specific attributes to AD LDAP attributes (`sAMAccountName`, `userPrincipalName`).
 - **Repository:** `LdapRepository` or `LdapTemplate`.
 

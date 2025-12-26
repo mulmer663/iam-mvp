@@ -13,9 +13,9 @@
 # Implementation Patterns
 
 - **Entity Design:** Use JPA Entities with `Lombok`. Relations should be Lazy by default.
-  - **ID Strategy:** Use **TSID (Long)** via `hypersistence-tsid` for all primary keys to ensure sortability and indexing performance.
-  - `IamUser`: Long (PK/TSID), loginId (unique), name, status.
-  - `IamUserExtension`: userId (PK/FK), attributes (jsonb).
+  - **ID Strategy:** Use **TSID (Long)** for numeric primary keys or **UUID (String)** for SCIM standard compatibility as per `spec.md`.
+  - `IamUser`: `userName` (unique), `familyName`, `givenName`, `active`, `resourceType`, `created`, `lastModified` (Flattened Columns).
+  - `IamUserExtension`: `userId` (PK/FK), `extensions` (jsonb mapping to structured `ExtensionData`).
   - `IdentityLink`: systemType, externalId (Index), iamUserId.
 - **Repository:** `JpaRepository` interface based.
 - **Service Layer:** Business logic here. `@Transactional` usually applies at this layer.
@@ -32,7 +32,7 @@
 - **Do's:**
   - Use DTOs for API/Event payloads; never expose `@Entity` directly.
   - Use `Optional<T>` for return types in Services/Repositories where applicable.
-  - **Logic Flow (processHrSync):** Check `IdentityLink` -> Create new `IamUser`/`Extension`/`Link` (New) or Update existing (Update) -> Emit provisioning command.
+  - **Logic Flow (processHrSync):** Normalize incoming SCIM JSON -> Check `IdentityLink` -> Create/Update `IamUser` (Flattened) & `IamUserExtension` (Structured) -> Emit SCIM Command.
 - **Don'ts:**
   - Do not put specific connector logic (e.g., "AD Attribute Mapping") here.
   - Do not ignore `LazyInitializationException` warnings.

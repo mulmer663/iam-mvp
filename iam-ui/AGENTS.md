@@ -36,4 +36,4 @@
 # Standards & References
 
 - **Functional Specification:** [fe_spec.md](./fe_spec.md) — Source of truth for UI/UX patterns.
-- **Global Identity Spec:** [../spec.mb](../spec.mb) — Source of truth for domain data.
+- **Global Identity Spec:** [../spec.md](../spec.md) — Source of truth for domain data.
