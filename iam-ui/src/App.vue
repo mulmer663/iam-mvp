@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, defineAsyncComponent, computed, watch, nextTick, useTemplateRef } from 'vue'
+import { onMounted, defineAsyncComponent, computed } from 'vue'
 import { useMillerStore } from './stores/miller'
 import AppSidebar from './components/layout/AppSidebar.vue'
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar'
@@ -19,8 +19,6 @@ const VIEW_COMPONENTS: Record<string, any> = {
 }
 
 const millerStore = useMillerStore()
-const scrollContainer = useTemplateRef<HTMLElement>('scrollContainer')
-
 // Computed
 const currentRootTitle = computed(() => millerStore.panes[0]?.title || 'Loading...')
 
@@ -41,35 +39,24 @@ onMounted(() => {
   })
 })
 
-// Auto-scroll logic for new/replaced panes
-watch(() => millerStore.panes[millerStore.panes.length - 1]?.id, async (newId) => {
-  if (newId) {
-    await nextTick()
-    // Multiple attempts to account for transition delay and layout shifts
-    const doScroll = () => {
-      const element = document.getElementById(`pane-${newId}`)
-      if (element && scrollContainer.value) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'end' })
-      }
-    }
-    
-    // Immediate, then after some transition progress
-    doScroll()
-    setTimeout(doScroll, 150)
-    setTimeout(doScroll, 400)
-  }
-})
+// Event-driven scroll: Triggered by Vue's animation hooks
+const handleScrollToElement = (el: Element, isSmooth = true) => {
+  el.scrollIntoView({ 
+    behavior: isSmooth ? 'smooth' : 'auto', 
+    block: 'nearest', 
+    inline: 'end' 
+  })
+}
 
-// Highlight and Scroll logic for existing panes
-watch(() => millerStore.highlightedPaneId, async (id) => {
-  if (id) {
-    await nextTick()
-    const element = document.getElementById(`pane-${id}`)
-    if (element && scrollContainer.value) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-    }
-  }
-})
+// Start scrolling as soon as the transition begins
+function onEnter(el: Element) {
+  handleScrollToElement(el, true)
+}
+
+// Final adjustment when transition is 100% complete
+function onAfterEnter(el: Element) {
+  handleScrollToElement(el, true)
+}
 
 function getHistoryType(viewType: string) {
   if (viewType === 'SourceSyncHistory') return 'SOURCE'
@@ -131,8 +118,9 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
         <TransitionGroup 
           name="miller-pane" 
           tag="main"
-          ref="scrollContainer"
-          class="flex-1 flex overflow-x-auto overflow-y-hidden bg-neutral-100/30 scroll-smooth items-stretch relative"
+          @enter="onEnter"
+          @after-enter="onAfterEnter"
+          class="flex-1 flex overflow-x-auto overflow-y-hidden bg-neutral-100/30 items-stretch relative"
         >
           <div 
             v-for="(pane, index) in panes" 
@@ -185,8 +173,8 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                         <User class="size-5" />
                      </div>
                      <div class="min-w-0">
-                        <div class="text-sm font-black text-neutral-900 leading-tight uppercase tracking-tight">{{ pane.data.user.name }}</div>
-                        <div class="text-[11px] text-neutral-400 font-mono mt-0.5 truncate">{{ pane.data.user.email }}</div>
+                        <div class="text-sm font-black text-neutral-900 leading-tight uppercase tracking-tight">{{ pane.data.user.name.givenName }} {{ pane.data.user.name.familyName }}</div>
+                        <div class="text-[11px] text-neutral-400 font-mono mt-0.5 truncate">{{ pane.data.user.emails[0]?.value }}</div>
                      </div>
                   </div>
                   
@@ -196,9 +184,44 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                         <div class="size-1 bg-neutral-300 rounded-full"></div> Core Identity
                       </h3>
                       <div class="grid grid-cols-3 gap-y-4 gap-x-2">
-                         <div v-for="(val, key) in pane.data.user" :key="key" class="space-y-1 border-l border-neutral-100 pl-2">
-                            <div class="text-[9px] uppercase font-bold text-neutral-400 tracking-tighter">{{ key }}</div>
-                            <div class="text-[11px] text-neutral-800 font-semibold truncate">{{ val }}</div>
+                         <div class="space-y-1 border-l border-neutral-100 pl-2">
+                            <div class="text-[9px] uppercase font-bold text-neutral-400 tracking-tighter">Given Name</div>
+                            <div class="text-[11px] text-neutral-800 font-semibold truncate">{{ pane.data.user.name.givenName }}</div>
+                         </div>
+                         <div class="space-y-1 border-l border-neutral-100 pl-2">
+                            <div class="text-[9px] uppercase font-bold text-neutral-400 tracking-tighter">Family Name</div>
+                            <div class="text-[11px] text-neutral-800 font-semibold truncate">{{ pane.data.user.name.familyName }}</div>
+                         </div>
+                         <div class="space-y-1 border-l border-neutral-100 pl-2">
+                            <div class="text-[9px] uppercase font-bold text-neutral-400 tracking-tighter">User Name</div>
+                            <div class="text-[11px] text-neutral-800 font-semibold truncate">{{ pane.data.user.userName }}</div>
+                         </div>
+                         <div class="space-y-1 border-l border-neutral-100 pl-2">
+                            <div class="text-[9px] uppercase font-bold text-neutral-400 tracking-tighter">Title</div>
+                            <div class="text-[11px] text-neutral-800 font-semibold truncate">{{ pane.data.user.title }}</div>
+                         </div>
+                         <div class="space-y-1 border-l border-neutral-100 pl-2">
+                            <div class="text-[9px] uppercase font-bold text-neutral-400 tracking-tighter">Active</div>
+                            <div class="text-[11px] text-neutral-800 font-semibold truncate">{{ pane.data.user.active ? 'Yes' : 'No' }}</div>
+                         </div>
+                         <div class="space-y-1 border-l border-neutral-100 pl-2">
+                            <div class="text-[9px] uppercase font-bold text-neutral-400 tracking-tighter">Primary Email</div>
+                            <div class="text-[11px] text-neutral-800 font-semibold truncate">{{ pane.data.user.emails[0]?.value }}</div>
+                         </div>
+                      </div>
+                    </section>
+
+                    <Separator class="bg-neutral-50" />
+
+                    <section v-if="pane.data.user['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']">
+                      <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <div class="size-1 bg-neutral-300 rounded-full"></div> Enterprise Extension
+                      </h3>
+                      <div class="grid grid-cols-2 gap-2">
+                         <div v-for="(val, key) in pane.data.user['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']" :key="key" 
+                              class="bg-neutral-50 p-2 rounded border border-neutral-100 group hover:border-blue-200 transition-colors">
+                            <div class="text-[8px] uppercase font-bold text-neutral-400 mb-0.5">{{ key }}</div>
+                            <div class="text-[11px] text-neutral-800 font-medium">{{ val }}</div>
                          </div>
                       </div>
                     </section>
@@ -223,8 +246,8 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                         <div class="size-1 bg-neutral-300 rounded-full"></div> Continuous Exploration
                       </h3>
                       <div class="grid grid-cols-1 gap-2">
-                        <Button 
-                          @click="pushChildPane(index, 'SourceSyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name, { userId: pane.data.user.id })"
+                         <Button 
+                          @click="pushChildPane(index, 'SourceSyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
                           <span class="flex items-center gap-2">
@@ -234,7 +257,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                         <Button 
-                          @click="pushChildPane(index, 'IntegrationSyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name, { userId: pane.data.user.id })"
+                          @click="pushChildPane(index, 'IntegrationSyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
                           <span class="flex items-center gap-2">
@@ -244,7 +267,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                         <Button 
-                          @click="pushChildPane(index, 'UserAuditLogs', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name, { userId: pane.data.user.id })"
+                          @click="pushChildPane(index, 'UserAuditLogs', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
                           <span class="flex items-center gap-2">
@@ -307,35 +330,21 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
 /* Miller Pane Transitions */
 .miller-pane-enter-active,
 .miller-pane-leave-active {
-  transition: 
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    min-width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
-  white-space: nowrap; /* Avoid text wrapping during width collapse */
+  white-space: nowrap;
 }
 
-/* Entering Pane */
-.miller-pane-enter-from {
-  opacity: 0;
-  transform: translateX(100px);
-  width: 0 !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
-}
-
-/* Leaving Pane */
+.miller-pane-enter-from,
 .miller-pane-leave-to {
   opacity: 0;
-  transform: translateX(100px);
+  transform: translateX(30px);
   width: 0 !important;
   min-width: 0 !important;
   max-width: 0 !important;
 }
 
 .miller-pane-move {
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 </style>

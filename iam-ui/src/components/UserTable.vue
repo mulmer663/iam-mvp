@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { MOCK_USERS } from '@/mocks/data'
-import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { MoreHorizontal, Mail, User as LucideUser } from 'lucide-vue-next'
 import { useMillerStore } from '@/stores/miller'
@@ -16,7 +15,7 @@ const millerStore = useMillerStore()
 
 const filteredUsers = computed((): User[] => {
   if (!props.deptId) return MOCK_USERS as User[]
-  return MOCK_USERS.filter(u => u.deptCode === props.deptId) as User[]
+  return MOCK_USERS.filter(u => u['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?.department === props.deptId) as User[]
 })
 
 // Check if a user is "selected" (has an open detail pane in the stack)
@@ -25,19 +24,11 @@ const selectedUserId = computed(() => {
   return detailPane?.data.user.id
 })
 
-const getStatusVariant = (status: string) => {
-  switch (status) {
-    case 'ACTIVE': return 'default'
-    case 'INACTIVE': return 'secondary'
-    default: return 'outline'
-  }
-}
-
 function openUserDetail(user: User) {
   const detailPane = {
     id: `user-detail-${user.id}`,
     type: 'UserDetail',
-    title: `User: ${user.name}`,
+    title: `User: ${user.name.givenName} ${user.name.familyName}`,
     data: { user }
   }
 
@@ -77,25 +68,23 @@ function openUserDetail(user: User) {
             </TableCell>
             <TableCell class="p-2 py-1">
               <div class="flex flex-col">
-                 <span class="text-[12px] font-semibold text-neutral-800 leading-tight">{{ user.name }}</span>
-                 <span class="text-[10px] text-neutral-400 font-mono">{{ user.loginId }}</span>
+                 <span class="text-[12px] font-semibold text-neutral-800 leading-tight">{{ user.name.givenName }} {{ user.name.familyName }}</span>
+                 <span class="text-[10px] text-neutral-400 font-mono">{{ user.userName }}</span>
               </div>
             </TableCell>
             <TableCell class="p-2 py-1">
-              <span class="text-[11px] text-neutral-600 font-medium">{{ user.position }}</span>
+              <span class="text-[11px] text-neutral-600 font-medium">{{ user.title }}</span>
             </TableCell>
             <TableCell class="p-2 py-1 text-center">
-              <Badge 
-                :variant="getStatusVariant(user.status)"
-                class="px-1.5 py-0 h-4 text-[9px] uppercase font-bold tracking-wider rounded-sm"
-              >
-                {{ user.status }}
-              </Badge>
+              <span class="px-1.5 py-0 h-4 text-[9px] uppercase font-bold tracking-wider rounded-sm"
+                    :class="user.active ? 'bg-blue-100 text-blue-700' : 'bg-neutral-100 text-neutral-400'">
+                {{ user.active ? 'ACTIVE' : 'INACTIVE' }}
+              </span>
             </TableCell>
             <TableCell class="p-2 py-1 relative">
               <div class="flex items-center gap-1.5">
                  <Mail class="size-3 text-neutral-300" />
-                 <span class="text-[11px] text-neutral-500">{{ user.email }}</span>
+                 <span class="text-[11px] text-neutral-500">{{ user.emails[0]?.value }}</span>
               </div>
               <!-- Connection Indicator -->
               <div v-if="selectedUserId === user.id" class="absolute right-0 top-0 bottom-0 w-0.5 bg-blue-600"></div>

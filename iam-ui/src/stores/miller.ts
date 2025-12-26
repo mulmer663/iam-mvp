@@ -4,10 +4,13 @@ import type { MillerPane } from '@/types'
 
 export const useMillerStore = defineStore('miller', () => {
     const highlightedPaneId = ref<string | null>(null)
+    const activePaneId = ref<string | null>(null)
     const panes = ref<MillerPane[]>([])
 
     function pushPane(pane: MillerPane) {
         panes.value.push(pane)
+        activePaneId.value = null
+        activePaneId.value = pane.id
     }
 
     function popPane() {
@@ -23,6 +26,8 @@ export const useMillerStore = defineStore('miller', () => {
 
     function setPane(index: number, pane: MillerPane) {
         panes.value = [...panes.value.slice(0, index), pane]
+        activePaneId.value = null
+        activePaneId.value = pane.id
     }
 
     let highlightTimeout: any = null
@@ -46,6 +51,7 @@ export const useMillerStore = defineStore('miller', () => {
     return {
         panes,
         highlightedPaneId,
+        activePaneId,
         pushPane,
         popPane,
         popToPane,

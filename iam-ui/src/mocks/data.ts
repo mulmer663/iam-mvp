@@ -1,16 +1,48 @@
 export const MOCK_DEPARTMENTS = [
     { id: 'DEPT01', name: 'IAM Solution Group', parentId: null },
-    { id: 'DEPT01-1', name: 'Core Development Team', parentId: 'DEPT01' },
+    { id: 'DEPT01-1', name: 'Dev Team', parentId: 'DEPT01' },
     { id: 'DEPT01-2', name: 'Connector Team', parentId: 'DEPT01' },
     { id: 'DEPT02', name: 'Business Strategy', parentId: null },
     { id: 'DEPT02-1', name: 'Marketing Team', parentId: 'DEPT02' },
 ]
 
-export const MOCK_USERS = [
-    { id: '1', loginId: 'admin', name: 'System Administrator', deptCode: 'DEPT01', status: 'ACTIVE', position: 'Manager', email: 'admin@iam.com' },
-    { id: '532100000000000002', loginId: 'hong.g', name: 'Gildong Hong', deptCode: 'DEPT01-1', status: 'ACTIVE', position: 'Senior Engineer', email: 'hong@iam.com' },
-    { id: '3', loginId: 'kim.f', name: 'Free Kim', deptCode: 'DEPT01-2', status: 'ACTIVE', position: 'Junior Engineer', email: 'kim@iam.com' },
-    { id: '4', loginId: 'lee.p', name: 'Planner Lee', deptCode: 'DEPT02-1', status: 'INACTIVE', position: 'Associate', email: 'lee@iam.com' },
+export const MOCK_USERS: any[] = [
+    {
+        id: '1',
+        userName: 'admin',
+        name: { familyName: 'System', givenName: 'Administrator' },
+        title: 'Manager',
+        active: true,
+        emails: [{ value: 'admin@iam.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT01' }
+    },
+    {
+        id: '532100000000000002',
+        userName: 'hong.g',
+        name: { familyName: 'Hong', givenName: 'Gildong' },
+        title: 'Principal Engineer',
+        active: true,
+        emails: [{ value: 'hong@test.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT01-1', employeeNumber: 'H001' }
+    },
+    {
+        id: '3',
+        userName: 'kim.f',
+        name: { familyName: 'Kim', givenName: 'Free' },
+        title: 'Junior Engineer',
+        active: true,
+        emails: [{ value: 'kim@iam.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT01-2' }
+    },
+    {
+        id: '4',
+        userName: 'lee.p',
+        name: { familyName: 'Lee', givenName: 'Planner' },
+        title: 'Associate',
+        active: false,
+        emails: [{ value: 'lee@iam.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT02-1' }
+    },
 ]
 
 export const MOCK_HISTORY = [
@@ -21,7 +53,11 @@ export const MOCK_HISTORY = [
         snapshot: {
             layer: 'HR',
             data: { empId: 'H001', name: 'Hong Gildong', position: 'Senior Engineer', dept: 'Dev Team', email: 'hong@test.com' }
-        }
+        },
+        mappings: [
+            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Senior Engineer' },
+            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'dept', toField: 'department', value: 'Dev Team' }
+        ]
     },
     // IAM Step: Ingestion Mapping (HR <-> IAM)
     {
@@ -49,11 +85,7 @@ export const MOCK_HISTORY = [
                     theme: 'dark'
                 }
             }
-        },
-        mappings: [
-            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Senior Engineer' },
-            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'dept', toField: 'department', value: 'Dev Team' }
-        ]
+        }
     },
     // Target Step: Distribution Mapping (IAM <-> AD)
     {
@@ -75,7 +107,8 @@ export const MOCK_HISTORY = [
         snapshot: {
             layer: 'HR',
             data: { empId: 'H001', name: 'Hong Gildong', position: 'Principal Engineer', dept: 'Dev Team', email: 'hong@test.com' }
-        }
+        },
+        mappings: [{ fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Principal Engineer' }]
     },
     {
         id: '542100000000000022', traceId: '542100000000000150', type: 'USER_UPDATE', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:05', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',
@@ -91,8 +124,7 @@ export const MOCK_HISTORY = [
                 emails: [{ value: 'hong@test.com', primary: true }],
                 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { employeeNumber: 'H001', department: 'Dev Team' }
             }
-        },
-        mappings: [{ fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Principal Engineer' }]
+        }
     },
     {
         id: '542100000000000023', traceId: '542100000000000150', type: 'AD_PROVISION', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:30', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',

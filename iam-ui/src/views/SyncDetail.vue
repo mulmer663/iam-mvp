@@ -218,7 +218,7 @@ const filteredEntries = computed(() => {
                  <div class="flex items-center justify-between border rounded p-2 transition-colors relative transition-all duration-300"
                       :class="[
                         getChange(key) 
-                          ? `bg-${theme.color}-50/30 border-${theme.color}-200 ring-1 ring-${theme.color}-100 shadow-sm` 
+                          ? theme.container 
                           : 'bg-neutral-50/30 border-neutral-100 group hover:bg-white'
                       ]">
                     <!-- Change Indicator (Vertical Accent) -->
@@ -253,7 +253,7 @@ const filteredEntries = computed(() => {
                           
                           <!-- Inline History -->
                           <div v-if="getChange(key)" class="text-[9px] text-neutral-400 font-medium italic">
-                             (was: <span class="line-through decoration-neutral-300">{{ getChange(key)?.old }}</span>)
+                             (was: <span class="decoration-neutral-300">{{ getChange(key)?.old }}</span>)
                           </div>
                        </div>
                     </div>

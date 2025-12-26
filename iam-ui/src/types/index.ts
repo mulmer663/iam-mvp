@@ -6,12 +6,20 @@ export interface Department {
 
 export interface User {
     id: string
-    loginId: string
-    name: string
-    deptCode: string
-    status: 'ACTIVE' | 'INACTIVE'
-    position: string
-    email: string
+    userName: string
+    name: {
+        familyName: string
+        givenName: string
+        formatted?: string
+    }
+    title: string
+    active: boolean
+    emails: Array<{ value: string; primary: boolean }>
+    'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'?: {
+        employeeNumber?: string
+        department?: string
+    }
+    [key: string]: any
 }
 
 export interface AttributeMapping {
