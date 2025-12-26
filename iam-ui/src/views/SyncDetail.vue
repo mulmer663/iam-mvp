@@ -2,26 +2,35 @@
 import { ArrowRight, Code, ChevronDown, ChevronRight, Search } from 'lucide-vue-next'
 import { Separator } from '@/components/ui/separator'
 import type { HistoryLog } from '@/types'
-import { MOCK_HISTORY } from '@/mocks/data'
-import { computed, ref } from 'vue'
-import { useMillerStore } from '@/stores/miller'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { HistoryService } from '@/api/HistoryService'
+import { computed, onMounted, ref } from 'vue'
+
+// ... existing imports ...
 
 import { SYSTEM_THEMES } from '@/utils/theme'
+import { useMillerStore } from '@/stores/miller'
 
 const props = defineProps<{
-  event: HistoryLog
-  paneIndex?: number
+    event: HistoryLog
+    paneIndex?: number
 }>()
 
 const millerStore = useMillerStore()
 const isRawOpen = ref(false)
 const viewMode = ref<'changes' | 'all'>(props.event.changes && props.event.changes.length > 0 ? 'changes' : 'all')
 const searchQuery = ref('')
+const allHistory = ref<HistoryLog[]>([])
+
+onMounted(async () => {
+    try {
+        allHistory.value = await HistoryService.getHistory()
+    } catch (e) {
+        console.error('Failed to load history for related events', e)
+    }
+})
 
 const relatedEvents = computed(() => {
-  return (MOCK_HISTORY as HistoryLog[]).filter(h => h.traceId === props.event.traceId && h.id !== props.event.id)
+  return allHistory.value.filter(h => h.traceId === props.event.traceId && h.id !== props.event.id)
 })
 
 const theme = computed(() => {

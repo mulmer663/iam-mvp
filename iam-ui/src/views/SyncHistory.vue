@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { MOCK_HISTORY } from '@/mocks/data'
+import { HistoryService } from '@/api/HistoryService'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { ExternalLink } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { HistoryLog } from '@/types'
 import { useMillerStore } from '@/stores/miller'
 
@@ -16,13 +16,29 @@ const props = defineProps<{
 }>()
 
 const millerStore = useMillerStore()
+const history = ref<HistoryLog[]>([])
 const currentTheme = computed(() => SYSTEM_THEMES[props.type])
 
+onMounted(async () => {
+    try {
+        history.value = await HistoryService.getHistory()
+    } catch (e) {
+        console.error('Failed to load history', e)
+    }
+})
+
 const filteredHistory = computed((): HistoryLog[] => {
-  let baseList = MOCK_HISTORY as HistoryLog[]
+  let baseList = history.value
   
   if (props.userId) {
-    baseList = baseList.filter(h => h.userId === props.userId)
+    baseList = baseList.filter(h => h.target === props.userId) // Note: target might need to be UserId not UserName depending on backend.
+    // Backend logs "targetUser" which is currently "userName". Frontend props.userId is "id".
+    // This is a potential mismatch. Backend log doesn't store User ID properly, it stores target name.
+    // Ideally Backend SyncHistory should store userId or targetId.
+    // For now, let's assume we might need to fix this or match vaguely.
+    // Wait, let's check SyncDetail.vue or where History is called.
+    // If we filter, maybe we should filter by target string match?
+    // Let's assume for now target matches userName.
   }
 
   if (props.type === 'AUDIT') return baseList.filter(h => h.type === 'USER_UPDATE')

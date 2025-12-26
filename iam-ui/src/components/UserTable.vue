@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { MOCK_USERS } from '@/mocks/data'
+import { UserService } from '@/api/UserService'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { MoreHorizontal, Mail, User as LucideUser } from 'lucide-vue-next'
 import { useMillerStore } from '@/stores/miller'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { User } from '@/types'
 
 const props = defineProps<{
@@ -12,10 +12,19 @@ const props = defineProps<{
 }>()
 
 const millerStore = useMillerStore()
+const users = ref<User[]>([])
+
+onMounted(async () => {
+    try {
+        users.value = await UserService.getUsers()
+    } catch (e) {
+        console.error('Failed to load users', e)
+    }
+})
 
 const filteredUsers = computed((): User[] => {
-  if (!props.deptId) return MOCK_USERS as User[]
-  return MOCK_USERS.filter(u => u['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?.department === props.deptId) as User[]
+  if (!props.deptId) return users.value
+  return users.value.filter(u => u['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']?.department === props.deptId)
 })
 
 // Check if a user is "selected" (has an open detail pane in the stack)
