@@ -1,10 +1,12 @@
 package com.iam.core.domain.entity;
 
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,6 +18,7 @@ import java.time.LocalDateTime;
 public class IamUser {
     @Id
     @Column(name = "user_id")
+    @Tsid
     private Long id; // TSID
 
     @Column(name = "external_id")
@@ -38,6 +41,6 @@ public class IamUser {
     private LocalDateTime created;
     private LocalDateTime lastModified;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private IamUserExtension extension;
 }

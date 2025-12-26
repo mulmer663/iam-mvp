@@ -6,7 +6,7 @@ services:
     image: iam-core:latest
     container_name: iam-core
     ports:
-      - "8081:8081"
+      - "18081:8081"
     depends_on:
       - postgres
     environment:
@@ -27,7 +27,7 @@ services:
     image: iam-connector-ad:latest
     container_name: iam-connector-ad
     ports:
-      - "8082:8082"
+      - "18082:8082"
     depends_on:
       - postgres
     environment:
@@ -48,7 +48,7 @@ services:
     image: iam-connector-hr:latest
     container_name: iam-connector-hr
     ports:
-      - "8083:8083"
+      - "18083:8083"
     depends_on:
       - postgres
     environment:
@@ -69,7 +69,7 @@ services:
     image: iam-ui:latest
     container_name: iam-ui
     ports:
-      - "5173:80"
+      - "15173:80"
     networks:
       - iam-network
     environment:

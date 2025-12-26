@@ -1,5 +1,6 @@
 package com.iam.core.domain.entity;
 
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class SyncHistory {
     @Id
+    @Tsid
     @Column(name = "history_id")
     private Long id; // TSID
 

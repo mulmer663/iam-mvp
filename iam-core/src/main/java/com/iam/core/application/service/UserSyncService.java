@@ -1,20 +1,14 @@
 package com.iam.core.application.service;
 
-import com.iam.core.domain.entity.EnterpriseUserExtension;
-import com.iam.core.domain.entity.ExtensionData;
-import com.iam.core.domain.entity.GenericExtension;
-import com.iam.core.domain.entity.IamUser;
-import com.iam.core.domain.entity.IamUserExtension;
-import com.iam.core.domain.entity.IdentityLink;
-import com.iam.core.domain.port.MessagePublisher;
-import com.iam.core.domain.repository.IamUserRepository;
-import com.iam.core.domain.repository.IdentityLinkRepository;
 import com.iam.core.application.dto.ProvisioningCommand;
 import com.iam.core.application.dto.UserSyncEvent;
 import com.iam.core.application.dto.UserSyncPayload;
+import com.iam.core.domain.entity.*;
 import com.iam.core.domain.exception.ErrorCode;
 import com.iam.core.domain.exception.IamBusinessException;
-import io.hypersistence.tsid.TSID;
+import com.iam.core.domain.port.MessagePublisher;
+import com.iam.core.domain.repository.IamUserRepository;
+import com.iam.core.domain.repository.IdentityLinkRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -125,7 +119,6 @@ public class UserSyncService {
 
     private IamUser buildNewUser(UserSyncPayload payload) {
         var user = new IamUser();
-        user.setId(TSID.fast().toLong());
         user.setExternalId(payload.getExternalId());
         updateUserFields(user, payload);
         user.setResourceType("User");

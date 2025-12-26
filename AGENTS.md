@@ -8,8 +8,12 @@
 - **Tech Stack:** Java 21, Spring Boot 3.5.8, Gradle, PostgreSQL, RabbitMQ, Docker
 - **Structure:** Multi-module Gradle project (Core, Connectors)
 - **Operational Commands:**
+  - **Hybrid Development (Highly Recommended):**
+    - Start Infra: `docker-compose -f docker-compose.infra.yml up -d`
+    - Run Apps: Use IDE (IntelliJ/VSCode) for debugging and rapid development.
+  - **Full Stack (Containerized):**
+    - Run All: `docker-compose up -d` (Apps mapped to ports `18081-18084`, `15173`)
   - Build: `./gradlew build`
-  - Run (All): `docker-compose up -d`
   - Run (Core): `./gradlew :iam-core:bootRun`
   - Test: `./gradlew test`
 

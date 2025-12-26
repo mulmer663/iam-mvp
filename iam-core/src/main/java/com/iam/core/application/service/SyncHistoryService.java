@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iam.core.application.dto.HistoryResponse;
 import com.iam.core.domain.entity.SyncHistory;
 import com.iam.core.domain.repository.SyncHistoryRepository;
-import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,6 @@ public class SyncHistoryService {
             String message) {
         try {
             var history = new SyncHistory();
-            history.setId(TSID.fast().toLong());
             history.setTraceId(traceId);
             history.setType(type);
             history.setStatus(status);

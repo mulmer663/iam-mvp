@@ -1,4 +1,4 @@
-package com.iam.core.adapter.infrastructure.config;
+package com.iam.core.config;
 
 import com.iam.core.domain.entity.EnterpriseUserExtension;
 import com.iam.core.domain.entity.IamUser;
@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 로컬 개발 환경용 초기 데이터 이니셜라이저.
@@ -70,10 +69,7 @@ public class DataInitializer implements CommandLineRunner {
             String title, boolean active, String email,
             String dept, String empNo, String costCenter) {
 
-        long id = TSID.fast().toLong();
-
         IamUser user = new IamUser();
-        user.setId(id);
         user.setUserName(userName);
         user.setFamilyName(familyName);
         user.setGivenName(givenName);
@@ -85,7 +81,6 @@ public class DataInitializer implements CommandLineRunner {
 
         // Extension Setup
         IamUserExtension extension = new IamUserExtension();
-        extension.setUserId(id);
         extension.setUser(user);
 
         // Required Schemas
