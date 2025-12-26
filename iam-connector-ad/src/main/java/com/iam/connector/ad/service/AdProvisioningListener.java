@@ -23,6 +23,12 @@ public class AdProvisioningListener {
         if ("CREATE_ACCOUNT".equals(operation)) {
             String targetId = (String) payload.get("targetSystemId");
             log.info("Provisioning AD Account for: {}", targetId);
+            log.info("Attributes: CN={}, DisplayName={}, FamilyName={}, GivenName={}, Active={}",
+                    targetId,
+                    payload.get("formattedName"),
+                    payload.get("familyName"),
+                    payload.get("givenName"),
+                    payload.get("active"));
             // Mock LDAP Call
             log.info("LDAP: create_user(cn={}, attributes={})", targetId, payload.get("attributes"));
         } else {

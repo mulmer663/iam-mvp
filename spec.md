@@ -67,7 +67,7 @@ graph LR
 public class IamUser {
     @Id
     @Column(name = "user_id", length = 36)
-    private String id; // TSID or UUID
+    private Long id; // TSID
 
     @Column(name = "external_id")
     private String externalId; // 원천 시스템 식별자

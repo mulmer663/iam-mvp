@@ -1,6 +1,6 @@
 package com.iam.core.service;
 
-import com.iam.core.domain.entity.UserStatus;
+import com.iam.core.domain.entity.EnterpriseUserExtension;
 import com.iam.core.domain.repository.IamUserRepository;
 import com.iam.core.domain.repository.IdentityLinkRepository;
 import com.iam.core.dto.UserSyncEvent;
@@ -24,84 +24,82 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class UserSyncServiceTest {
 
-    @Autowired
-    private UserSyncService userSyncService;
+        @Autowired
+        private UserSyncService userSyncService;
 
-    @MockitoBean
-    private RabbitTemplate rabbitTemplate;
+        @MockitoBean
+        private RabbitTemplate rabbitTemplate;
 
-    @Autowired
-    private IamUserRepository iamUserRepository;
+        @Autowired
+        private IamUserRepository iamUserRepository;
 
-    @Autowired
-    private IdentityLinkRepository identityLinkRepository;
+        @Autowired
+        private IdentityLinkRepository identityLinkRepository;
 
-    @Test
-    @DisplayName("HR 신규 사용자 동기화 시 DB에 정상 저장되고 TSID가 생성되어야 한다")
-    void processHrSync_NewUser_ShouldSaveWithTsid() {
-        // Given
-        String hrEmpId = "2024001";
-        UserSyncEvent event = new UserSyncEvent(
-                "trace-123",
-                "SYNC_USER",
-                LocalDateTime.now(),
-                new UserSyncPayload(
-                        hrEmpId,
-                        "홍길동",
-                        Map.of("deptCode", "DEV01", "position", "Senior")));
+        @Test
+        @DisplayName("HR 신규 사용자 동기화 시 DB에 정상 저장되고 컬럼과 JSONB가 분리되어야 한다")
+        void processHrSync_NewUser_ShouldSaveHybrid() {
+                // Given
+                String hrEmpId = "H001";
+                var payload = new UserSyncPayload(
+                                hrEmpId,
+                                "hong.g@iam.com",
+                                new UserSyncPayload.Name("Hong", "Gildong", "Hong Gildong"),
+                                "Senior Engineer",
+                                true,
+                                Map.of("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+                                                Map.of("employeeNumber", "H001", "department", "Dev Team")));
 
-        // When
-        userSyncService.processHrSync(event);
+                UserSyncEvent event = new UserSyncEvent("trace-123", "SYNC_USER", LocalDateTime.now(), payload);
 
-        // Then
-        // 1. IdentityLink 검증
-        var link = identityLinkRepository.findBySystemTypeAndExternalId("HR", hrEmpId)
-                .orElseThrow(() -> new AssertionError("IdentityLink not found"));
+                // When
+                userSyncService.processHrSync(event);
 
-        Long iamUserId = link.getIamUserId();
-        assertThat(iamUserId).isNotNull();
+                // Then
+                var link = identityLinkRepository.findBySystemTypeAndExternalId("HR", hrEmpId).get();
+                var user = iamUserRepository.findById(link.getIamUserId()).get();
 
-        // 2. IamUser 검증
-        var user = iamUserRepository.findById(iamUserId)
-                .orElseThrow(() -> new AssertionError("IamUser not found"));
+                assertThat(user.getUserName()).isEqualTo("hong.g@iam.com");
+                assertThat(user.getFamilyName()).isEqualTo("Hong");
 
-        assertThat(user.getName()).isEqualTo("홍길동");
-        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
-        assertThat(user.getId()).isEqualTo(iamUserId); // TSID match
+                var extData = user.getExtension().getExtensions()
+                                .get("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User");
+                assertThat(extData).isInstanceOf(EnterpriseUserExtension.class);
+                assertThat(((EnterpriseUserExtension) extData).getDepartment()).isEqualTo("Dev Team");
+        }
 
-        // 3. IamUserExtension 검증
-        assertThat(user.getExtension()).isNotNull();
-        assertThat(user.getExtension().getAttributes().get("deptCode")).isEqualTo("DEV01");
-    }
+        @Test
+        @DisplayName("기존 사용자 정보 변경 시 Core 컬럼과 Extension JSONB가 모두 업데이트 되어야 한다")
+        void processHrSync_UpdateUser_ShouldUpdateHybrid() {
+                // Given
+                String hrEmpId = "H002";
+                var firstPayload = new UserSyncPayload(
+                                hrEmpId, "kim.f@iam.com",
+                                new UserSyncPayload.Name("Kim", "Free", "Kim Free"),
+                                "Junior", true, Map.of());
+                userSyncService.processHrSync(new UserSyncEvent("trace-1", "SYNC", LocalDateTime.now(), firstPayload));
 
-    @Test
-    @DisplayName("기존 사용자 정보 변경 시 DB 데이터가 업데이트 되어야 한다")
-    void processHrSync_UpdateUser_ShouldUpdateData() {
-        // Given
-        // 1. 초기 데이터 생성
-        String hrEmpId = "2024002";
-        UserSyncEvent firstEvent = new UserSyncEvent(
-                "trace-1",
-                "SYNC_USER",
-                LocalDateTime.now(),
-                new UserSyncPayload(hrEmpId, "김철수", Map.of("dept", "HR")));
-        userSyncService.processHrSync(firstEvent);
+                var updatePayload = new UserSyncPayload(
+                                hrEmpId, "kim.f@iam.com",
+                                new UserSyncPayload.Name("Kim", "Future", "Kim Future"),
+                                "Senior", true,
+                                Map.of("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+                                                Map.of("department", "IT Team")));
 
-        // 2. 변경 데이터 준비
-        UserSyncEvent updateEvent = new UserSyncEvent(
-                "trace-2",
-                "SYNC_USER",
-                LocalDateTime.now(),
-                new UserSyncPayload(hrEmpId, "김영희", Map.of("dept", "IT")));
+                // When
+                userSyncService.processHrSync(
+                                new UserSyncEvent("trace-2", "UPDATE", LocalDateTime.now(), updatePayload));
 
-        // When
-        userSyncService.processHrSync(updateEvent);
+                // Then
+                var link = identityLinkRepository.findBySystemTypeAndExternalId("HR", hrEmpId).get();
+                var user = iamUserRepository.findById(link.getIamUserId()).get();
 
-        // Then
-        var link = identityLinkRepository.findBySystemTypeAndExternalId("HR", hrEmpId).get();
-        var user = iamUserRepository.findById(link.getIamUserId()).get();
+                assertThat(user.getGivenName()).isEqualTo("Future");
+                assertThat(user.getTitle()).isEqualTo("Senior");
 
-        assertThat(user.getName()).isEqualTo("김영희");
-        assertThat(user.getExtension().getAttributes().get("dept")).isEqualTo("IT");
-    }
+                var extData = user.getExtension().getExtensions()
+                                .get("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User");
+                assertThat(extData).isInstanceOf(EnterpriseUserExtension.class);
+                assertThat(((EnterpriseUserExtension) extData).getDepartment()).isEqualTo("IT Team");
+        }
 }

@@ -1,13 +1,16 @@
 package com.iam.core.domain.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -15,6 +18,7 @@ import java.util.Map;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class IamUserExtension {
     @Id
     @Column(name = "user_id")
@@ -25,9 +29,15 @@ public class IamUserExtension {
     @JoinColumn(name = "user_id")
     private IamUser user;
 
-    // MVP 단계에서는 Map<String, Object> 사용
-    // DB Column Definition: jsonb
+    // Standard Relational Mapping for schemas
+    @ElementCollection
+    @CollectionTable(name = "iam_user_schema", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "schema_uri")
+    private List<String> schemas = new ArrayList<>();
+
+    // Truly dynamic extensions remain JSONB to avoid schema drift
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Map<String, Object> attributes = new HashMap<>();
+    private Map<String, ExtensionData> extensions = new HashMap<>();
+    // Key: urn:ietf:params:scim:schemas:extension:...
 }
