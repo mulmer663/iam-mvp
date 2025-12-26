@@ -1,0 +1,74 @@
+package com.iam.core.application.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iam.core.domain.entity.SyncHistory;
+import com.iam.core.domain.repository.SyncHistoryRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
+class SyncHistoryServiceTest {
+
+    @Autowired
+    private SyncHistoryService syncHistoryService;
+
+    @Autowired
+    private SyncHistoryRepository syncHistoryRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Test
+    @DisplayName("성공 로그가 정상적으로 저장되어야 한다")
+    void logSuccess_ShouldSaveHistory() {
+        // Given
+        String traceId = "test-trace-1";
+        String type = "HR_SYNC";
+        String target = "user1";
+        Map<String, String> payload = Map.of("key", "value");
+
+        // When
+        syncHistoryService.logSuccess(traceId, type, target, payload, "Success message");
+
+        // Then
+        var histories = syncHistoryRepository.findByTraceId(traceId);
+        assertThat(histories).hasSize(1);
+
+        SyncHistory history = histories.get(0);
+        assertThat(history.getStatus()).isEqualTo("SUCCESS");
+        assertThat(history.getType()).isEqualTo(type);
+        assertThat(history.getTargetUser()).isEqualTo(target);
+        assertThat(history.getPayload()).contains("key", "value");
+    }
+
+    @Test
+    @DisplayName("실패 로그가 정상적으로 저장되어야 한다")
+    void logFailure_ShouldSaveHistory() {
+        // Given
+        String traceId = "test-trace-2";
+        String type = "USER_UPDATE";
+        String target = "user2";
+
+        // When
+        syncHistoryService.logFailure(traceId, type, target, null, "Failure reason");
+
+        // Then
+        var histories = syncHistoryRepository.findByTraceId(traceId);
+        assertThat(histories).hasSize(1);
+
+        SyncHistory history = histories.get(0);
+        assertThat(history.getStatus()).isEqualTo("FAILURE");
+        assertThat(history.getMessage()).isEqualTo("Failure reason");
+        assertThat(history.getPayload()).isNull();
+    }
+}

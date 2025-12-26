@@ -39,6 +39,7 @@ public class UserSyncService {
     private final IamUserRepository iamUserRepository;
     private final IdentityLinkRepository identityLinkRepository;
     private final MessagePublisher messagePublisher;
+    private final SyncHistoryService syncHistoryService;
 
     private static final String PROVISION_ROUTING_KEY = "cmd.ad.user.create";
     private static final String EXCHANGE_NAME = "iam.topic";
@@ -58,26 +59,31 @@ public class UserSyncService {
             identityLinkRepository.findBySystemTypeAndExternalId("HR", payload.getExternalId())
                     .ifPresentOrElse(
                             link -> updateExistingUser(link, payload, traceId),
-                            () -> createNewUser(payload));
+                            () -> createNewUser(payload, traceId));
         } catch (DataAccessException e) {
+            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), payload,
+                    "Database error: " + e.getMessage());
             throw new IamBusinessException(
                     ErrorCode.DATABASE_ERROR,
                     traceId,
                     "사용자 동기화 중 데이터베이스 오류가 발생했습니다",
                     e);
         } catch (Exception e) {
+            String message = "Unexpected error: " + e.getMessage();
+            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), payload, message);
+
             if (e instanceof IamBusinessException) {
                 throw e; // 이미 처리된 비즈니스 예외는 그대로 전파
             }
             throw new IamBusinessException(
                     ErrorCode.MESSAGE_PROCESSING_ERROR,
                     traceId,
-                    "사용자 동기화 처리 중 예상치 못한 오류가 발생했습니다: " + e.getMessage(),
+                    message,
                     e);
         }
     }
 
-    private void createNewUser(UserSyncPayload payload) {
+    private void createNewUser(UserSyncPayload payload, String traceId) {
         log.info("Creating new user for HR ID: {}", payload.getExternalId());
 
         var user = buildNewUser(payload);
@@ -87,6 +93,8 @@ public class UserSyncService {
         identityLinkRepository.save(link);
 
         publishProvisioningCommand(user, payload.getExtensions());
+
+        syncHistoryService.logSuccess(traceId, "HR_SYNC", user.getUserName(), payload, "User created successfully");
         log.info("Successfully created user with ID: {}", user.getId());
     }
 
@@ -100,13 +108,18 @@ public class UserSyncService {
                             updateUserExtensions(user, payload);
                             iamUserRepository.save(user);
                             publishProvisioningCommand(user, payload.getExtensions());
+
+                            syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), payload,
+                                    "User updated successfully");
                             log.info("Successfully updated user with ID: {}", user.getId());
                         },
                         () -> {
+                            String msg = "IdentityLink exists but User not found for ID: " + link.getIamUserId();
+                            syncHistoryService.logFailure(traceId, "USER_UPDATE", payload.getUserName(), payload, msg);
                             throw new IamBusinessException(
                                     ErrorCode.USER_NOT_FOUND,
                                     traceId,
-                                    "IdentityLink exists but User not found for ID: " + link.getIamUserId());
+                                    msg);
                         });
     }
 

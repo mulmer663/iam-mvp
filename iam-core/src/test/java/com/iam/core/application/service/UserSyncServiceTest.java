@@ -34,6 +34,9 @@ class UserSyncServiceTest {
         @MockitoBean
         private MessagePublisher messagePublisher;
 
+        @MockitoBean
+        private SyncHistoryService syncHistoryService;
+
         @Autowired
         private IamUserRepository iamUserRepository;
 
@@ -80,7 +83,9 @@ class UserSyncServiceTest {
                 var firstPayload = new UserSyncPayload(
                                 hrEmpId, "kim.f@iam.com",
                                 new UserSyncPayload.Name("Kim", "Free", "Kim Free"),
-                                "Junior", true, Map.of());
+                                "Junior", true,
+                                Map.of("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+                                                Map.of("department", "Dev Team")));
                 userSyncService.processHrSync(new UserSyncEvent("trace-1", "SYNC", LocalDateTime.now(), firstPayload));
 
                 var updatePayload = new UserSyncPayload(
