@@ -37,7 +37,7 @@ const getStatusVariant = (status: string) => {
 
 const getSyncTypeVariant = (item: HistoryLog) => {
   if (item.syncType === 'JOIN') return 'default'
-  if (item.syncType === 'UPDATE_CRITICAL') return 'destructive'
+  if (item.syncType === 'UPDATE_CRITICAL') return 'secondary' // Toned down
   return 'outline'
 }
 
@@ -88,7 +88,12 @@ function onRowClick(log: HistoryLog) {
                   </div>
                </TableCell>
                <TableCell class="p-2 py-1">
-                 <Badge v-if="log.syncType" :variant="getSyncTypeVariant(log)" class="h-4 px-1 text-[8px] uppercase tracking-tighter">
+                 <Badge 
+                   v-if="log.syncType" 
+                   :variant="getSyncTypeVariant(log)" 
+                   class="h-4 px-1 text-[8px] uppercase tracking-tighter"
+                   :class="{ 'text-amber-600 bg-amber-50 border-amber-200': log.syncType === 'UPDATE_CRITICAL' }"
+                 >
                    {{ log.syncType }}
                  </Badge>
                  <span v-else class="text-[9px] text-neutral-300">-</span>

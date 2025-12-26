@@ -14,6 +14,14 @@ export interface User {
     email: string
 }
 
+export interface AttributeMapping {
+    fromLabel: string
+    toLabel: string
+    fromField: string
+    toField: string
+    value: string
+}
+
 export interface HistoryLog {
     id: string
     traceId: string
@@ -23,6 +31,13 @@ export interface HistoryLog {
     time: string
     userId?: string
     syncType?: 'JOIN' | 'REJOIN' | 'UPDATE_SIMPLE' | 'UPDATE_CRITICAL' | 'LEAVE'
+    payload?: Record<string, any>
+    changes?: Array<{ field: string, old: string, new: string }>
+    mappings?: AttributeMapping[]
+    snapshot?: {
+        layer: 'HR' | 'IAM' | 'AD'
+        data: Record<string, any>
+    }
 }
 
 export interface MillerPane {

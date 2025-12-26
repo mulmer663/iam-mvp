@@ -40,7 +40,7 @@ onMounted(() => {
   })
 })
 
-// Auto-scroll logic
+// Auto-scroll logic for new panes
 watch(() => millerStore.panes.length, async (newLen, oldLen) => {
   if (newLen > oldLen) {
     await nextTick()
@@ -49,6 +49,17 @@ watch(() => millerStore.panes.length, async (newLen, oldLen) => {
         left: scrollContainer.value.scrollWidth,
         behavior: 'smooth'
       })
+    }
+  }
+})
+
+// Highlight and Scroll logic for existing panes
+watch(() => millerStore.highlightedPaneId, async (id) => {
+  if (id) {
+    await nextTick()
+    const element = document.getElementById(`pane-${id}`)
+    if (element && scrollContainer.value) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
   }
 })
@@ -117,12 +128,16 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
           <div 
             v-for="(pane, index) in panes" 
             :key="pane.id"
-            class="iam-pane border-r border-neutral-200 bg-white flex flex-col shadow-xl last:border-r-0 shrink-0 first:shadow-none"
+            :id="'pane-' + pane.id"
+            class="iam-pane border-r border-neutral-200 bg-white flex flex-col shadow-xl last:border-r-0 shrink-0 first:shadow-none transition-all duration-300"
             :style="{ 
               width: pane.width || '450px',
               minWidth: pane.width || '450px',
             }"
-            :class="[pane.isLast && !pane.maxWidth ? 'flex-1 min-w-[600px]' : '']"
+            :class="[
+              pane.isLast && !pane.maxWidth ? 'flex-1 min-w-[600px]' : '',
+              millerStore.highlightedPaneId === pane.id ? 'highlight-flash' : ''
+            ]"
           >
             <!-- Compact Header -->
             <div class="h-8 border-b border-neutral-100 bg-neutral-50/50 flex items-center px-3 justify-between shrink-0 group/header">
@@ -255,5 +270,20 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
 #app {
   height: 100vh;
   width: 100vw;
+}
+
+@keyframes flash {
+  0% { background-color: white; }
+  20% { 
+    background-color: #eff6ff; 
+    border-color: #3b82f6; 
+    box-shadow: inset 0 0 0 2px #3b82f6, 0 0 30px rgba(59, 130, 246, 0.4); 
+  }
+  100% { background-color: white; }
+}
+
+.highlight-flash {
+  animation: flash 2s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 50;
 }
 </style>

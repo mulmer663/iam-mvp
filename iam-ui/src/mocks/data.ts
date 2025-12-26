@@ -8,22 +8,80 @@ export const MOCK_DEPARTMENTS = [
 
 export const MOCK_USERS = [
     { id: '1', loginId: 'admin', name: 'System Administrator', deptCode: 'DEPT01', status: 'ACTIVE', position: 'Manager', email: 'admin@iam.com' },
-    { id: '2', loginId: 'hong.g', name: 'Gildong Hong', deptCode: 'DEPT01-1', status: 'ACTIVE', position: 'Senior Engineer', email: 'hong@iam.com' },
+    { id: '532100000000000002', loginId: 'hong.g', name: 'Gildong Hong', deptCode: 'DEPT01-1', status: 'ACTIVE', position: 'Senior Engineer', email: 'hong@iam.com' },
     { id: '3', loginId: 'kim.f', name: 'Free Kim', deptCode: 'DEPT01-2', status: 'ACTIVE', position: 'Junior Engineer', email: 'kim@iam.com' },
     { id: '4', loginId: 'lee.p', name: 'Planner Lee', deptCode: 'DEPT02-1', status: 'INACTIVE', position: 'Associate', email: 'lee@iam.com' },
 ]
 
 export const MOCK_HISTORY = [
-    // Hong Gildong (id: 2)
-    { id: 'evt-001', traceId: 'tr-001', type: 'HR_SYNC', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-01-01 09:00:00', userId: '2', syncType: 'JOIN' },
-    { id: 'evt-004', traceId: 'tr-004', type: 'HR_SYNC', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-06-15 14:00:00', userId: '2', syncType: 'UPDATE_SIMPLE' },
-    { id: 'evt-005', traceId: 'tr-005', type: 'HR_SYNC', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:00', userId: '2', syncType: 'UPDATE_CRITICAL' },
-    { id: 'evt-007', traceId: 'tr-007', type: 'AD_PROVISION', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:30:00', userId: '2' },
+    // --- Transaction 1: New Employee Join (Hong Gildong) ---
+    // HR Step: Original Data (No mapping here, logically it's the source)
+    {
+        id: '532100000000000001', traceId: '532100000000000001', type: 'HR_SYNC', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-01-01 09:00:00', userId: '532100000000000002', syncType: 'JOIN',
+        snapshot: {
+            layer: 'HR',
+            data: { empId: 'H001', name: 'Hong Gildong', position: 'Senior Engineer', dept: 'Dev Team', email: 'hong@test.com' }
+        }
+    },
+    // IAM Step: Ingestion Mapping (HR <-> IAM)
+    {
+        id: '532100000000000002', traceId: '532100000000000001', type: 'USER_UPDATE', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-01-01 09:00:05', userId: '532100000000000002', syncType: 'JOIN',
+        snapshot: {
+            layer: 'IAM',
+            data: {
+                schemas: [
+                    "urn:ietf:params:scim:schemas:core:2.0:User",
+                    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+                    "urn:ietf:params:scim:schemas:extension:mycustom:2.0:User"
+                ],
+                id: '532100000000000002',
+                userName: 'hong.g@iam.com',
+                name: { familyName: 'Hong', givenName: 'Gildong' },
+                title: 'Senior Engineer',
+                active: true,
+                emails: [{ value: 'hong@test.com', primary: true }],
+                'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
+                    employeeNumber: 'H001',
+                    department: 'Dev Team'
+                },
+                'urn:ietf:params:scim:schemas:extension:mycustom:2.0:User': {
+                    birthday: '1990-01-01',
+                    theme: 'dark'
+                }
+            }
+        },
+        mappings: [
+            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Senior Engineer' },
+            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'dept', toField: 'department', value: 'Dev Team' }
+        ]
+    },
+    // Target Step: Distribution Mapping (IAM <-> AD)
+    {
+        id: '532100000000000003', traceId: '532100000000000001', type: 'AD_PROVISION', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-01-01 09:01:00', userId: '532100000000000002', syncType: 'JOIN',
+        snapshot: {
+            layer: 'AD',
+            data: { sAMAccountName: 'hong.g', displayName: 'Hong Gildong', title: 'Senior Engineer', mail: 'hong@test.com', description: 'Dev Team' }
+        },
+        mappings: [
+            { fromLabel: 'IAM', toLabel: 'AD', fromField: 'title', toField: 'title', value: 'Senior Engineer' },
+            { fromLabel: 'IAM', toLabel: 'AD', fromField: 'department', toField: 'description', value: 'Dev Team' }
+        ]
+    },
 
-    // Free Kim (id: 3)
-    { id: 'evt-002', traceId: 'tr-002', type: 'AD_PROVISION', status: 'PENDING', target: 'Free Kim', time: '2025-12-21 10:30:00', userId: '3' },
-    { id: 'evt-006', traceId: 'tr-006', type: 'HR_SYNC', status: 'FAILURE', target: 'Free Kim', time: '2025-12-21 10:25:00', userId: '3', syncType: 'UPDATE_SIMPLE' },
-
-    // System Admin (id: 1)
-    { id: 'evt-003', traceId: 'tr-003', type: 'USER_UPDATE', status: 'SUCCESS', target: 'System Administrator', time: '2025-12-21 11:15:00', userId: '1' },
+    // --- Transaction 3: Critical Update (Promotion) ---
+    {
+        id: '542100000000000021', traceId: '542100000000000150', type: 'HR_SYNC', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:00', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',
+        changes: [{ field: 'position', old: 'Senior Engineer', new: 'Principal Engineer' }],
+        snapshot: { layer: 'HR', data: { position: 'Principal Engineer' } }
+    },
+    {
+        id: '542100000000000022', traceId: '542100000000000150', type: 'USER_UPDATE', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:05', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',
+        snapshot: { layer: 'IAM', data: { title: 'Principal Engineer' } },
+        mappings: [{ fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Principal Engineer' }]
+    },
+    {
+        id: '542100000000000023', traceId: '542100000000000150', type: 'AD_PROVISION', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:30', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',
+        snapshot: { layer: 'AD', data: { title: 'Principal Engineer' } },
+        mappings: [{ fromLabel: 'IAM', toLabel: 'AD', fromField: 'title', toField: 'title', value: 'Principal Engineer' }]
+    }
 ]

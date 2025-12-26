@@ -17,13 +17,14 @@
   - Always use `<script setup lang="ts">`.
   - Strictly follow the "IDE-like" high-density design in [fe_spec.md](./fe_spec.md).
   - Use `Miller Columns` for navigation as defined in the spec.
+  - **SCIM 2.0 Compliance**: IAM Core data must strictly follow SCIM 2.0 schema and extension patterns.
 
 - **Do's:**
-  - Use `hugeicons-vue` for all icons.
+  - Use `lucide-vue-next` for all icons.
   - Follow Shadcn Vue patterns but override for density (px-2 instead of px-4, h-8 instead of h-10).
-  - Centralize state in Pinia for Miller Column management.
+  - Centralize state in Pinia for Miller Column management (panes, highlighting, scrolling).
+  - Use **TSID** (Time-Sorted ID) for all system-generated identifiers.
   - **Always run `pnpm run build` and ensure it passes BEFORE validating screens in the browser.**
-  - **Limit Chrome Antigraity plugin DOM verification to 3 attempts. Determine the cause by analyzing the code rather than repeatedly checking the DOM.**
 
 - **Don'ts:**
   - Do not use Options API.

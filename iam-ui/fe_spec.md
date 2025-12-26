@@ -83,3 +83,14 @@ actions: {
    - The **last (active)** pane should expand to fill the remaining screen space (`flex-1`).
    - Previous panes should shrink to their minimum/default width (`min-w-[450px]`).
    - This ensures focus remains on the current task while maintaining context.
+
+### 4.4 Advanced Interaction: Pane Highlighting & Scrolling [NEW]
+
+1. **Infinite Loop Prevention**: When clicking a link to an event that is already open in a pane, the UI should not open a duplicate. Instead, it must:
+   - **Highlight**: Trigger a visual flash animation (Blue-themed glow) on the existing pane.
+   - **Scroll**: Automatically scroll the container to center the existing pane.
+2. **Context-Aware Attribute Mapping**:
+   - **HR Sync Events**: Display `HR Source -> IAM (SCIM)` field mapping.
+   - **IAM Updates**: Display standardized SCIM 2.0 attributes, separating Core from Custom Extensions.
+   - **Target Provisioning**: Display `IAM (SCIM) -> Target (AD/etc)` field mapping.
+   - This ensures UI scalability as one IAM change can trigger hundreds of provisioning signals.
