@@ -1,4 +1,4 @@
-package com.iam.core.dto;
+package com.iam.core.application.dto;
 
 import java.util.Map;
 

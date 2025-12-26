@@ -3,6 +3,22 @@
 **Core Identity Engine:** Central hub for identity lifecycle management, policy enforcement, and persistence.
 **Dependencies:** `spring-boot-starter-data-jpa`, `postgresql`, `spring-boot-starter-amqp`
 
+## Repository Layout (Clean Architecture)
+
+```
+com.iam.core
+├── domain               <-- [Core] Entities, Repositories, Exceptions (No dependency on outer layers)
+│   ├── entity
+│   ├── repository
+│   └── exception
+├── application          <-- [Use Cases] Services, DTOs
+│   ├── service
+│   └── dto
+├── adapter              <-- [Infra] Messaging, Web, etc.
+│   └── messaging
+└── config               <-- Spring Config
+```
+
 # Tech Stack & Constraints
 
 - **Database:** PostgreSQL (via `spring-data-jpa`).
@@ -20,6 +36,10 @@
 - **Repository:** `JpaRepository` interface based.
 - **Service Layer:** Business logic here. `@Transactional` usually applies at this layer.
 - **Event Publication:** Publish generic events (e.g., `UserCreatedEvent`) to RabbitMQ for connectors.
+- **Error Handling & Validation:**
+  - **Custom Exception:** Use `IamBusinessException` combined with `ErrorCode` (e.g., `ErrorCode.USER_NOT_FOUND`) for domain-level errors.
+  - **Global Handler:** All exceptions are caught by `GlobalExceptionHandler` (`@RestControllerAdvice`) which converts them to a standard JSON error response.
+  - **Validation:** Use `jakarta.validation` annotations (`@NotNull`, `@Email`, etc.) on Input DTOs. Validation errors are automatically transformed into `400 Bad Request` responses.
 
 # Testing Strategy
 

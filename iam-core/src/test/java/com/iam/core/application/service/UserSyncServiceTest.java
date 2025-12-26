@@ -1,15 +1,15 @@
-package com.iam.core.service;
+package com.iam.core.application.service;
 
 import com.iam.core.domain.entity.EnterpriseUserExtension;
+import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.IamUserRepository;
 import com.iam.core.domain.repository.IdentityLinkRepository;
-import com.iam.core.dto.UserSyncEvent;
-import com.iam.core.dto.UserSyncPayload;
+import com.iam.core.application.dto.UserSyncEvent;
+import com.iam.core.application.dto.UserSyncPayload;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +19,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * UserSyncService 단위 테스트
+ * MQ와 무관하게 순수 비즈니스 로직만 테스트
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -28,7 +32,7 @@ class UserSyncServiceTest {
         private UserSyncService userSyncService;
 
         @MockitoBean
-        private RabbitTemplate rabbitTemplate;
+        private MessagePublisher messagePublisher;
 
         @Autowired
         private IamUserRepository iamUserRepository;
