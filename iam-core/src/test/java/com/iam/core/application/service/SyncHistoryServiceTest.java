@@ -1,13 +1,14 @@
 package com.iam.core.application.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iam.core.domain.entity.SyncHistory;
+import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.SyncHistoryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
@@ -19,14 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class SyncHistoryServiceTest {
 
+    @MockitoBean
+    private MessagePublisher messagePublisher;
+
     @Autowired
     private SyncHistoryService syncHistoryService;
 
     @Autowired
     private SyncHistoryRepository syncHistoryRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Test
     @DisplayName("성공 로그가 정상적으로 저장되어야 한다")
