@@ -25,13 +25,22 @@ export const useMillerStore = defineStore('miller', () => {
         panes.value = [...panes.value.slice(0, index), pane]
     }
 
+    let highlightTimeout: any = null
+
     function highlightPane(id: string) {
-        highlightedPaneId.value = id
+        if (highlightTimeout) clearTimeout(highlightTimeout)
+
+        // Reset to trigger animation again if already highlighted
+        highlightedPaneId.value = null
+
         setTimeout(() => {
-            if (highlightedPaneId.value === id) {
-                highlightedPaneId.value = null
-            }
-        }, 2000)
+            highlightedPaneId.value = id
+            highlightTimeout = setTimeout(() => {
+                if (highlightedPaneId.value === id) {
+                    highlightedPaneId.value = null
+                }
+            }, 2000)
+        }, 10)
     }
 
     return {

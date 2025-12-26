@@ -7,6 +7,8 @@ import { computed } from 'vue'
 import type { HistoryLog } from '@/types'
 import { useMillerStore } from '@/stores/miller'
 
+import { SYSTEM_THEMES } from '@/utils/theme'
+
 const props = defineProps<{
   type: 'SOURCE' | 'INTEGRATION' | 'AUDIT'
   userId?: string
@@ -14,20 +16,20 @@ const props = defineProps<{
 }>()
 
 const millerStore = useMillerStore()
+const currentTheme = computed(() => SYSTEM_THEMES[props.type])
 
 const filteredHistory = computed((): HistoryLog[] => {
   let baseList = MOCK_HISTORY as HistoryLog[]
   
-  // 1. Filter by UserId if provided
   if (props.userId) {
     baseList = baseList.filter(h => h.userId === props.userId)
   }
 
-  // 2. Filter by Type
   if (props.type === 'AUDIT') return baseList.filter(h => h.type === 'USER_UPDATE')
   if (props.type === 'SOURCE') return baseList.filter(h => h.type === 'HR_SYNC')
   return baseList.filter(h => h.type === 'AD_PROVISION')
 })
+
 
 const getStatusVariant = (status: string) => {
   if (status === 'SUCCESS') return 'default'
@@ -59,9 +61,14 @@ function onRowClick(log: HistoryLog) {
 
 <template>
   <div class="h-full flex flex-col">
-    <div class="h-10 border-b border-neutral-100 flex items-center px-4 bg-white shrink-0 gap-2">
-       <h2 class="text-sm font-bold text-neutral-800">History Log</h2>
-       <Badge variant="outline" class="h-4 text-[9px] uppercase">{{ type }}</Badge>
+    <div class="h-10 border-b border-neutral-100 flex items-center px-4 bg-white shrink-0 justify-between">
+       <div class="flex items-center gap-2">
+         <component :is="currentTheme.icon" class="size-4" :class="currentTheme.text" />
+         <h2 class="text-sm font-bold text-neutral-800">
+           {{ currentTheme.label }}
+         </h2>
+         <Badge variant="outline" class="h-4 text-[9px] uppercase">{{ type }}</Badge>
+       </div>
     </div>
     <div class="flex-1 p-3 overflow-auto">
        <Table class="border">

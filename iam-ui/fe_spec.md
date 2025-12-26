@@ -94,3 +94,24 @@ actions: {
    - **IAM Updates**: Display standardized SCIM 2.0 attributes, separating Core from Custom Extensions.
    - **Target Provisioning**: Display `IAM (SCIM) -> Target (AD/etc)` field mapping.
    - This ensures UI scalability as one IAM change can trigger hundreds of provisioning signals.
+
+### 4.5 Centralized UI Theme System [NEW]
+
+To maintain visual consistency across layered Miller panes, a central theme mapping must be used:
+
+- **SOURCE (Blue)**: Target label `Source Sync`, Sub-label `HR Source System`.
+- **INTEGRATION (Purple)**: Target label `Integration Sync`, Sub-label `AD Target System`.
+- **AUDIT/IAM (Amber/Orange)**: Target label `Modification Ledger`, Sub-label `IAM Core (SCIM 2.0)`.
+
+This mapping ensures that a user can trace an event's lifecycle through consistent color-coding (Icon, Border, Background, and Indicator).
+
+### 4.6 Snapshot Explorer (High-Density Data UI) [NEW]
+
+For entities with 100+ attributes, snapshots must implement the **Explorer Pattern**:
+
+1. **Contextual Diff**: Changes are merged into the snapshot view. Modified fields are highlighted with an `[UPDATED]` badge and previous values are shown inline as `(was: old_value)`.
+2. **View Mode Toggle**:
+   - **CHANGES**: Only show attributes that were modified in this transaction.
+   - **ALL**: Show the full snapshot of the entity, with changed fields pinned to the top.
+3. **Inline Search**: Real-time filtering within the snapshot to find specific fields or values.
+4. **Smart Pagination/Count**: Display the current visible field count vs. total fields (e.g., `3 / 102`).

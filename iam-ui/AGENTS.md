@@ -18,6 +18,8 @@
   - Strictly follow the "IDE-like" high-density design in [fe_spec.md](./fe_spec.md).
   - Use `Miller Columns` for navigation as defined in the spec.
   - **SCIM 2.0 Compliance**: IAM Core data must strictly follow SCIM 2.0 schema and extension patterns.
+  - **Centralized UI Theme**: Use `SYSTEM_THEMES` from `@/utils/theme.ts` for all system-specific icons, labels, and colors (Source, Integration, Audit).
+  - **Contextual Diff & Explorer**: High-density snapshots must support "Changes/All" toggles, inline search, and contextual diff history (e.g., "was: old_value").
 
 - **Do's:**
   - Use `lucide-vue-next` for all icons.

@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/s
 import { Button } from '@/components/ui/button'
 import { Search, Bell, HelpCircle, ChevronRight, User } from 'lucide-vue-next'
 import { Separator } from '@/components/ui/separator'
+import { SYSTEM_THEMES } from '@/utils/theme'
 
 // Async views mapping
 const VIEW_COMPONENTS: Record<string, any> = {
@@ -13,7 +14,7 @@ const VIEW_COMPONENTS: Record<string, any> = {
   SourceSyncHistory: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
   IntegrationSyncHistory: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
   UserAuditLogs: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
-  UserChangeHistory: defineAsyncComponent(() => import('./views/UserChangeHistory.vue')),
+  UserChangeHistory: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
   SyncDetail: defineAsyncComponent(() => import('./views/SyncDetail.vue')),
 }
 
@@ -40,16 +41,22 @@ onMounted(() => {
   })
 })
 
-// Auto-scroll logic for new panes
-watch(() => millerStore.panes.length, async (newLen, oldLen) => {
-  if (newLen > oldLen) {
+// Auto-scroll logic for new/replaced panes
+watch(() => millerStore.panes[millerStore.panes.length - 1]?.id, async (newId) => {
+  if (newId) {
     await nextTick()
-    if (scrollContainer.value) {
-      scrollContainer.value.scrollTo({
-        left: scrollContainer.value.scrollWidth,
-        behavior: 'smooth'
-      })
+    // Multiple attempts to account for transition delay and layout shifts
+    const doScroll = () => {
+      const element = document.getElementById(`pane-${newId}`)
+      if (element && scrollContainer.value) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'end' })
+      }
     }
+    
+    // Immediate, then after some transition progress
+    doScroll()
+    setTimeout(doScroll, 150)
+    setTimeout(doScroll, 400)
   }
 })
 
@@ -121,15 +128,17 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
           </div>
         </header>
 
-        <main 
+        <TransitionGroup 
+          name="miller-pane" 
+          tag="main"
           ref="scrollContainer"
-          class="flex-1 flex overflow-x-auto overflow-y-hidden bg-neutral-100/30 scroll-smooth items-stretch"
+          class="flex-1 flex overflow-x-auto overflow-y-hidden bg-neutral-100/30 scroll-smooth items-stretch relative"
         >
           <div 
             v-for="(pane, index) in panes" 
             :key="pane.id"
             :id="'pane-' + pane.id"
-            class="iam-pane border-r border-neutral-200 bg-white flex flex-col shadow-xl last:border-r-0 shrink-0 first:shadow-none transition-all duration-300"
+            class="iam-pane border-r border-neutral-200 bg-white flex flex-col shadow-xl last:border-r-0 shrink-0 first:shadow-none transition-all duration-300 relative"
             :style="{ 
               width: pane.width || '450px',
               minWidth: pane.width || '450px',
@@ -209,30 +218,39 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
 
                     <Separator class="bg-neutral-50" />
 
-                    <section>
+                     <section>
                       <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                         <div class="size-1 bg-neutral-300 rounded-full"></div> Continuous Exploration
                       </h3>
                       <div class="grid grid-cols-1 gap-2">
                         <Button 
-                          @click="pushChildPane(index, 'SourceSyncHistory', 'Source Sync: ' + pane.data.user.name, { userId: pane.data.user.id })"
+                          @click="pushChildPane(index, 'SourceSyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
-                          <span class="flex items-center gap-2"><div class="size-1 bg-blue-400 rounded-full"></div> Source Sync</span>
+                          <span class="flex items-center gap-2">
+                            <div class="size-1 rounded-full" :class="SYSTEM_THEMES.SOURCE.indicator"></div> 
+                            {{ SYSTEM_THEMES.SOURCE.label }}
+                          </span>
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                         <Button 
-                          @click="pushChildPane(index, 'IntegrationSyncHistory', 'Integration Sync: ' + pane.data.user.name, { userId: pane.data.user.id })"
+                          @click="pushChildPane(index, 'IntegrationSyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
-                          <span class="flex items-center gap-2"><div class="size-1 bg-green-400 rounded-full"></div> Integration Sync</span>
+                          <span class="flex items-center gap-2">
+                            <div class="size-1 rounded-full" :class="SYSTEM_THEMES.INTEGRATION.indicator"></div> 
+                            {{ SYSTEM_THEMES.INTEGRATION.label }}
+                          </span>
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                         <Button 
-                          @click="pushChildPane(index, 'UserChangeHistory', 'Change Hist: ' + pane.data.user.name)"
+                          @click="pushChildPane(index, 'UserAuditLogs', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name, { userId: pane.data.user.id })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
-                          <span class="flex items-center gap-2"><div class="size-1 bg-amber-400 rounded-full"></div> Change Hist</span>
+                          <span class="flex items-center gap-2">
+                            <div class="size-1 rounded-full" :class="SYSTEM_THEMES.AUDIT.indicator"></div> 
+                            {{ SYSTEM_THEMES.AUDIT.label }}
+                          </span>
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                       </div>
@@ -246,7 +264,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                </div>
             </div>
           </div>
-        </main>
+        </TransitionGroup>
 
       <footer class="h-6 border-t border-neutral-200 bg-white flex items-center px-3 shrink-0 text-[10px] text-neutral-400 font-medium uppercase">
         <div class="flex items-center gap-4">
@@ -276,8 +294,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
   0% { background-color: white; }
   20% { 
     background-color: #eff6ff; 
-    border-color: #3b82f6; 
-    box-shadow: inset 0 0 0 2px #3b82f6, 0 0 30px rgba(59, 130, 246, 0.4); 
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.3); 
   }
   100% { background-color: white; }
 }
@@ -285,5 +302,40 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
 .highlight-flash {
   animation: flash 2s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 50;
+}
+
+/* Miller Pane Transitions */
+.miller-pane-enter-active,
+.miller-pane-leave-active {
+  transition: 
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    min-width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  white-space: nowrap; /* Avoid text wrapping during width collapse */
+}
+
+/* Entering Pane */
+.miller-pane-enter-from {
+  opacity: 0;
+  transform: translateX(100px);
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+}
+
+/* Leaving Pane */
+.miller-pane-leave-to {
+  opacity: 0;
+  transform: translateX(100px);
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+}
+
+.miller-pane-move {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 </style>

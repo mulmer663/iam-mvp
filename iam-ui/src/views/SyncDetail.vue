@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ArrowRight, Code, Database, Activity, Server, ChevronDown, ChevronRight } from 'lucide-vue-next'
+import { ArrowRight, Code, ChevronDown, ChevronRight, Search } from 'lucide-vue-next'
 import { Separator } from '@/components/ui/separator'
 import type { HistoryLog } from '@/types'
 import { MOCK_HISTORY } from '@/mocks/data'
 import { computed, ref } from 'vue'
 import { useMillerStore } from '@/stores/miller'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+
+import { SYSTEM_THEMES } from '@/utils/theme'
 
 const props = defineProps<{
   event: HistoryLog
@@ -14,56 +17,83 @@ const props = defineProps<{
 
 const millerStore = useMillerStore()
 const isRawOpen = ref(false)
+const viewMode = ref<'changes' | 'all'>(props.event.changes && props.event.changes.length > 0 ? 'changes' : 'all')
+const searchQuery = ref('')
 
 const relatedEvents = computed(() => {
   return (MOCK_HISTORY as HistoryLog[]).filter(h => h.traceId === props.event.traceId && h.id !== props.event.id)
 })
 
 const theme = computed(() => {
-  if (props.event.type === 'HR_SYNC') {
-    return {
-      title: 'HR Source System',
-      icon: Database,
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      text: 'text-blue-700',
-    }
-  }
-  if (props.event.type === 'USER_UPDATE') {
-    return {
-      title: 'IAM Core (SCIM 2.0)',
-      icon: Activity,
-      bg: 'bg-orange-50',
-      border: 'border-orange-200',
-      text: 'text-orange-700',
-    }
-  }
-  return {
-    title: 'AD Target System',
-    icon: Server,
-    bg: 'bg-purple-50',
-    border: 'border-purple-200',
-    text: 'text-purple-700',
-  }
+  if (props.event.type === 'HR_SYNC') return SYSTEM_THEMES.SOURCE
+  if (props.event.type === 'USER_UPDATE') return SYSTEM_THEMES.AUDIT
+  return SYSTEM_THEMES.INTEGRATION
 })
+
+const snapshotTitle = computed(() => theme.value.subLabel)
+
 
 function openRelatedEvent(log: HistoryLog) {
   const targetPaneId = `sync-detail-${log.id}`
   const existingPane = millerStore.panes.find(p => p.id === targetPaneId)
+  
   if (existingPane) {
     millerStore.highlightPane(targetPaneId)
     return
   }
-  millerStore.pushPane({
+
+  const nextPaneData = {
     id: targetPaneId,
     type: 'SyncDetail',
     title: `Event: ${log.traceId}`,
     data: { event: log }
-  })
+  }
+
+  if (props.paneIndex !== undefined) {
+    millerStore.setPane(props.paneIndex + 1, nextPaneData)
+  } else {
+    millerStore.pushPane(nextPaneData)
+  }
 }
 
 // Function to check if a value is a SCIM extension key
 const isExtension = (key: string) => key.startsWith('urn:ietf:params:scim:schemas:extension:')
+
+// Helper to get change for a specific field
+const getChange = (key: string) => {
+  return props.event.changes?.find(c => c.field === key)
+}
+
+const allSnapshotEntries = computed(() => {
+  if (!props.event.snapshot?.data) return []
+  const data = props.event.snapshot.data
+  return Object.entries(data).filter(([key]) => key !== 'schemas' && !isExtension(key))
+})
+
+const filteredEntries = computed(() => {
+  let entries = allSnapshotEntries.value
+  
+  // 1. Filter by Search Query
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    entries = entries.filter(([key, val]) => 
+      key.toLowerCase().includes(q) || 
+      String(val).toLowerCase().includes(q)
+    )
+  }
+
+  // 2. Filter by View Mode (only if not searching)
+  if (viewMode.value === 'changes' && !searchQuery.value) {
+    entries = entries.filter(([key]) => !!getChange(key))
+  }
+
+  // 3. Sort: Changed first
+  return entries.sort(([keyA], [keyB]) => {
+    const changeA = getChange(keyA) ? 1 : 0
+    const changeB = getChange(keyB) ? 1 : 0
+    return changeB - changeA
+  })
+})
 </script>
 
 <template>
@@ -74,7 +104,7 @@ const isExtension = (key: string) => key.startsWith('urn:ietf:params:scim:schema
         <div class="flex items-center gap-2">
            <component :is="theme.icon" class="size-5" :class="theme.text" />
            <span class="text-sm font-black uppercase tracking-tight" :class="theme.text">
-             {{ theme.title }}
+             {{ theme.label }}
            </span>
         </div>
         <div class="text-[10px] font-mono text-neutral-500 bg-white/50 px-2 py-1 rounded">
@@ -89,6 +119,7 @@ const isExtension = (key: string) => key.startsWith('urn:ietf:params:scim:schema
 
     <div class="flex-1 overflow-y-auto p-4 space-y-6">
       
+
       <!-- Attribution Mapping (Context Aware 2-Way) -->
       <section v-if="event.mappings && event.mappings.length > 0">
         <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -132,27 +163,98 @@ const isExtension = (key: string) => key.startsWith('urn:ietf:params:scim:schema
 
       <!-- Layer Snapshot (SCIM Aware) -->
       <section v-if="event.snapshot">
-        <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3">
-          {{ event.snapshot.layer }} Layer Snapshot
-        </h3>
+        <div class="flex flex-col gap-3 mb-4">
+           <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                 <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
+                   {{ snapshotTitle }} Snapshot
+                 </h3>
+                 <span class="px-1.5 py-0.5 bg-neutral-100 text-[8px] font-bold text-neutral-500 rounded-sm">
+                   {{ filteredEntries.length }} / {{ allSnapshotEntries.length }}
+                 </span>
+              </div>
+              
+              <!-- View Mode Toggle -->
+              <div v-if="event.changes && event.changes.length > 0" class="flex items-center gap-1 p-0.5 bg-neutral-100 rounded-sm">
+                <button 
+                  @click="viewMode = 'changes'; searchQuery = ''"
+                  class="px-2 py-0.5 text-[9px] font-bold rounded-sm transition-all"
+                  :class="viewMode === 'changes' && !searchQuery ? 'bg-white text-blue-600 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'"
+                >
+                  CHANGES
+                </button>
+                <button 
+                  @click="viewMode = 'all'; searchQuery = ''"
+                  class="px-2 py-0.5 text-[9px] font-bold rounded-sm transition-all"
+                  :class="viewMode === 'all' && !searchQuery ? 'bg-white text-neutral-700 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'"
+                >
+                  ALL
+                </button>
+              </div>
+           </div>
+           
+           <!-- Snapshot Search -->
+           <div v-if="allSnapshotEntries.length > 0" class="relative group">
+              <Search class="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-neutral-300 group-focus-within:text-blue-500 transition-colors" />
+              <input 
+                v-model="searchQuery"
+                type="text" 
+                :placeholder="`Search in ${allSnapshotEntries.length} fields...`" 
+                class="w-full h-7 bg-neutral-50/50 border border-neutral-100 rounded-sm pl-7 text-[10px] focus:bg-white focus:border-blue-200 focus:ring-1 focus:ring-blue-100/50 transition-all outline-none"
+              />
+           </div>
+        </div>
+
         <div class="space-y-4">
+           <!-- No Results State -->
+           <div v-if="filteredEntries.length === 0" class="py-10 text-center border border-dashed border-neutral-200 rounded-md">
+              <div class="text-[10px] text-neutral-400 italic">No matching fields found.</div>
+              <Button v-if="searchQuery" variant="ghost" size="xs" @click="searchQuery = ''" class="mt-2 text-[9px] h-6">Clear Search</Button>
+           </div>
+
            <!-- Standard Attributes -->
-           <div class="grid grid-cols-1 gap-2">
-              <div v-for="(val, key) in event.snapshot.data" :key="key">
-                 <div v-if="key !== 'schemas' && !isExtension(key as string)" 
-                      class="flex items-center justify-between border border-neutral-100 rounded p-2 bg-neutral-50/30 group hover:bg-white transition-colors">
+           <div v-else class="grid grid-cols-1 gap-2">
+              <div v-for="[key, val] in filteredEntries" :key="key">
+                 <div class="flex items-center justify-between border rounded p-2 transition-colors relative transition-all duration-300"
+                      :class="[
+                        getChange(key) 
+                          ? `bg-${theme.color}-50/30 border-${theme.color}-200 ring-1 ring-${theme.color}-100 shadow-sm` 
+                          : 'bg-neutral-50/30 border-neutral-100 group hover:bg-white'
+                      ]">
+                    <!-- Change Indicator (Vertical Accent) -->
+                    <div v-if="getChange(key)" class="absolute left-0 top-0 bottom-0 w-0.5" :class="theme.indicator"></div>
+
                     <div class="min-w-0 flex-1">
-                       <div class="text-[9px] uppercase font-bold text-neutral-400 mb-0.5 truncate">{{ key }}</div>
-                       <div class="text-[11px] font-medium text-neutral-800 break-words line-clamp-2">
-                          <template v-if="Array.isArray(val)">
-                             <div v-for="(item, i) in val" :key="i" class="bg-white px-1.5 py-0.5 rounded border border-neutral-100 mt-1 inline-block mr-1">
-                                {{ item.value || item }}
-                             </div>
-                          </template>
-                          <template v-else-if="typeof val === 'object'">
-                             <span class="text-[9px] font-mono text-neutral-400">{{ JSON.stringify(val) }}</span>
-                          </template>
-                          <template v-else>{{ val }}</template>
+                       <div class="flex items-center gap-2 mb-0.5">
+                          <div class="text-[9px] uppercase font-bold tracking-tighter"
+                               :class="getChange(key) ? theme.text : 'text-neutral-400'">
+                            {{ key }}
+                          </div>
+                          <div v-if="getChange(key)" 
+                               class="text-[7px] font-black px-1 text-white rounded-[2px] tracking-widest uppercase"
+                               :class="theme.indicator">
+                            Updated
+                          </div>
+                       </div>
+                       
+                       <div class="flex flex-wrap items-baseline gap-x-2">
+                          <div class="text-[11px] font-semibold"
+                               :class="getChange(key) ? 'text-neutral-900' : 'text-neutral-800'">
+                             <template v-if="Array.isArray(val)">
+                                <div v-for="(item, i) in val" :key="i" class="bg-white px-1.5 py-0.5 rounded border border-neutral-100 mt-1 inline-block mr-1">
+                                   {{ item.value || item }}
+                                </div>
+                             </template>
+                             <template v-else-if="typeof val === 'object'">
+                                <span class="text-[9px] font-mono text-neutral-400">{{ JSON.stringify(val) }}</span>
+                             </template>
+                             <template v-else>{{ val }}</template>
+                          </div>
+                          
+                          <!-- Inline History -->
+                          <div v-if="getChange(key)" class="text-[9px] text-neutral-400 font-medium italic">
+                             (was: <span class="line-through decoration-neutral-300">{{ getChange(key)?.old }}</span>)
+                          </div>
                        </div>
                     </div>
                  </div>
@@ -162,15 +264,15 @@ const isExtension = (key: string) => key.startsWith('urn:ietf:params:scim:schema
            <!-- Extensions -->
            <div v-for="(val, key) in event.snapshot.data" :key="key">
               <div v-if="isExtension(key as string)" class="space-y-2">
-                 <div class="text-[9px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
+                 <div class="text-[9px] font-black uppercase tracking-widest flex items-center gap-2" :class="theme.text">
                     <Separator class="flex-1" />
                     <span>Extension: {{ (key as string).split(':').pop() }}</span>
                     <Separator class="flex-1" />
                  </div>
                  <div class="grid grid-cols-2 gap-2">
                     <div v-for="(extVal, extKey) in (val as any)" :key="extKey" 
-                         class="border border-blue-50 rounded p-2 bg-blue-50/10">
-                       <div class="text-[9px] uppercase font-bold text-blue-400 mb-0.5">{{ extKey }}</div>
+                         class="border rounded p-2" :class="[theme.bg, theme.border]">
+                       <div class="text-[9px] uppercase font-bold mb-0.5" :class="theme.text">{{ extKey }}</div>
                        <div class="text-[11px] font-medium text-neutral-800">{{ extVal }}</div>
                     </div>
                  </div>
