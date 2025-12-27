@@ -21,13 +21,15 @@ public class SyncHistoryService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public void logSuccess(String traceId, String type, String targetUser, Object payload, String message) {
-        saveHistory(traceId, type, "SUCCESS", targetUser, payload, message);
+    public void logSuccess(String traceId, String type, String targetUser, String sourceSystem, Object payload,
+            String responsePayload) {
+        saveHistory(traceId, type, "SUCCESS", targetUser, sourceSystem, null, payload, responsePayload);
     }
 
     @Transactional
-    public void logFailure(String traceId, String type, String targetUser, Object payload, String message) {
-        saveHistory(traceId, type, "FAILURE", targetUser, payload, message);
+    public void logFailure(String traceId, String type, String targetUser, String sourceSystem, Object payload,
+            String errorDetails) {
+        saveHistory(traceId, type, "FAILURE", targetUser, sourceSystem, null, payload, errorDetails);
     }
 
     @Transactional(readOnly = true)
@@ -37,26 +39,28 @@ public class SyncHistoryService {
                 .toList();
     }
 
-    private void saveHistory(String traceId, String type, String status, String targetUser, Object payload,
-            String message) {
+    private void saveHistory(String traceId, String type, String status, String targetUser, String sourceSystem,
+            String targetSystem, Object requestPayload, String responsePayload) {
         try {
-            var history = new SyncHistory();
-            history.setTraceId(traceId);
-            history.setType(type);
-            history.setStatus(status);
-            history.setTargetUser(targetUser);
-            history.setMessage(message);
-            history.setCreatedAt(LocalDateTime.now());
+            var history = SyncHistory.builder()
+                    .traceId(traceId)
+                    .type(type)
+                    .status(status)
+                    .targetUser(targetUser)
+                    .sourceSystem(sourceSystem)
+                    .targetSystem(targetSystem)
+                    .responsePayload(responsePayload)
+                    .createdAt(LocalDateTime.now())
+                    .build();
 
-            if (payload != null) {
-                history.setPayload(objectMapper.writeValueAsString(payload));
+            if (requestPayload != null) {
+                history.setRequestPayload(objectMapper.writeValueAsString(requestPayload));
             }
 
             syncHistoryRepository.save(history);
             log.info("Saved sync history [{}]: {} - {}", status, type, traceId);
         } catch (Exception e) {
             log.error("Failed to save sync history", e);
-            // Audit log failure shouldn't stop the main flow, but we log it.
         }
     }
 
@@ -68,7 +72,7 @@ public class SyncHistoryService {
                 history.getStatus(),
                 history.getTargetUser(),
                 history.getCreatedAt(),
-                history.getMessage(),
-                history.getPayload());
+                "", // Legacy message field
+                history.getRequestPayload());
     }
 }

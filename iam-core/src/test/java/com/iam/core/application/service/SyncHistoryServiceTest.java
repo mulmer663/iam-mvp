@@ -39,7 +39,7 @@ class SyncHistoryServiceTest {
         Map<String, String> payload = Map.of("key", "value");
 
         // When
-        syncHistoryService.logSuccess(traceId, type, target, payload, "Success message");
+        syncHistoryService.logSuccess(traceId, type, target, "TEST_SYSTEM", payload, "Success message");
 
         // Then
         var histories = syncHistoryRepository.findByTraceId(traceId);
@@ -49,7 +49,7 @@ class SyncHistoryServiceTest {
         assertThat(history.getStatus()).isEqualTo("SUCCESS");
         assertThat(history.getType()).isEqualTo(type);
         assertThat(history.getTargetUser()).isEqualTo(target);
-        assertThat(history.getPayload()).contains("key", "value");
+        assertThat(history.getRequestPayload()).contains("key", "value");
     }
 
     @Test
@@ -61,7 +61,7 @@ class SyncHistoryServiceTest {
         String target = "user2";
 
         // When
-        syncHistoryService.logFailure(traceId, type, target, null, "Failure reason");
+        syncHistoryService.logFailure(traceId, type, target, "TEST_SYSTEM", null, "Failure reason");
 
         // Then
         var histories = syncHistoryRepository.findByTraceId(traceId);
@@ -69,7 +69,7 @@ class SyncHistoryServiceTest {
 
         SyncHistory history = histories.get(0);
         assertThat(history.getStatus()).isEqualTo("FAILURE");
-        assertThat(history.getMessage()).isEqualTo("Failure reason");
-        assertThat(history.getPayload()).isNull();
+        assertThat(history.getResponsePayload()).isEqualTo("Failure reason");
+        assertThat(history.getRequestPayload()).isNull();
     }
 }

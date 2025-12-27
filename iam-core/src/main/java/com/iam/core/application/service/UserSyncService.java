@@ -55,7 +55,7 @@ public class UserSyncService {
                             link -> updateExistingUser(link, payload, traceId),
                             () -> createNewUser(payload, traceId));
         } catch (DataAccessException e) {
-            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), payload,
+            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), "SAP_HR", payload,
                     "Database error: " + e.getMessage());
             throw new IamBusinessException(
                     ErrorCode.DATABASE_ERROR,
@@ -64,7 +64,7 @@ public class UserSyncService {
                     e);
         } catch (Exception e) {
             String message = "Unexpected error: " + e.getMessage();
-            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), payload, message);
+            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), "SAP_HR", payload, message);
 
             if (e instanceof IamBusinessException) {
                 throw e; // 이미 처리된 비즈니스 예외는 그대로 전파
@@ -88,7 +88,8 @@ public class UserSyncService {
 
         publishProvisioningCommand(user, payload.getExtensions());
 
-        syncHistoryService.logSuccess(traceId, "HR_SYNC", user.getUserName(), payload, "User created successfully");
+        syncHistoryService.logSuccess(traceId, "HR_SYNC", user.getUserName(), "SAP_HR", payload,
+                "User created successfully");
         log.info("Successfully created user with ID: {}", user.getId());
     }
 
@@ -103,13 +104,14 @@ public class UserSyncService {
                             iamUserRepository.save(user);
                             publishProvisioningCommand(user, payload.getExtensions());
 
-                            syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), payload,
+                            syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), "SAP_HR", payload,
                                     "User updated successfully");
                             log.info("Successfully updated user with ID: {}", user.getId());
                         },
                         () -> {
                             String msg = "IdentityLink exists but User not found for ID: " + link.getIamUserId();
-                            syncHistoryService.logFailure(traceId, "USER_UPDATE", payload.getUserName(), payload, msg);
+                            syncHistoryService.logFailure(traceId, "USER_UPDATE", payload.getUserName(), "SAP_HR",
+                                    payload, msg);
                             throw new IamBusinessException(
                                     ErrorCode.USER_NOT_FOUND,
                                     traceId,

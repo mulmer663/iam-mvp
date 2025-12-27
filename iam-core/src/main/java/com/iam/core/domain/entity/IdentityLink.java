@@ -1,5 +1,6 @@
 package com.iam.core.domain.entity;
 
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class IdentityLink {
     @Id
+    @Tsid
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 

@@ -6,24 +6,44 @@
 
 SCIM 2.0 프로토콜을 기반으로 외부 시스템(HR)으로부터 데이터를 수신하여 IAM Core에 저장하고, 대상 시스템(AD)으로 프로비저닝합니다.
 
-* **Ingestion:** HR Connector가 원천 데이터를 SCIM User Resource 형태로 변환하여 전송합니다.
+* **iam-connector-hr (Source Event Detector):**  
+  * HR 시스템의 변화(신규 입사, 정보 수정, 퇴사)를 감지합니다.
+  * 복잡한 변환 없이 **원천 데이터 스냅샷**을 포함한 이벤트를 `iam.ingest` 큐로 던집니다.
+  * 이 시점에 **`traceId`**를 생성하여 전체 프로세스의 추적성을 시작합니다.
+
+* **iam-core (Transformation & Orchestration):**  
+  * 큐에서 이벤트를 수신하여 **Groovy Rule Engine**을 구동합니다.
+  * 원천 데이터를 SCIM 표준 및 IAM 내부 스키마(`IamUser`, `JSONB`)로 변환합니다.
+  * 변환 전/후 데이터를 `SyncHistory`에 기록하고 DB에 최종 반영합니다.
+
 * **Core Storage:** 정형 속성(Core)은 컬럼으로, 비정형 속성(Extensions)은 JSONB로 분리 저장하는 하이브리드 방식을 채택합니다.
 
 ```mermaid
 graph LR
     subgraph "External"
         HR[HR System]
-        AD[Active Directory]
     end
 
     subgraph "IAM System"
         direction TB
-        HRC[HR Connector] -->|SCIM User Event| MQ1((iam.ingest))
-        MQ1 -->|Consume| Logic[Sync Service]
-        Logic <-->|Store| DB[(PostgreSQL)]
-        Logic -->|Prov Command| MQ2((iam.provision))
-        MQ2 -->|Consume| ADC[AD Connector]
+        subgraph "Ingestion"
+            HRC[HR Connector]
+        end
+        
+        MQ1((iam.ingest))
+        
+        subgraph "Core Domain (Rule Engine)"
+            Logic[Sync Service]
+            Rule[Groovy Engine]
+            DB[(PostgreSQL)]
+        end
     end
+
+    HR -->|1. Detect Change| HRC
+    HRC -->|2. Raw Event + traceId| MQ1
+    MQ1 -->|3. Consume| Logic
+    Logic <-->|4. Transform| Rule
+    Logic <-->|5. Store & Audit| DB
 ```
 
 ## 3. 데이터 모델 전략 (Hybrid Storage)
@@ -65,4 +85,4 @@ graph LR
 [x] Core/Extension 하이브리드 스토리지 설계
 [x] TSID 기반 엔티티 구조 설계
 [ ] Groovy Rule Engine 샌드박스 구현
-[ ] HR Connector SCIM 변환 로직
+[ ] HR Connector 스냅샷 및 변경 이벤트 로직

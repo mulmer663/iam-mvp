@@ -1,3 +1,9 @@
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -5,6 +11,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework.boot:spring-boot-starter-json'
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
+
+    // Groovy Support
+    implementation 'org.apache.groovy:groovy:4.0.15'
+    implementation 'org.apache.groovy:groovy-json:4.0.15'
+    implementation 'org.apache.groovy:groovy-jsr223:4.0.15'
+
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.amqp:spring-rabbit-test'
     testRuntimeOnly 'com.h2database:h2'

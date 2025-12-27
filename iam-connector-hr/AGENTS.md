@@ -1,31 +1,38 @@
+# Role
+
+**Source Event Detector** for HR System Integration.
+
 # Module Context
 
-**HR Connector:** Authoritative source ingestion (Upstream). Pushes changes to Core.
-**Dependencies:** `spring-boot-starter-web`, `spring-boot-starter-amqp`
+- **HR Connector:** Detects changes in the HR system (Upstream) and pushes **Raw Snapshots** to Core.
+- **Responsibilities:** Change detection, Raw data extraction, and Initial `traceId` generation.
+- **Dependencies:** `spring-boot-starter-web`, `spring-boot-starter-amqp`
 
 # Tech Stack & Constraints
 
 - **Source:** HTTP REST API (Mock/Real HR System).
 - **Messaging:** RabbitMQ (Producer).
-- **Constraint:** Read-only access to HR System (usually).
+- **Constraint:** Read-only access to HR System.
 
 # Implementation Patterns
 
-- **Ingestion:** Scheduled Task or Webhook Receiver.
-- **Normalization:** Convert raw HR JSON to standardized SCIM 2.0 `UserResource`.
-- **Payload:** `externalId`, `userName`, `name` (complex), and SCIM Extensions (e.g., Enterprise User).
-- **Publisher:** Send events to `iam.hr.exchange`.
-
-# Testing Strategy
-
-- **Unit:** `WebMvcTest` (if webhook) or `RestClientTest`.
-- **Command:** `./gradlew :iam-connector-hr:test`
+- **Batch Ingestion (Fingerprint Strategy):**
+  - **Full Pull:** Fetch the entire dataset from the HR system during each batch cycle (Daily/Manual).
+  - **Change Detection:** Calculate a **SHA-256 hash** of the raw HR record.
+  - **Minimal Local State:** Store only `externalId`, `hashValue`, and `lastSeen` in a lightweight local DB (e.g., SQLite or Redis) to identify ADD, UPDATE, or DELETE actions.
+  - **Reconciliation:** After each batch, any `externalId` in the local state not found in the latest HR pull must be treated as a DELETE/TERMINATION event.
 
 # Local Golden Rules
 
 - **Do's:**
-  - Sanitize input data (trim strings, check nulls) before sending to Core.
-  - Log the "Raw" payload ID for tracing purposes.
+  - Generate a **`traceId`** for the entire batch job and include it in every individual event sent to Core.
+  - Send the **Raw Payload** exactly as received from HR; do not filter or transform attributes.
+  - Perform the hash calculation on the "canonicalized" JSON (sorted keys) to prevent false positives from key reordering.
 - **Don'ts:**
-  - Do not implement complex identity logic (leave that to Core).
-  - Do not tightly couple with Core's internal DB schema.
+  - Do not keep the hash of PII (Personally Identifiable Information) if sensitive; the hash itself is a fingerprint, but ensure the storage is secure.
+
+# Testing Strategy
+
+- **Unit:** `RestClientTest` for HR API consumption.
+- **Integration:** Verify AMQP message publishing to the `iam.ingest` exchange.
+- **Command:** `./gradlew :iam-connector-hr:test`
