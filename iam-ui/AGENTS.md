@@ -33,6 +33,15 @@
   - Avoid heavy whitespace or large border-radius (> 4px).
   - Do not create new top-level pages; use Miller panes.
 
+- **Frontend Spec Synchronization:**
+  - After developing or modifying UI components, Pinia stores, or UX patterns, you MUST update `fe_spec.md` to reflect the current state.
+  - Ensure that **Component names**, **Pinia actions/state structures**, and **CSS utility classes** in `fe_spec.md` match the actual implementation.
+  - If a new UX interaction (e.g., a specific Miller Column behavior or a new Batch Operation) is established, document it clearly in the "Feature Specification" section of `fe_spec.md`.
+
+- **UI/UX Consistency Loop:**
+  - Treat `fe_spec.md` as the "Single Source of Truth" for the dashboard's design system and navigation logic.
+  - Always verify that new UI implementation adheres to the "High-Density" and "IDE-like" constraints defined in `fe_spec.md`.
+
 # Standards & References
 
 - **Functional Specification:** [fe_spec.md](./fe_spec.md) — Source of truth for UI/UX patterns.

@@ -1,7 +1,7 @@
 # Module Context
 
 **Core Identity Engine:** Central hub for identity lifecycle management, policy enforcement, and persistence.
-**Dependencies:** `spring-boot-starter-data-jpa`, `postgresql`, `spring-boot-starter-amqp`
+**Dependencies:** `spring-boot-starter-data-jpa`, `postgresql`, `spring-boot-starter-amqp`, `groovy-all`
 
 ## Repository Layout (Clean Architecture)
 
@@ -24,6 +24,7 @@ com.iam.core
 - **Database:** PostgreSQL (via `spring-data-jpa`).
 - **Messaging:** RabbitMQ (Events for provisioning).
 - **Validation:** `javax.validation` / `hibernate-validator`.
+- **Script Engine:** Groovy 4.x (with `SecureASTCustomizer` for Sandbox).
 - **Constraint:** No direct dependency on `iam-connector-*` modules.
 
 # Implementation Patterns
@@ -36,6 +37,10 @@ com.iam.core
 - **Repository:** `JpaRepository` interface based.
 - **Service Layer:** Business logic here. `@Transactional` usually applies at this layer.
 - **Event Publication:** Publish generic events (e.g., `UserCreatedEvent`) to RabbitMQ for connectors.
+- **Rule Engine Security:**
+  - Use `SecureASTCustomizer` to whitelist allowed classes (`String`, `Math`, `Date`, etc.).
+  - **NEVER** allow `System`, `Runtime`, or `ProcessBuilder` in scripts.
+  - Scripts must be hashed (SHA-256) and versioned in `IAM_TRANS_RULE_VERSION`.
 - **Error Handling & Validation:**
   - **Custom Exception:** Use `IamBusinessException` combined with `ErrorCode` (e.g., `ErrorCode.USER_NOT_FOUND`) for domain-level errors.
   - **Global Handler:** All exceptions are caught by `GlobalExceptionHandler` (`@RestControllerAdvice`) which converts them to a standard JSON error response as defined in [../api-specs.md](../api-specs.md).

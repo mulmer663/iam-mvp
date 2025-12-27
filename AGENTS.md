@@ -59,3 +59,14 @@
 - **[UI Dashboard (FE)](./iam-ui/AGENTS.md)** — High-density Vue 3 dashboard and Miller Columns.
 - **[Infrastructure (Ops)](./docker-compose.yml)** — Docker services for Postgres, RabbitMQ, and Apps.
 - **[Build Settings (Root)](./build.gradle)** — Root project configuration and dependencies.
+
+## Living Documentation & Feedback Loop
+
+- **Spec Synchronization:**
+  - After completing any feature development or refactoring, you MUST update `spec.md` to reflect the actual implementation.
+  - Ensure that Class names, Database schemas (DDL), and JSON payload examples in `spec.md` are 100% consistent with the final code.
+  - If any architectural decisions or edge cases were discovered during coding, document them in the "Implementation Notes" section of `spec.md`.
+
+- **Context Preservation:**
+  - Treat `spec.md` as the "Single Source of Truth" for the AI's mental map.
+  - When starting a new task, always cross-reference the updated `spec.md` to ensure continuity and prevent regression.
