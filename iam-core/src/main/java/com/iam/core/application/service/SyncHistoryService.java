@@ -41,8 +41,15 @@ public class SyncHistoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<HistoryResponse> getAllHistory() {
-        return syncHistoryRepository.findAllByOrderByCreatedAtDesc().stream()
+    public List<HistoryResponse> getHistory(String userId, String targetUser) {
+        List<SyncHistory> list;
+        if (targetUser != null && !targetUser.isBlank()) {
+            list = syncHistoryRepository.findByTargetUser(targetUser);
+        } else {
+            list = syncHistoryRepository.findAllByOrderByCreatedAtDesc();
+        }
+
+        return list.stream()
                 .map(this::toResponse)
                 .toList();
     }

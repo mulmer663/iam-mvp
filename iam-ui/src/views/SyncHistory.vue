@@ -12,6 +12,7 @@ import { SYSTEM_THEMES } from '@/utils/theme'
 const props = defineProps<{
   type: 'SOURCE' | 'INTEGRATION' | 'AUDIT'
   userId?: string
+  userName?: string
   paneIndex?: number
 }>()
 
@@ -21,7 +22,10 @@ const currentTheme = computed(() => SYSTEM_THEMES[props.type])
 
 onMounted(async () => {
     try {
-        history.value = await HistoryService.getHistory()
+        history.value = await HistoryService.getHistory({ 
+            userId: props.userId, 
+            userName: props.userName 
+        })
     } catch (e) {
         console.error('Failed to load history', e)
     }
@@ -30,14 +34,12 @@ onMounted(async () => {
 const filteredHistory = computed((): HistoryLog[] => {
   let baseList = history.value
   
-  if (props.userId) {
-    baseList = baseList.filter(h => h.userId === props.userId)
-  }
-
   if (props.type === 'AUDIT') return baseList.filter(h => h.type === 'USER_UPDATE')
   if (props.type === 'SOURCE') return baseList.filter(h => h.type === 'HR_SYNC')
   return baseList.filter(h => h.type === 'AD_PROVISION')
 })
+
+
 
 
 const getStatusVariant = (status: string) => {

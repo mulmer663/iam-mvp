@@ -48,6 +48,7 @@ export interface HistoryLog {
     target: string
     time: string
     userId?: string
+    userName?: string
     syncType?: 'JOIN' | 'REJOIN' | 'UPDATE_SIMPLE' | 'UPDATE_CRITICAL' | 'LEAVE'
     payload?: Record<string, any>
     changes?: Array<{ field: string, old: string, new: string }>

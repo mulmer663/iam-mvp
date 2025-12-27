@@ -247,7 +247,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                       </h3>
                       <div class="grid grid-cols-1 gap-2">
                          <Button 
-                          @click="pushChildPane(index, 'SourceSyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id })"
+                          @click="pushChildPane(index, 'SourceSyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
                           <span class="flex items-center gap-2">
@@ -257,7 +257,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                         <Button 
-                          @click="pushChildPane(index, 'IntegrationSyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id })"
+                          @click="pushChildPane(index, 'IntegrationSyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
                           <span class="flex items-center gap-2">
@@ -267,9 +267,10 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                           <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                         </Button>
                         <Button 
-                          @click="pushChildPane(index, 'UserAuditLogs', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id })"
+                          @click="pushChildPane(index, 'UserAuditLogs', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName })"
                           variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                         >
+
                           <span class="flex items-center gap-2">
                             <div class="size-1 rounded-full" :class="SYSTEM_THEMES.AUDIT.indicator"></div> 
                             {{ SYSTEM_THEMES.AUDIT.label }}

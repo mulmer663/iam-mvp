@@ -374,7 +374,7 @@ const filteredEntries = computed(() => {
                     </span>
                     <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'"></div>
                   </div>
-                  <div class="text-[8px] text-neutral-400 font-mono">{{ h.time.split(' ')[1] }}</div>
+                  <div class="text-[8px] text-neutral-400 font-mono">{{ h.time?.includes(' ') ? h.time.split(' ')[1] : h.time }}</div>
                 </div>
               </div>
             </div>

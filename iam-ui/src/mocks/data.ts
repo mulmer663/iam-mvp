@@ -1,138 +1,119 @@
 export const MOCK_DEPARTMENTS = [
-    { id: 'DEPT01', name: 'IAM Solution Group', parentId: null },
-    { id: 'DEPT01-1', name: 'Dev Team', parentId: 'DEPT01' },
-    { id: 'DEPT01-2', name: 'Connector Team', parentId: 'DEPT01' },
-    { id: 'DEPT02', name: 'Business Strategy', parentId: null },
-    { id: 'DEPT02-1', name: 'Marketing Team', parentId: 'DEPT02' },
+    { id: 'GLOBAL-IT', name: 'Global IT', parentId: null },
+    { id: 'AUDIT-01', name: 'Internal Audit', parentId: null },
+    { id: 'SEC-OPS', name: 'Security Operations', parentId: null },
+    { id: 'EXTERNAL-V', name: 'External Vendors', parentId: null },
+    { id: 'DEPT01', name: 'SAP HR Division', parentId: null },
+    { id: 'DEPT02', name: 'SAP HR Planning', parentId: null },
 ]
 
 export const MOCK_USERS: any[] = [
     {
         id: '1',
-        userName: 'admin',
-        name: { familyName: 'System', givenName: 'Administrator' },
-        title: 'Manager',
+        userName: 'super.admin',
+        name: { familyName: 'Admin', givenName: 'Michael' },
+        title: 'IT Director',
         active: true,
-        emails: [{ value: 'admin@iam.com', primary: true }],
-        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT01' }
+        emails: [{ value: 'michael.admin@global-iam.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
+            department: 'GLOBAL-IT',
+            employeeNumber: 'ADM001'
+        }
     },
     {
-        id: '532100000000000002',
-        userName: 'hong.g',
-        name: { familyName: 'Hong', givenName: 'Gildong' },
-        title: 'Principal Engineer',
+        id: '2',
+        userName: 'jane.doe',
+        name: { familyName: 'Doe', givenName: 'Jane' },
+        title: 'External Auditor',
         active: true,
-        emails: [{ value: 'hong@test.com', primary: true }],
-        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT01-1', employeeNumber: 'H001' }
+        emails: [{ value: 'jane.doe@audit-firm.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
+            department: 'AUDIT-01',
+            employeeNumber: 'EXT-101'
+        }
     },
     {
         id: '3',
-        userName: 'kim.f',
-        name: { familyName: 'Kim', givenName: 'Free' },
-        title: 'Junior Engineer',
+        userName: 'john.smith',
+        name: { familyName: 'Smith', givenName: 'John' },
+        title: 'Security Analyst',
         active: true,
-        emails: [{ value: 'kim@iam.com', primary: true }],
-        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT01-2' }
+        emails: [{ value: 'john.smith@global-iam.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
+            department: 'SEC-OPS',
+            employeeNumber: 'SEC-888'
+        }
     },
     {
         id: '4',
-        userName: 'lee.p',
-        name: { familyName: 'Lee', givenName: 'Planner' },
-        title: 'Associate',
+        userName: 'sarah.v',
+        name: { familyName: 'Vendor', givenName: 'Sarah' },
+        title: 'Implementation Partner',
         active: false,
-        emails: [{ value: 'lee@iam.com', primary: true }],
-        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { department: 'DEPT02-1' }
+        emails: [{ value: 'sarah.v@partner.com', primary: true }],
+        'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
+            department: 'EXTERNAL-V',
+            employeeNumber: 'VND-444'
+        }
     },
 ]
 
 export const MOCK_HISTORY = [
-    // --- Transaction 1: New Employee Join (Hong Gildong) ---
-    // HR Step: Original Data (No mapping here, logically it's the source)
+    // --- Scenario: New Employee Join (Jane Doe) ---
     {
-        id: '532100000000000001', traceId: '532100000000000001', type: 'HR_SYNC', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-01-01 09:00:00', userId: '532100000000000002', syncType: 'JOIN',
+        id: '101', traceId: 'T-101', type: 'HR_SYNC', status: 'SUCCESS', targetUser: 'jane.doe', time: '2025-01-01 09:00:00', userId: '2', syncType: 'JOIN',
         snapshot: {
             layer: 'HR',
-            data: { empId: 'H001', name: 'Hong Gildong', position: 'Senior Engineer', dept: 'Dev Team', email: 'hong@test.com' }
+            data: { empId: 'EXT-101', name: 'Jane Doe', position: 'Auditor', dept: 'AUDIT-01' }
         },
         mappings: [
-            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Senior Engineer' },
-            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'dept', toField: 'department', value: 'Dev Team' }
+            { fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'External Auditor' }
         ]
     },
-    // IAM Step: Ingestion Mapping (HR <-> IAM)
     {
-        id: '532100000000000002', traceId: '532100000000000001', type: 'USER_UPDATE', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-01-01 09:00:05', userId: '532100000000000002', syncType: 'JOIN',
+        id: '102', traceId: 'T-101', type: 'USER_UPDATE', status: 'SUCCESS', targetUser: 'jane.doe', time: '2025-01-01 09:00:05', userId: '2', syncType: 'JOIN',
         snapshot: {
             layer: 'IAM',
-            data: {
-                schemas: [
-                    "urn:ietf:params:scim:schemas:core:2.0:User",
-                    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
-                    "urn:ietf:params:scim:schemas:extension:mycustom:2.0:User"
-                ],
-                id: '532100000000000002',
-                userName: 'hong.g@iam.com',
-                name: { familyName: 'Hong', givenName: 'Gildong' },
-                title: 'Senior Engineer',
-                active: true,
-                emails: [{ value: 'hong@test.com', primary: true }],
-                'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
-                    employeeNumber: 'H001',
-                    department: 'Dev Team'
-                },
-                'urn:ietf:params:scim:schemas:extension:mycustom:2.0:User': {
-                    birthday: '1990-01-01',
-                    theme: 'dark'
-                }
-            }
+            data: { id: '2', userName: 'jane.doe', active: true }
         }
     },
-    // Target Step: Distribution Mapping (IAM <-> AD)
     {
-        id: '532100000000000003', traceId: '532100000000000001', type: 'AD_PROVISION', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-01-01 09:01:00', userId: '532100000000000002', syncType: 'JOIN',
+        id: '103', traceId: 'T-101', type: 'AD_PROVISION', status: 'SUCCESS', targetUser: 'jane.doe', time: '2025-01-01 09:01:00', userId: '2', syncType: 'JOIN',
         snapshot: {
             layer: 'AD',
-            data: { sAMAccountName: 'hong.g', displayName: 'Hong Gildong', title: 'Senior Engineer', mail: 'hong@test.com', description: 'Dev Team' }
+            data: { sAMAccountName: 'jane.doe', displayName: 'Jane Doe' }
         },
         mappings: [
-            { fromLabel: 'IAM', toLabel: 'AD', fromField: 'title', toField: 'title', value: 'Senior Engineer' },
-            { fromLabel: 'IAM', toLabel: 'AD', fromField: 'department', toField: 'description', value: 'Dev Team' }
+            { fromLabel: 'IAM', toLabel: 'AD', fromField: 'title', toField: 'title', value: 'External Auditor' }
         ]
     },
 
-    // --- Transaction 3: Critical Update (Promotion) ---
+    // --- Scenario: Promotion (Jane Doe) ---
     {
-        id: '542100000000000021', traceId: '542100000000000150', type: 'HR_SYNC', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:00', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',
-        changes: [{ field: 'position', old: 'Senior Engineer', new: 'Principal Engineer' }],
+        id: '201', traceId: 'T-201', type: 'HR_SYNC', status: 'SUCCESS', targetUser: 'jane.doe', time: '2025-12-21 10:05:00', userId: '2', syncType: 'UPDATE_CRITICAL',
+        changes: [{ field: 'position', old: 'Auditor', new: 'Senior Auditor' }],
         snapshot: {
             layer: 'HR',
-            data: { empId: 'H001', name: 'Hong Gildong', position: 'Principal Engineer', dept: 'Dev Team', email: 'hong@test.com' }
+            data: { empId: 'EXT-101', name: 'Jane Doe', position: 'Senior Auditor', dept: 'AUDIT-01' }
         },
-        mappings: [{ fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Principal Engineer' }]
+        mappings: [{ fromLabel: 'HR', toLabel: 'IAM', fromField: 'position', toField: 'title', value: 'Senior Auditor' }]
     },
     {
-        id: '542100000000000022', traceId: '542100000000000150', type: 'USER_UPDATE', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:05', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',
-        changes: [{ field: 'title', old: 'Senior Engineer', new: 'Principal Engineer' }],
+        id: '202', traceId: 'T-201', type: 'USER_UPDATE', status: 'SUCCESS', targetUser: 'jane.doe', time: '2025-12-21 10:05:05', userId: '2', syncType: 'UPDATE_CRITICAL',
+        changes: [{ field: 'title', old: 'External Auditor', new: 'Senior Auditor' }],
         snapshot: {
             layer: 'IAM',
-            data: {
-                id: '532100000000000002',
-                userName: 'hong.g@iam.com',
-                name: { familyName: 'Hong', givenName: 'Gildong' },
-                title: 'Principal Engineer',
-                active: true,
-                emails: [{ value: 'hong@test.com', primary: true }],
-                'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': { employeeNumber: 'H001', department: 'Dev Team' }
-            }
+            data: { id: '2', title: 'Senior Auditor' }
         }
     },
     {
-        id: '542100000000000023', traceId: '542100000000000150', type: 'AD_PROVISION', status: 'SUCCESS', target: 'Hong Gildong', time: '2025-12-21 10:05:30', userId: '532100000000000002', syncType: 'UPDATE_CRITICAL',
-        changes: [{ field: 'title', old: 'Senior Engineer', new: 'Principal Engineer' }],
+        id: '203', traceId: 'T-201', type: 'AD_PROVISION', status: 'SUCCESS', targetUser: 'jane.doe', time: '2025-12-21 10:05:30', userId: '2', syncType: 'UPDATE_CRITICAL',
+        changes: [{ field: 'title', old: 'External Auditor', new: 'Senior Auditor' }],
         snapshot: {
             layer: 'AD',
-            data: { sAMAccountName: 'hong.g', displayName: 'Hong Gildong', title: 'Principal Engineer', mail: 'hong@test.com', description: 'Dev Team' }
+            data: { sAMAccountName: 'jane.doe', title: 'Senior Auditor' }
         },
-        mappings: [{ fromLabel: 'IAM', toLabel: 'AD', fromField: 'title', toField: 'title', value: 'Principal Engineer' }]
+        mappings: [{ fromLabel: 'IAM', toLabel: 'AD', fromField: 'title', toField: 'title', value: 'Senior Auditor' }]
     }
 ]
+

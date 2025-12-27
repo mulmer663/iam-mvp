@@ -17,7 +17,9 @@ public class HistoryController {
     private final SyncHistoryService syncHistoryService;
 
     @GetMapping
-    public List<HistoryResponse> getHistory() {
-        return syncHistoryService.getAllHistory();
+    public List<HistoryResponse> getHistory(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String userId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String targetUser) {
+        return syncHistoryService.getHistory(userId, targetUser);
     }
 }

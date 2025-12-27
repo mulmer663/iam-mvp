@@ -88,7 +88,14 @@ public class UserSyncService {
 
         publishProvisioningCommand(user, payload.getExtensions());
 
-        syncHistoryService.logSuccess(traceId, "HR_SYNC", user.getUserName(), "SAP_HR", payload,
+        // Wrap payload for history
+        Map<String, Object> historyPayload = Map.of(
+                "syncType", "JOIN",
+                "snapshot", Map.of(
+                        "layer", "HR",
+                        "data", payload));
+
+        syncHistoryService.logSuccess(traceId, "HR_SYNC", user.getUserName(), "SAP_HR", historyPayload,
                 "User created successfully");
         log.info("Successfully created user with ID: {}", user.getId());
     }
@@ -104,7 +111,15 @@ public class UserSyncService {
                             iamUserRepository.save(user);
                             publishProvisioningCommand(user, payload.getExtensions());
 
-                            syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), "SAP_HR", payload,
+                            // Wrap payload for history
+                            Map<String, Object> historyPayload = Map.of(
+                                    "syncType", "UPDATE_SIMPLE",
+                                    "snapshot", Map.of(
+                                            "layer", "HR",
+                                            "data", payload));
+
+                            syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), "SAP_HR",
+                                    historyPayload,
                                     "User updated successfully");
                             log.info("Successfully updated user with ID: {}", user.getId());
                         },

@@ -132,10 +132,10 @@ public class DataInitializer implements CommandLineRunner {
     List<com.iam.core.domain.entity.SyncHistory> histories = new ArrayList<>();
     String traceId = "T-" + TSID.fast().toLong();
     String userId = String.valueOf(user.getId());
-    String targetName = user.getGivenName() + " " + user.getFamilyName();
+    String userName = user.getUserName();
 
     // 1. HR Sync (Join)
-    histories.add(createHistory(traceId, "HR_SYNC", "SUCCESS", targetName, "New employee joined from HR",
+    histories.add(createHistory(traceId, "HR_SYNC", "SUCCESS", userName, "New employee joined from HR",
         """
             {
               "userId": "%s",
@@ -149,11 +149,11 @@ public class DataInitializer implements CommandLineRunner {
               ]
             }
             """
-            .formatted(userId, targetName),
+            .formatted(userId, userName),
         LocalDateTime.now().minusDays(1)));
 
     // 2. IAM Core Update
-    histories.add(createHistory(traceId, "USER_UPDATE", "SUCCESS", targetName, "IAM User record updated",
+    histories.add(createHistory(traceId, "USER_UPDATE", "SUCCESS", userName, "IAM User record updated",
         """
             {
               "userId": "%s",
@@ -167,7 +167,7 @@ public class DataInitializer implements CommandLineRunner {
         LocalDateTime.now().minusDays(1).plusSeconds(5)));
 
     // 3. AD Provision
-    histories.add(createHistory(traceId, "AD_PROVISION", "SUCCESS", targetName, "AD Account provisioned",
+    histories.add(createHistory(traceId, "AD_PROVISION", "SUCCESS", userName, "AD Account provisioned",
         """
             {
               "userId": "%s",
@@ -181,7 +181,7 @@ public class DataInitializer implements CommandLineRunner {
               ]
             }
             """
-            .formatted(userId, user.getUserName(), targetName),
+            .formatted(userId, user.getUserName(), userName),
         LocalDateTime.now().minusDays(1).plusMinutes(1)));
 
     syncHistoryRepository.saveAll(histories);
@@ -191,7 +191,7 @@ public class DataInitializer implements CommandLineRunner {
     String critTraceId = "T-" + TSID.fast().toLong();
 
     criticalHistories
-        .add(createHistory(critTraceId, "HR_SYNC", "SUCCESS", targetName,
+        .add(createHistory(critTraceId, "HR_SYNC", "SUCCESS", userName,
             "User promoted to Principal Engineer",
             """
                 {
@@ -207,11 +207,11 @@ public class DataInitializer implements CommandLineRunner {
                   ]
                 }
                 """
-                .formatted(userId, targetName),
+                .formatted(userId, userName),
             LocalDateTime.now().minusHours(2)));
 
     criticalHistories.add(
-        createHistory(critTraceId, "USER_UPDATE", "SUCCESS", targetName, "IAM title updated",
+        createHistory(critTraceId, "USER_UPDATE", "SUCCESS", userName, "IAM title updated",
             """
                 {
                   "userId": "%s",
@@ -226,7 +226,7 @@ public class DataInitializer implements CommandLineRunner {
                 .formatted(userId, userId),
             LocalDateTime.now().minusHours(2).plusSeconds(10)));
 
-    criticalHistories.add(createHistory(critTraceId, "AD_PROVISION", "SUCCESS", targetName,
+    criticalHistories.add(createHistory(critTraceId, "AD_PROVISION", "SUCCESS", userName,
         "AD title provisioned",
         """
             {
@@ -258,11 +258,11 @@ public class DataInitializer implements CommandLineRunner {
     };
 
     // HR & IAM steps for this trace
-    provisioningHistories.add(createHistory(provTraceId, "HR_SYNC", "SUCCESS", targetName,
+    provisioningHistories.add(createHistory(provTraceId, "HR_SYNC", "SUCCESS", userName,
         "User attributes updated in HR",
         "{\"syncType\": \"UPDATE_SIMPLE\", \"userId\": \"%s\"}".formatted(userId),
         LocalDateTime.now().minusMinutes(30)));
-    provisioningHistories.add(createHistory(provTraceId, "USER_UPDATE", "SUCCESS", targetName,
+    provisioningHistories.add(createHistory(provTraceId, "USER_UPDATE", "SUCCESS", userName,
         "IAM Core synchronized",
         "{\"syncType\": \"UPDATE_SIMPLE\", \"userId\": \"%s\"}".formatted(userId),
         LocalDateTime.now().minusMinutes(29)));
@@ -270,7 +270,7 @@ public class DataInitializer implements CommandLineRunner {
     // 20 Provisioning Events
     for (int i = 0; i < targets.length; i++) {
       String targetSystem = targets[i];
-      provisioningHistories.add(createHistory(provTraceId, "AD_PROVISION", "SUCCESS", targetName,
+      provisioningHistories.add(createHistory(provTraceId, "AD_PROVISION", "SUCCESS", userName,
           "Provisioned to " + targetSystem,
           """
               {
