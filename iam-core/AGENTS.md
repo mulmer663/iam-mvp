@@ -5,7 +5,7 @@
 
 ## Repository Layout (Clean Architecture)
 
-```
+```text
 com.iam.core
 ├── domain               <-- [Core] Entities, Repositories, Exceptions (No dependency on outer layers)
 │   ├── entity
@@ -38,7 +38,7 @@ com.iam.core
 - **Event Publication:** Publish generic events (e.g., `UserCreatedEvent`) to RabbitMQ for connectors.
 - **Error Handling & Validation:**
   - **Custom Exception:** Use `IamBusinessException` combined with `ErrorCode` (e.g., `ErrorCode.USER_NOT_FOUND`) for domain-level errors.
-  - **Global Handler:** All exceptions are caught by `GlobalExceptionHandler` (`@RestControllerAdvice`) which converts them to a standard JSON error response.
+  - **Global Handler:** All exceptions are caught by `GlobalExceptionHandler` (`@RestControllerAdvice`) which converts them to a standard JSON error response as defined in [../api-specs.md](../api-specs.md).
   - **Validation:** Use `jakarta.validation` annotations (`@NotNull`, `@Email`, etc.) on Input DTOs. Validation errors are automatically transformed into `400 Bad Request` responses.
 
 # Testing Strategy

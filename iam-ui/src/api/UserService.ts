@@ -3,6 +3,7 @@ import type { User } from '@/types'
 
 // SCIM Types from Backend (matching ScimListResponse & ScimUserResponse)
 interface ScimListResponse<T> {
+    schemas: string[]
     totalResults: number
     itemsPerPage: number
     startIndex: number
@@ -10,15 +11,24 @@ interface ScimListResponse<T> {
 }
 
 interface ScimUserResponse {
+    schemas: string[]
     id: string
+    externalId?: string
     userName: string
     name: {
         familyName: string
         givenName: string
         formatted?: string
     }
+    title?: string
     emails: { value: string; primary: boolean }[]
     active: boolean
+    meta: {
+        resourceType: string
+        created: string
+        lastModified: string
+        location: string
+    }
     'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'?: {
         department?: string
         employeeNumber?: string
@@ -43,15 +53,13 @@ export const UserService = {
     toUser(scim: ScimUserResponse): User {
         return {
             id: scim.id,
+            externalId: scim.externalId,
             userName: scim.userName,
             name: scim.name,
-            title: '', // Title is not standard SCIM Core but often in Enterprise extension or custom. Backend map logic check needed.
-            // Wait, Backend UserQueryService maps everything standard. 
-            // Let's assume title comes from enterprise extension or is missing for now.
-            // Update: Checked backend, title is in IamUser but NOT mapped to SCIM standard fields in UserQueryService yet.
-            // We will map it if available or leave empty.
+            title: scim.title || '',
             active: scim.active,
             emails: scim.emails,
+            meta: scim.meta,
             'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': scim['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']
         }
     }

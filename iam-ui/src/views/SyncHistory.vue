@@ -31,14 +31,7 @@ const filteredHistory = computed((): HistoryLog[] => {
   let baseList = history.value
   
   if (props.userId) {
-    baseList = baseList.filter(h => h.target === props.userId) // Note: target might need to be UserId not UserName depending on backend.
-    // Backend logs "targetUser" which is currently "userName". Frontend props.userId is "id".
-    // This is a potential mismatch. Backend log doesn't store User ID properly, it stores target name.
-    // Ideally Backend SyncHistory should store userId or targetId.
-    // For now, let's assume we might need to fix this or match vaguely.
-    // Wait, let's check SyncDetail.vue or where History is called.
-    // If we filter, maybe we should filter by target string match?
-    // Let's assume for now target matches userName.
+    baseList = baseList.filter(h => h.userId === props.userId)
   }
 
   if (props.type === 'AUDIT') return baseList.filter(h => h.type === 'USER_UPDATE')

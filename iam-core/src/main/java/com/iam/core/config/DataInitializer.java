@@ -4,6 +4,7 @@ import com.iam.core.domain.entity.EnterpriseUserExtension;
 import com.iam.core.domain.entity.IamUser;
 import com.iam.core.domain.entity.IamUserExtension;
 import com.iam.core.domain.repository.IamUserRepository;
+import com.iam.core.domain.repository.SyncHistoryRepository;
 
 import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
@@ -27,79 +28,263 @@ import java.util.List;
 @Profile({ "local", "dev" }) // 운영 환경에서는 실행되지 않도록 제한
 public class DataInitializer implements CommandLineRunner {
 
-    private final IamUserRepository iamUserRepository;
+        private final IamUserRepository iamUserRepository;
+        private final SyncHistoryRepository syncHistoryRepository;
 
-    @Override
-    @Transactional
-    public void run(String... args) throws Exception {
-        if (iamUserRepository.count() > 0) {
-            log.info("ℹ️ DB에 이미 데이터가 존재하여 초기화를 건너뜁니다.");
-            return;
+        @Override
+        @Transactional
+        public void run(String... args) throws Exception {
+                if (iamUserRepository.count() > 0) {
+                        log.info("ℹ️ DB에 이미 데이터가 존재하여 초기화를 건너뜁니다.");
+                        return;
+                }
+
+                log.info("🚀 [DataInitializer] 샘플 데이터 생성을 시작합니다...");
+
+                List<IamUser> users = new ArrayList<>();
+
+                // User 1: Admin
+                users.add(createUser(
+                                "admin", "System", "Administrator", "Manager", true, "admin@iam.com",
+                                "DEPT01", null, null));
+
+                // User 2: Hong Gildong
+                IamUser hong = createUser(
+                                "hong.g", "Hong", "Gildong", "Principal Engineer", true, "hong@test.com",
+                                "DEPT01-1", "H001", null);
+                users.add(hong);
+
+                // User 3: Kim Free
+                users.add(createUser(
+                                "kim.f", "Kim", "Free", "Junior Engineer", true, "kim@iam.com",
+                                "DEPT01-2", null, null));
+
+                // User 4: Lee Planner
+                users.add(createUser(
+                                "lee.p", "Lee", "Planner", "Associate", false, "lee@iam.com",
+                                "DEPT02-1", null, null));
+
+                iamUserRepository.saveAll(users);
+                log.info("✅ [DataInitializer] 총 {}건의 사용자 데이터를 생성했습니다.", users.size());
+
+                // Sync History Data
+                createSyncHistory(hong);
         }
 
-        log.info("🚀 [DataInitializer] IamUser 샘플 데이터 생성을 시작합니다...");
+        private void createSyncHistory(IamUser user) {
+                List<com.iam.core.domain.entity.SyncHistory> histories = new ArrayList<>();
+                String traceId = "T-" + TSID.fast().toLong();
+                String userId = String.valueOf(user.getId());
+                String targetName = user.getGivenName() + " " + user.getFamilyName();
 
-        List<IamUser> users = new ArrayList<>();
+                // 1. HR Sync (Join)
+                histories.add(createHistory(traceId, "HR_SYNC", "SUCCESS", targetName, "New employee joined from HR",
+                                """
+                                                {
+                                                  "userId": "%s",
+                                                  "syncType": "JOIN",
+                                                  "snapshot": {
+                                                    "layer": "HR",
+                                                    "data": { "empId": "H001", "name": "%s", "position": "Senior Engineer", "dept": "Dev Team" }
+                                                  },
+                                                  "mappings": [
+                                                    { "fromLabel": "HR", "toLabel": "IAM", "fromField": "position", "toField": "title", "value": "Senior Engineer" }
+                                                  ]
+                                                }
+                                                """
+                                                .formatted(userId, targetName),
+                                LocalDateTime.now().minusDays(1)));
 
-        // User 1: Admin
-        users.add(createUser(
-                "admin", "System", "Administrator", "Manager", true, "admin@iam.com",
-                "DEPT01", null, null));
+                // 2. IAM Core Update
+                histories.add(createHistory(traceId, "USER_UPDATE", "SUCCESS", targetName, "IAM User record updated",
+                                """
+                                                {
+                                                  "userId": "%s",
+                                                  "syncType": "JOIN",
+                                                  "snapshot": {
+                                                    "layer": "IAM",
+                                                    "data": { "id": "%s", "userName": "%s", "active": true }
+                                                  }
+                                                }
+                                                """.formatted(userId, userId, user.getUserName()),
+                                LocalDateTime.now().minusDays(1).plusSeconds(5)));
 
-        // User 2: Hong Gildong
-        users.add(createUser(
-                "hong.g", "Hong", "Gildong", "Principal Engineer", true, "hong@test.com",
-                "DEPT01-1", "H001", null));
+                // 3. AD Provision
+                histories.add(createHistory(traceId, "AD_PROVISION", "SUCCESS", targetName, "AD Account provisioned",
+                                """
+                                                {
+                                                  "userId": "%s",
+                                                  "syncType": "JOIN",
+                                                  "snapshot": {
+                                                    "layer": "AD",
+                                                    "data": { "sAMAccountName": "%s", "displayName": "%s" }
+                                                  },
+                                                  "mappings": [
+                                                    { "fromLabel": "IAM", "toLabel": "AD", "fromField": "title", "toField": "title", "value": "Senior Engineer" }
+                                                  ]
+                                                }
+                                                """
+                                                .formatted(userId, user.getUserName(), targetName),
+                                LocalDateTime.now().minusDays(1).plusMinutes(1)));
 
-        // User 3: Kim Free
-        users.add(createUser(
-                "kim.f", "Kim", "Free", "Junior Engineer", true, "kim@iam.com",
-                "DEPT01-2", null, null));
+                syncHistoryRepository.saveAll(histories);
 
-        // User 4: Lee Planner
-        users.add(createUser(
-                "lee.p", "Lee", "Planner", "Associate", false, "lee@iam.com",
-                "DEPT02-1", null, null));
+                // --- Scenario 2: Promotion (UPDATE_CRITICAL) ---
+                List<com.iam.core.domain.entity.SyncHistory> criticalHistories = new ArrayList<>();
+                String critTraceId = "T-" + TSID.fast().toLong();
 
-        iamUserRepository.saveAll(users);
-        log.info("✅ [DataInitializer] 총 {}건의 사용자 데이터를 생성했습니다.", users.size());
-    }
+                criticalHistories
+                                .add(createHistory(critTraceId, "HR_SYNC", "SUCCESS", targetName,
+                                                "User promoted to Principal Engineer",
+                                                """
+                                                                {
+                                                                  "userId": "%s",
+                                                                  "syncType": "UPDATE_CRITICAL",
+                                                                  "changes": [{ "field": "position", "old": "Senior Engineer", "new": "Principal Engineer" }],
+                                                                  "snapshot": {
+                                                                    "layer": "HR",
+                                                                    "data": { "empId": "H001", "name": "%s", "position": "Principal Engineer", "dept": "Dev Team" }
+                                                                  },
+                                                                  "mappings": [
+                                                                    { "fromLabel": "HR", "toLabel": "IAM", "fromField": "position", "toField": "title", "value": "Principal Engineer" }
+                                                                  ]
+                                                                }
+                                                                """
+                                                                .formatted(userId, targetName),
+                                                LocalDateTime.now().minusHours(2)));
 
-    private IamUser createUser(String userName, String familyName, String givenName,
-            String title, boolean active, String email,
-            String dept, String empNo, String costCenter) {
+                criticalHistories.add(
+                                createHistory(critTraceId, "USER_UPDATE", "SUCCESS", targetName, "IAM title updated",
+                                                """
+                                                                {
+                                                                  "userId": "%s",
+                                                                  "syncType": "UPDATE_CRITICAL",
+                                                                  "changes": [{ "field": "title", "old": "Senior Engineer", "new": "Principal Engineer" }],
+                                                                  "snapshot": {
+                                                                    "layer": "IAM",
+                                                                    "data": { "id": "%s", "title": "Principal Engineer" }
+                                                                  }
+                                                                }
+                                                                """
+                                                                .formatted(userId, userId),
+                                                LocalDateTime.now().minusHours(2).plusSeconds(10)));
 
-        IamUser user = new IamUser();
-        user.setUserName(userName);
-        user.setFamilyName(familyName);
-        user.setGivenName(givenName);
-        user.setFormattedName(givenName + " " + familyName);
-        user.setTitle(title);
-        user.setActive(active);
-        user.setCreated(LocalDateTime.now());
-        user.setLastModified(LocalDateTime.now());
+                criticalHistories.add(createHistory(critTraceId, "AD_PROVISION", "SUCCESS", targetName,
+                                "AD title provisioned",
+                                """
+                                                {
+                                                  "userId": "%s",
+                                                  "syncType": "UPDATE_CRITICAL",
+                                                  "changes": [{ "field": "title", "old": "Senior Engineer", "new": "Principal Engineer" }],
+                                                  "snapshot": {
+                                                    "layer": "AD",
+                                                    "data": { "sAMAccountName": "%s", "title": "Principal Engineer" }
+                                                  },
+                                                  "mappings": [
+                                                    { "fromLabel": "IAM", "toLabel": "AD", "fromField": "title", "toField": "title", "value": "Principal Engineer" }
+                                                  ]
+                                                }
+                                                """
+                                                .formatted(userId, user.getUserName()),
+                                LocalDateTime.now().minusHours(2).plusMinutes(2)));
 
-        // Extension Setup
-        IamUserExtension extension = new IamUserExtension();
-        extension.setUser(user);
+                syncHistoryRepository.saveAll(criticalHistories);
 
-        // Required Schemas
-        List<String> schemas = new ArrayList<>();
-        schemas.add("urn:ietf:params:scim:schemas:core:2.0:User");
+                // --- Scenario 3: Large Scale Provisioning (Many Targets) ---
+                List<com.iam.core.domain.entity.SyncHistory> provisioningHistories = new ArrayList<>();
+                String provTraceId = "T-" + TSID.fast().toLong();
+                String[] targets = {
+                                "AD", "Google Workspace", "Slack", "Zoom", "GitHub",
+                                "Jira", "Confluence", "AWS", "Azure", "Office 365",
+                                "Salesforce", "Datadog", "Sentry", "Figma", "Notion",
+                                "Zendesk", "HubSpot", "Dropbox", "Bitbucket", "PagerDuty"
+                };
 
-        // Enterprise Extension
-        EnterpriseUserExtension enterpriseExt = new EnterpriseUserExtension();
-        enterpriseExt.setDepartment(dept);
-        enterpriseExt.setEmployeeNumber(empNo);
-        enterpriseExt.setCostCenter(costCenter);
-        // ... set other fields if necessary
+                // HR & IAM steps for this trace
+                provisioningHistories.add(createHistory(provTraceId, "HR_SYNC", "SUCCESS", targetName,
+                                "User attributes updated in HR",
+                                "{\"syncType\": \"UPDATE_SIMPLE\", \"userId\": \"%s\"}".formatted(userId),
+                                LocalDateTime.now().minusMinutes(30)));
+                provisioningHistories.add(createHistory(provTraceId, "USER_UPDATE", "SUCCESS", targetName,
+                                "IAM Core synchronized",
+                                "{\"syncType\": \"UPDATE_SIMPLE\", \"userId\": \"%s\"}".formatted(userId),
+                                LocalDateTime.now().minusMinutes(29)));
 
-        extension.getExtensions().put("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User", enterpriseExt);
-        schemas.add("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User");
+                // 20 Provisioning Events
+                for (int i = 0; i < targets.length; i++) {
+                        String targetSystem = targets[i];
+                        provisioningHistories.add(createHistory(provTraceId, "AD_PROVISION", "SUCCESS", targetName,
+                                        "Provisioned to " + targetSystem,
+                                        """
+                                                        {
+                                                          "userId": "%s",
+                                                          "syncType": "UPDATE_SIMPLE",
+                                                          "targetSystem": "%s",
+                                                          "snapshot": {
+                                                            "layer": "TARGET",
+                                                            "data": { "account": "hong.g", "status": "active" }
+                                                          },
+                                                          "mappings": [
+                                                            { "fromLabel": "IAM", "toLabel": "%s", "fromField": "userName", "toField": "account", "value": "hong.g" }
+                                                          ]
+                                                        }
+                                                        """
+                                                        .formatted(userId, targetSystem, targetSystem),
+                                        LocalDateTime.now().minusMinutes(28).plusSeconds(i * 5)));
+                }
 
-        extension.setSchemas(schemas);
-        user.setExtension(extension);
+                syncHistoryRepository.saveAll(provisioningHistories);
+                log.info("✅ [DataInitializer] 대규모 프로비저닝(20개 타겟) 시나리오 데이터를 생성했습니다.");
+        }
 
-        return user;
-    }
+        private com.iam.core.domain.entity.SyncHistory createHistory(String traceId, String type, String status,
+                        String target, String msg, String payload, LocalDateTime time) {
+                var h = new com.iam.core.domain.entity.SyncHistory();
+                h.setTraceId(traceId);
+                h.setType(type);
+                h.setStatus(status);
+                h.setTargetUser(target);
+                h.setMessage(msg);
+                h.setPayload(payload);
+                h.setCreatedAt(time);
+                return h;
+        }
+
+        private IamUser createUser(String userName, String familyName, String givenName,
+                        String title, boolean active, String email,
+                        String dept, String empNo, String costCenter) {
+
+                IamUser user = new IamUser();
+                user.setUserName(userName);
+                user.setFamilyName(familyName);
+                user.setGivenName(givenName);
+                user.setFormattedName(givenName + " " + familyName);
+                user.setTitle(title);
+                user.setActive(active);
+                user.setCreated(LocalDateTime.now());
+                user.setLastModified(LocalDateTime.now());
+
+                // Extension Setup
+                IamUserExtension extension = new IamUserExtension();
+                extension.setUser(user);
+
+                // Required Schemas
+                List<String> schemas = new ArrayList<>();
+                schemas.add("urn:ietf:params:scim:schemas:core:2.0:User");
+
+                // Enterprise Extension
+                EnterpriseUserExtension enterpriseExt = new EnterpriseUserExtension();
+                enterpriseExt.setDepartment(dept);
+                enterpriseExt.setEmployeeNumber(empNo);
+                enterpriseExt.setCostCenter(costCenter);
+
+                extension.getExtensions().put("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+                                enterpriseExt);
+                schemas.add("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User");
+
+                extension.setSchemas(schemas);
+                user.setExtension(extension);
+
+                return user;
+        }
 }

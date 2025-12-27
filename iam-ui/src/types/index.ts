@@ -6,18 +6,28 @@ export interface Department {
 
 export interface User {
     id: string
+    externalId?: string
     userName: string
     name: {
         familyName: string
         givenName: string
         formatted?: string
     }
-    title: string
+    title?: string
     active: boolean
     emails: Array<{ value: string; primary: boolean }>
     'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'?: {
         employeeNumber?: string
         department?: string
+        costCenter?: string
+        organization?: string
+        division?: string
+    }
+    meta?: {
+        resourceType: string
+        created: string
+        lastModified: string
+        location: string
     }
     [key: string]: any
 }

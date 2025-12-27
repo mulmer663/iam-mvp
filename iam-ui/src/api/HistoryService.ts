@@ -14,7 +14,7 @@ interface HistoryResponse {
 
 export const HistoryService = {
     async getHistory(): Promise<HistoryLog[]> {
-        const response = await request<HistoryResponse[]>('/api/v1/history')
+        const response = await request<HistoryResponse[]>('/v1/history')
         return response.map(this.toHistoryLog)
     },
 
@@ -35,8 +35,10 @@ export const HistoryService = {
             status: dto.status as any,
             target: dto.target,
             time: dto.time,
+            message: dto.message,
             payload: payloadObj,
-            // Mapping remaining fields if possible, or using defaults
+            // Flatten relevant fields from payload for UI compatibility
+            ...(payloadObj as any)
         }
     }
 }

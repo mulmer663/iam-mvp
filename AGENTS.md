@@ -48,7 +48,7 @@
 
 - **Code Style:** Standard Java/Spring Boot conventions.
 - **Git:** Semantic Commit Messages (`feat:`, `fix:`, `chore:`).
-- **Functional Specification:** [spec.md](./spec.md) — Source of truth for domain logic and data schemas.
+- **API Specification:** [api-specs.md](./api-specs.md) — RESTful API Documentation for core services.
 - **Maintenance Policy:** Suggest updates to this file if patterns change.
 
 # Context Map

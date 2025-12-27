@@ -5,8 +5,16 @@ import type { HistoryLog } from '@/types'
 import { HistoryService } from '@/api/HistoryService'
 import { computed, onMounted, ref } from 'vue'
 
-// ... existing imports ...
-
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { SYSTEM_THEMES } from '@/utils/theme'
 import { useMillerStore } from '@/stores/miller'
 
@@ -29,9 +37,8 @@ onMounted(async () => {
     }
 })
 
-const relatedEvents = computed(() => {
-  return allHistory.value.filter(h => h.traceId === props.event.traceId && h.id !== props.event.id)
-})
+// relatedEvents is now handled directly in the template within the Sync Pipeline section
+
 
 const theme = computed(() => {
   if (props.event.type === 'HR_SYNC') return SYSTEM_THEMES.SOURCE
@@ -292,29 +299,85 @@ const filteredEntries = computed(() => {
 
       <Separator />
 
-      <!-- Linked Trace Events -->
-      <section v-if="relatedEvents.length > 0">
-        <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-          Linked Trace Events
+      <!-- Sync Pipeline Visualization -->
+      <section v-if="allHistory.length > 0">
+        <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          Sync Pipeline
         </h3>
-        <div class="bg-white border border-neutral-100 rounded-md overflow-hidden">
-          <div 
-            v-for="rel in relatedEvents" :key="rel.id" @click="openRelatedEvent(rel)"
-            class="flex items-center gap-3 p-2.5 border-b border-neutral-50 last:border-0 hover:bg-neutral-50 cursor-pointer group transition-colors"
-          >
-             <div class="size-2 rounded-full" :class="{
-                'bg-blue-400': rel.type === 'HR_SYNC',
-                'bg-orange-400': rel.type === 'USER_UPDATE',
-                'bg-purple-400': rel.type === 'AD_PROVISION'
-             }"></div>
-             <div class="flex-1 min-w-0">
-               <div class="flex items-center gap-2">
-                 <span class="text-[10px] font-bold text-neutral-700">{{ rel.type.replace('_', ' ') }}</span>
-                 <span class="text-[9px] text-neutral-400">{{ rel.time.split(' ')[1] }}</span>
-               </div>
-               <div class="text-[10px] text-neutral-500 truncate mt-0.5">{{ rel.target }}</div>
-             </div>
-             <ArrowRight class="size-3 text-neutral-300 group-hover:text-black" />
+        
+        <div class="flex flex-col gap-6 relative">
+          <!-- Connection Lines (Visual) -->
+          <div class="absolute left-3 top-3 bottom-3 w-px bg-neutral-100 -z-0"></div>
+
+          <!-- Step 1: Source -->
+          <div class="relative z-10 flex flex-col gap-2">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="size-6 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shadow-sm">1</div>
+              <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">Source Systems</span>
+            </div>
+            <div class="ml-8 space-y-1">
+              <div 
+                v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.type === 'HR_SYNC')" :key="h.id"
+                @click="openRelatedEvent(h)"
+                class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
+                :class="h.id === event.id ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : 'bg-white border-neutral-100 hover:border-blue-200'"
+              >
+                <div class="flex flex-col">
+                  <span class="font-bold text-neutral-700">HR System</span>
+                  <span class="text-[9px] text-neutral-400 font-mono">{{ h.time }}</span>
+                </div>
+                <Badge :variant="h.status === 'SUCCESS' ? 'default' : 'destructive'" class="h-3 text-[8px] px-1">{{ h.status }}</Badge>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Core -->
+          <div class="relative z-10 flex flex-col gap-2">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="size-6 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600 shadow-sm">2</div>
+              <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">IAM Core</span>
+            </div>
+            <div class="ml-8 space-y-1">
+              <div 
+                v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.type === 'USER_UPDATE')" :key="h.id"
+                @click="openRelatedEvent(h)"
+                class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
+                :class="h.id === event.id ? 'bg-orange-50 border-orange-200 ring-2 ring-orange-100' : 'bg-white border-neutral-100 hover:border-orange-200'"
+              >
+                <div class="flex flex-col">
+                  <span class="font-bold text-neutral-700">Identity Management</span>
+                  <span class="text-[9px] text-neutral-400 font-mono">{{ h.time }}</span>
+                </div>
+                <Badge :variant="h.status === 'SUCCESS' ? 'default' : 'destructive'" class="h-3 text-[8px] px-1">{{ h.status }}</Badge>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Targets -->
+          <div class="relative z-10 flex flex-col gap-2">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="size-6 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center text-[10px] font-bold text-purple-600 shadow-sm">3</div>
+              <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">Target Provisioning</span>
+              <Badge variant="outline" class="h-3 text-[8px] border-purple-200 text-purple-600">{{ allHistory.filter(x => x.traceId === event.traceId && x.type === 'AD_PROVISION').length }} Targets</Badge>
+            </div>
+            <div class="ml-8">
+              <div class="grid grid-cols-2 gap-2">
+                <div 
+                  v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.type === 'AD_PROVISION')" :key="h.id"
+                  @click="openRelatedEvent(h)"
+                  class="p-2 border rounded-md text-[10px] cursor-pointer transition-all flex flex-col gap-1 group bg-white"
+                  :class="h.id === event.id ? 'bg-purple-50 border-purple-200 ring-2 ring-purple-100' : 'border-neutral-100 hover:border-purple-200'"
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="font-black text-neutral-500 uppercase tracking-tighter truncate max-w-[70%]">
+                      {{ h.payload?.targetSystem || 'Target System' }}
+                    </span>
+                    <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'"></div>
+                  </div>
+                  <div class="text-[8px] text-neutral-400 font-mono">{{ h.time.split(' ')[1] }}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
