@@ -69,8 +69,10 @@ graph LR
   * **보안:** `SecureASTCustomizer`를 통한 화이트리스트 기반 샌드박스 실행.
 
 * **이력 관리 (Traceability):**
-  * **참조 파일:** `SyncHistory.java`
-  * **핵심 규칙:** 모든 이벤트는 `traceId`를 공유하며 `HR -> Core -> AD` 전체 흐름이 연결되어야 함.
+  * **참조 파일:** [SyncHistory.java](file:///c:/Dev/project/iam/iam-core/src/main/java/com/iam/core/domain/entity/SyncHistory.java)
+  * **추적성 강화:** 모든 이벤트는 `traceId`를 공유하며, `parent_history_id`를 통한 단계별 부모-자식 관계를 형성하여 `HR -> Core -> AD` 흐름을 추적함.
+  * **메타데이터:** `duration_ms`를 통해 각 변환/반영 단계별 처리 속도를 측정하고, `expires_at`을 통해 이력 보관 주기를 관리함.
+  * **데이터 평탄화:** `UniversalData` 구조를 자동으로 언래핑하여 JSON 페이로드 가독성을 확보함.
 
 * **데이터베이스:** `IAM_TRANS_RULE_META`, `IAM_TRANS_RULE_VERSION` 등 규칙 버전 관리 테이블 참조 (`schema.sql`).
 
@@ -84,5 +86,6 @@ graph LR
 
 [x] Core/Extension 하이브리드 스토리지 설계
 [x] TSID 기반 엔티티 구조 설계
-[ ] Groovy Rule Engine 샌드박스 구현
-[ ] HR Connector 스냅샷 및 변경 이벤트 로직
+[x] Groovy Rule Engine 샌드박스 및 동적 변환 엔진 구현
+[x] HR Connector 스냅샷 가데이터 및 변경 이벤트 인제스트 로직
+[x] 계층적 동기화 이력 관리 (Traceability) 및 페이로드 평탄화 구현

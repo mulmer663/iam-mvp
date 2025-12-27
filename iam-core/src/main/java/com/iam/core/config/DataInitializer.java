@@ -27,7 +27,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Profile({ "local", "dev" }) // 운영 환경에서는 실행되지 않도록 제한
+@Profile({ "local", "dev", "default" }) // 운영 환경에서는 실행되지 않도록 제한
 public class DataInitializer implements CommandLineRunner {
 
   private final IamUserRepository iamUserRepository;
@@ -39,8 +39,11 @@ public class DataInitializer implements CommandLineRunner {
   @Override
   @Transactional
   public void run(String... args) throws Exception {
+    // Rule Engine Data (Always try to init if mappings are missing)
+    initRuleEngineData();
+
     if (iamUserRepository.count() > 0) {
-      log.info("ℹ️ DB에 이미 데이터가 존재하여 초기화를 건너뜁니다.");
+      log.info("ℹ️ DB에 이미 사용자 데이터가 존재하여 사용자 초기화를 건너뜁니다.");
       return;
     }
 
@@ -48,35 +51,32 @@ public class DataInitializer implements CommandLineRunner {
 
     List<IamUser> users = new ArrayList<>();
 
-    // User 1: Admin
+    // User 1: Super Admin
     users.add(createUser(
-        "admin", "System", "Administrator", "Manager", true, "admin@iam.com",
-        "DEPT01", null, null));
+        "super.admin", "Michael", "Admin", "IT Director", true, "michael.admin@global-iam.com",
+        "GLOBAL-IT", "ADM001", null));
 
-    // User 2: Hong Gildong
-    IamUser hong = createUser(
-        "hong.g", "Hong", "Gildong", "Principal Engineer", true, "hong@test.com",
-        "DEPT01-1", "H001", null);
-    users.add(hong);
+    // User 2: Jane Doe (Auditor)
+    IamUser jane = createUser(
+        "jane.doe", "Jane", "Doe", "External Auditor", true, "jane.doe@audit-firm.com",
+        "AUDIT-01", "EXT-101", null);
+    users.add(jane);
 
-    // User 3: Kim Free
+    // User 3: John Smith (Security)
     users.add(createUser(
-        "kim.f", "Kim", "Free", "Junior Engineer", true, "kim@iam.com",
-        "DEPT01-2", null, null));
+        "john.smith", "John", "Smith", "Security Analyst", true, "john.smith@global-iam.com",
+        "SEC-OPS", "SEC-888", null));
 
-    // User 4: Lee Planner
+    // User 4: Sarah Vendor (Contractor)
     users.add(createUser(
-        "lee.p", "Lee", "Planner", "Associate", false, "lee@iam.com",
-        "DEPT02-1", null, null));
+        "sarah.v", "Sarah", "Vendor", "Implementation Partner", false, "sarah.v@partner.com",
+        "EXTERNAL-V", "VND-444", null));
 
     iamUserRepository.saveAll(users);
     log.info("✅ [DataInitializer] 총 {}건의 사용자 데이터를 생성했습니다.", users.size());
 
     // Sync History Data
-    createSyncHistory(hong);
-
-    // Rule Engine Data
-    initRuleEngineData();
+    createSyncHistory(jane);
   }
 
   private void initRuleEngineData() {
@@ -104,6 +104,7 @@ public class DataInitializer implements CommandLineRunner {
 
             // Extension mapping
             res.employeeNumber = source.empNo
+            res.department = source.deptCode
             return res
         """;
 

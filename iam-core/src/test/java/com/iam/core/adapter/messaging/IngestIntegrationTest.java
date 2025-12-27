@@ -1,6 +1,5 @@
 package com.iam.core.adapter.messaging;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iam.core.domain.entity.*;
 import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.*;
@@ -42,9 +41,6 @@ class IngestIntegrationTest {
 
         @Autowired
         private TransMappingRepository transMappingRepository;
-
-        @Autowired
-        private ObjectMapper objectMapper;
 
         @BeforeEach
         void setUp() {

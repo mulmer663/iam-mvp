@@ -41,6 +41,12 @@ public class SyncHistory {
     @Column(name = "target_user")
     private String targetUser;
 
+    @Column(name = "message", columnDefinition = "TEXT")
+    private String message; // Human readable message
+
+    @Column(name = "payload", columnDefinition = "TEXT")
+    private String payload; // Copy of requestPayload/responsePayload for CSV compat
+
     @Column(name = "request_payload", columnDefinition = "TEXT")
     private String requestPayload; // Raw snapshot or pre-transformation data
 

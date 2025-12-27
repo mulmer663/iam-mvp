@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-
 import java.util.Map;
 
 /**
@@ -32,9 +31,11 @@ public class IngestListener {
 
     @RabbitListener(queues = com.iam.core.config.IamRabbitConfig.INGEST_QUEUE_NAME)
     public void onRawDataIngested(Map<String, Object> event) {
+        long startTime = System.currentTimeMillis();
         String traceId = "UNKNOWN";
         String systemId = "UNKNOWN";
         Map<String, Object> payload = null;
+        Long parentId = null;
 
         try {
             traceId = (String) event.get("traceId");
@@ -43,19 +44,22 @@ public class IngestListener {
             Map<String, Object> rawPayload = (Map<String, Object>) event.get("payload");
             payload = rawPayload;
 
+            // Extract identifier early for consistent logging
+            String externalId = (String) payload.getOrDefault("externalId", payload.get("empNo"));
+            String initialTarget = externalId != null ? externalId : "SYSTEM";
+
             log.info("Processing ingestion event: traceId={}, systemId={}", traceId, systemId);
 
-            // 1. Initial Logging
-            syncHistoryService.logSuccess(traceId, "RAW_INGEST", "SYSTEM", systemId, payload, "Raw data received");
+            // 1. Initial Logging (Use initialTarget instead of "SYSTEM")
+            parentId = syncHistoryService.logSuccess(traceId, "RAW_INGEST", initialTarget, systemId, payload,
+                    "Raw data received");
 
             // 2. Transformation
             Map<String, UniversalData> transformedData = transformationService.transform(systemId, payload);
-            syncHistoryService.logSuccess(traceId, "TRANSFORM", "SYSTEM", systemId, transformedData,
-                    "Transformation completed");
+            syncHistoryService.logSuccess(traceId, "TRANSFORM", initialTarget, systemId, transformedData,
+                    "Transformation completed", parentId, System.currentTimeMillis() - startTime);
 
             // 3. Identity Correlation
-            // Fallback: Use empNo if externalId is missing (common in HR connector)
-            String externalId = (String) payload.getOrDefault("externalId", payload.get("empNo"));
             if (externalId == null)
                 throw new RuntimeException("Missing externalId or empNo in payload");
 
@@ -82,7 +86,7 @@ public class IngestListener {
 
             // 5. Success Logging
             syncHistoryService.logSuccess(traceId, "IAM_UPDATE", user.getUserName(), systemId, transformedData,
-                    "IAM User updated successfully");
+                    "IAM User updated successfully", parentId, System.currentTimeMillis() - startTime);
 
         } catch (Exception e) {
             log.error("Failed to process raw ingestion: traceId={}", traceId, e);
@@ -93,7 +97,6 @@ public class IngestListener {
                     systemId,
                     payload,
                     "Processing failed: " + e.getMessage());
-            // TODO: Log to SyncTransformFailure table specifically if it's a rule error
         }
     }
 }

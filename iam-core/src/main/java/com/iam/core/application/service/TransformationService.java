@@ -45,7 +45,7 @@ public class TransformationService {
 
         // 2. Load Mappings
         List<TransMapping> mappings = mappingRepository.findBySystemIdOrderByExecOrderAsc(systemId);
-        log.info("Found {} rule mappings for system: {}", mappings.size(), systemId);
+        log.info("Found {} rule mappings for system: {} (Raw Keys: {})", mappings.size(), systemId, rawData.keySet());
 
         // 3. Execute Rules Sequentially
         for (TransMapping mapping : mappings) {
@@ -67,6 +67,7 @@ public class TransformationService {
                         params);
 
                 if (result instanceof Map<?, ?> resultMap) {
+                    log.debug("Rule result: {}", resultMap);
                     // Update targetMap with changes
                     resultMap.forEach((k, v) -> {
                         if (k instanceof String key) {

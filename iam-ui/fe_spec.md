@@ -117,11 +117,16 @@ For entities with many attributes (SCIM 2.0), snapshots implement:
 
 ### 4.7 Sync Pipeline (Event Tracing) [NEW]
 
-The `SyncDetail` view implements a 3-step pipeline visualization:
+The `SyncDetail` view implements a 3-step pipeline visualization using the backend's hierarchical logging:
 
-1. **Source**: Links to the original HR event that triggered the change.
-2. **Core**: The IAM internal modification record.
-3. **Target**: Grid of downstream provisioning events (AD, GitHub, etc.) triggered by the same Trace ID.
+1. **Hierarchy**: Use `parent_history_id` to link events (e.g., `RAW_INGEST` -> `TRANSFORM` -> `IAM_UPDATE`).
+2. **Performance**: Display `duration_ms` for each stage to identify bottlenecks.
+3. **Payloads**:
+   - `message`: Use the human-readable outcome message.
+   - `payload`: Use the flattened JSON (unwrapped `UniversalData`) for display.
+4. **Source**: Links to the original HR event that triggered the change.
+5. **Core**: The IAM internal modification record.
+6. **Target**: Grid of downstream provisioning events (AD, GitHub, etc.) triggered by the same Trace ID.
 
 Cross-pane navigation within the pipeline uses `highlightPane` if the target is already open.
 
