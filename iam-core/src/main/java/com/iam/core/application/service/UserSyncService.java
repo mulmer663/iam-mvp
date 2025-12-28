@@ -13,6 +13,7 @@ import com.iam.core.domain.exception.IamBusinessException;
 import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.IdentityLinkRepository;
 import com.iam.core.domain.vo.UniversalData;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ public class UserSyncService {
     private final IamUserUpdateService iamUserUpdateService;
     private final IdentityCorrelationService correlationService;
     private final UniversalMapper universalMapper;
+    private final ObjectMapper objectMapper;
 
     private static final String PROVISION_ROUTING_KEY = "cmd.ad.user.create";
     private static final String EXCHANGE_NAME = "iam.topic";
@@ -81,21 +83,10 @@ public class UserSyncService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> convertToMap(UserSyncPayload payload) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(AttributeConstants.EXTERNAL_ID, payload.getExternalId());
-        map.put(AttributeConstants.USERNAME, payload.getUserName());
-        if (payload.getName() != null) {
-            map.put(AttributeConstants.FAMILY_NAME, payload.getName().getFamilyName());
-            map.put(AttributeConstants.GIVEN_NAME, payload.getName().getGivenName());
-            map.put(AttributeConstants.FORMATTED_NAME, payload.getName().getFormatted());
-        }
-        map.put(AttributeConstants.TITLE, payload.getTitle());
-        map.put(AttributeConstants.ACTIVE, payload.getActive());
-        if (payload.getExtensions() != null) {
-            map.putAll(payload.getExtensions());
-        }
-        return map;
+        // Dynamic conversion to map to avoid hard-coding fields
+        return objectMapper.convertValue(payload, Map.class);
     }
 
     private void createNewUser(String externalId, Map<String, UniversalData> attributes,

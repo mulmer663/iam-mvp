@@ -48,13 +48,18 @@ class UserSyncServiceTest {
         void processHrSync_NewUser_ShouldSaveHybrid() {
                 // Given
                 String hrEmpId = "H001";
-                var payload = new UserSyncPayload(
-                                hrEmpId,
-                                "hong.g@iam.com",
-                                new UserSyncPayload.Name("Hong", "Gildong", "Hong Gildong"),
-                                "Senior Engineer",
-                                true,
-                                Map.of("empNo", hrEmpId, "deptName", "Dev Team"));
+                var payload = UserSyncPayload.builder()
+                                .externalId(hrEmpId)
+                                .userName("hong.g@iam.com")
+                                .name(UserSyncPayload.Name.builder()
+                                                .familyName("Hong")
+                                                .givenName("Gildong")
+                                                .formatted("Hong Gildong")
+                                                .build())
+                                .title("Senior Engineer")
+                                .active(true)
+                                .extensions(Map.of("empNo", hrEmpId, "deptName", "Dev Team"))
+                                .build();
 
                 UserSyncEvent event = new UserSyncEvent("trace-123", "SAP_HR", "USER_SYNC", LocalDateTime.now(),
                                 payload);
@@ -83,19 +88,33 @@ class UserSyncServiceTest {
         void processHrSync_UpdateUser_ShouldUpdateHybrid() {
                 // Given
                 String hrEmpId = "H002";
-                var firstPayload = new UserSyncPayload(
-                                hrEmpId, "kim.f@iam.com",
-                                new UserSyncPayload.Name("Kim", "Free", "Kim Free"),
-                                "Junior", true,
-                                Map.of("empNo", hrEmpId, "deptName", "Dev Team"));
+                var firstPayload = UserSyncPayload.builder()
+                                .externalId(hrEmpId)
+                                .userName("kim.f@iam.com")
+                                .name(UserSyncPayload.Name.builder()
+                                                .familyName("Kim")
+                                                .givenName("Free")
+                                                .formatted("Kim Free")
+                                                .build())
+                                .title("Junior")
+                                .active(true)
+                                .extensions(Map.of("empNo", hrEmpId, "deptName", "Dev Team"))
+                                .build();
                 userSyncService.processSync(
                                 new UserSyncEvent("trace-1", "SAP_HR", "USER_SYNC", LocalDateTime.now(), firstPayload));
 
-                var updatePayload = new UserSyncPayload(
-                                hrEmpId, "kim.f@iam.com",
-                                new UserSyncPayload.Name("Kim", "Future", "Kim Future"),
-                                "Senior", true,
-                                Map.of("empNo", hrEmpId, "deptName", "IT Team"));
+                var updatePayload = UserSyncPayload.builder()
+                                .externalId(hrEmpId)
+                                .userName("kim.f@iam.com")
+                                .name(UserSyncPayload.Name.builder()
+                                                .familyName("Kim")
+                                                .givenName("Future")
+                                                .formatted("Kim Future")
+                                                .build())
+                                .title("Senior")
+                                .active(true)
+                                .extensions(Map.of("empNo", hrEmpId, "deptName", "IT Team"))
+                                .build();
 
                 // When
                 userSyncService.processSync(

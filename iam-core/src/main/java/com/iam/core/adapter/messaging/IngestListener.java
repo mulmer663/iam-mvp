@@ -9,7 +9,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,6 +22,7 @@ import java.util.UUID;
 public class IngestListener {
 
     private final UserSyncService userSyncService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @RabbitListener(queues = com.iam.core.config.IamRabbitConfig.INGEST_QUEUE_NAME)
     public void onRawDataIngested(Map<String, Object> message) {
@@ -39,8 +39,8 @@ public class IngestListener {
                 return;
             }
 
-            // Convert raw map to DTO
-            UserSyncPayload payload = mapToPayload(rawPayload);
+            // Convert raw map to DTO dynamicly using ObjectMapper
+            UserSyncPayload payload = objectMapper.convertValue(rawPayload, UserSyncPayload.class);
             UserSyncEvent event = new UserSyncEvent(traceId, systemId, "USER_SYNC", LocalDateTime.now(), payload);
 
             // Delegate to Application Service
@@ -49,34 +49,5 @@ public class IngestListener {
         } catch (Exception e) {
             log.error("Failed to adapt raw ingestion: traceId={}", traceId, e);
         }
-    }
-
-    private UserSyncPayload mapToPayload(Map<String, Object> map) {
-        UserSyncPayload payload = new UserSyncPayload();
-        payload.setExternalId((String) map.get("externalId"));
-        payload.setUserName((String) map.get("userName"));
-        payload.setTitle((String) map.get("title"));
-        payload.setActive(map.get("active") instanceof Boolean b ? b : true);
-
-        // Name
-        UserSyncPayload.Name name = new UserSyncPayload.Name();
-        name.setFamilyName((String) map.get("familyName"));
-        name.setGivenName((String) map.get("givenName"));
-        name.setFormatted((String) map.get("formattedName"));
-        payload.setName(name);
-
-        // All others as extensions
-        map.forEach((k, v) -> {
-            if (!isCoreField(k)) {
-                payload.addExtension(k, v);
-            }
-        });
-
-        return payload;
-    }
-
-    private boolean isCoreField(String key) {
-        return List.of("externalId", "userName", "title", "active", "familyName", "givenName", "formattedName")
-                .contains(key);
     }
 }

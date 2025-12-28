@@ -1,6 +1,8 @@
 package com.iam.core.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import lombok.Builder;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +19,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserSyncPayload {
 
         @NotBlank(message = "externalId는 필수입니다")
@@ -27,7 +30,8 @@ public class UserSyncPayload {
         private String userName;
 
         @Valid
-        private Name name;
+        @Builder.Default
+        private Name name = new Name();
 
         @Size(max = 200, message = "title은 200자 이하여야 합니다")
         private String title;
@@ -35,25 +39,46 @@ public class UserSyncPayload {
         @NotNull(message = "active 상태는 필수입니다")
         private Boolean active;
 
+        @Builder.Default
         private Map<String, Object> extensions = new HashMap<>();
 
         @JsonAnySetter
         public void addExtension(String key, Object value) {
-                this.extensions.put(key, value);
+                if (key == null)
+                        return;
+
+                // Manually route known SCIM name fields if they come in flat
+                // This is a common requirement for flat-to-nested mapping from dynamic sources
+                switch (key) {
+                        case "familyName", "lastName" -> {
+                                if (value != null)
+                                        name.setFamilyName(value.toString());
+                        }
+                        case "givenName", "firstName" -> {
+                                if (value != null)
+                                        name.setGivenName(value.toString());
+                        }
+                        case "formattedName", "formatted", "displayName" -> {
+                                if (value != null)
+                                        name.setFormatted(value.toString());
+                        }
+                        default -> this.extensions.put(key, value);
+                }
         }
 
         @Getter
         @Setter
         @NoArgsConstructor
         @AllArgsConstructor
+        @Builder
         public static class Name {
-                @Size(max = 50, message = "familyName은 50자 이하여야 합니다")
+                @com.fasterxml.jackson.annotation.JsonAlias({ "familyName", "lastName" })
                 private String familyName;
 
-                @Size(max = 50, message = "givenName은 50자 이하여야 합니다")
+                @com.fasterxml.jackson.annotation.JsonAlias({ "givenName", "firstName" })
                 private String givenName;
 
-                @Size(max = 100, message = "formatted는 100자 이하여야 합니다")
+                @com.fasterxml.jackson.annotation.JsonAlias({ "formatted", "formattedName", "displayName" })
                 private String formatted;
         }
 }
