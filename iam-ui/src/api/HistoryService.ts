@@ -39,6 +39,8 @@ export const HistoryService = {
         // Handle rich wrapping (syncType, snapshot) if present
         const syncType = payloadObj.syncType || (dto.type === 'HR_SYNC' ? 'JOIN' : undefined);
         const snapshot = payloadObj.snapshot || undefined;
+        const mappings = payloadObj.mappings || undefined;
+        const changes = payloadObj.changes || undefined;
         const actualPayload = payloadObj.snapshot ? payloadObj.snapshot.data : payloadObj;
 
         // Ensure time is formatted nicely (remove T if present)
@@ -55,6 +57,8 @@ export const HistoryService = {
             payload: actualPayload,
             syncType: syncType as any,
             snapshot: snapshot,
+            mappings: mappings,
+            changes: changes,
             // Flatten relevant fields from payload for UI compatibility
             ...(actualPayload || {})
         };

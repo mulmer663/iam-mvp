@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +35,9 @@ public class UserSyncService {
     private final IdentityLinkRepository identityLinkRepository;
     private final MessagePublisher messagePublisher;
     private final SyncHistoryService syncHistoryService;
+    private final TransformationService transformationService;
+    private final IamUserUpdateService iamUserUpdateService;
+    private final UniversalMapper universalMapper;
 
     private static final String PROVISION_ROUTING_KEY = "cmd.ad.user.create";
     private static final String EXCHANGE_NAME = "iam.topic";
@@ -45,147 +49,144 @@ public class UserSyncService {
     @Transactional
     public void processHrSync(UserSyncEvent event) {
         String traceId = event.traceId();
-        log.info("Processing HR sync for traceId: {}", traceId);
+        log.info("Processing HR sync migration for traceId: {}", traceId);
 
         var payload = event.payload();
+        Map<String, Object> rawData = convertToMap(payload);
 
         try {
+            // 1. Transform Attribute using Engine
+            Map<String, com.iam.core.domain.vo.UniversalData> transformed = transformationService.transform("SAP_HR",
+                    rawData);
+
+            // 2. Correlation & Update
             identityLinkRepository.findBySystemTypeAndExternalId("HR", payload.getExternalId())
                     .ifPresentOrElse(
-                            link -> updateExistingUser(link, payload, traceId),
-                            () -> createNewUser(payload, traceId));
-        } catch (DataAccessException e) {
-            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), "SAP_HR", payload,
-                    "Database error: " + e.getMessage());
-            throw new IamBusinessException(
-                    ErrorCode.DATABASE_ERROR,
-                    traceId,
-                    "사용자 동기화 중 데이터베이스 오류가 발생했습니다",
-                    e);
+                            link -> updateExistingUser(link, transformed, rawData, traceId),
+                            () -> createNewUser(payload.getExternalId(), transformed, rawData, traceId));
+
         } catch (Exception e) {
-            String message = "Unexpected error: " + e.getMessage();
-            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), "SAP_HR", payload, message);
+            log.error("Sync failed for traceId: {}", traceId, e);
+            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), "SAP_HR", payload,
+                    "Error: " + e.getMessage());
 
             if (e instanceof IamBusinessException) {
-                throw e; // 이미 처리된 비즈니스 예외는 그대로 전파
+                throw e;
             }
-            throw new IamBusinessException(
-                    ErrorCode.MESSAGE_PROCESSING_ERROR,
-                    traceId,
-                    message,
-                    e);
+            throw new IamBusinessException(ErrorCode.MESSAGE_PROCESSING_ERROR, traceId, e.getMessage(), e);
         }
     }
 
-    private void createNewUser(UserSyncPayload payload, String traceId) {
-        log.info("Creating new user for HR ID: {}", payload.getExternalId());
+    private Map<String, Object> convertToMap(UserSyncPayload payload) {
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("externalId", payload.getExternalId());
+        map.put("userName", payload.getUserName());
+        if (payload.getName() != null) {
+            map.put("familyName", payload.getName().getFamilyName());
+            map.put("givenName", payload.getName().getGivenName());
+            map.put("formattedName", payload.getName().getFormatted());
+        }
+        map.put("title", payload.getTitle());
+        map.put("active", payload.getActive());
+        if (payload.getExtensions() != null) {
+            map.putAll(payload.getExtensions());
+        }
+        return map;
+    }
 
-        var user = buildNewUser(payload);
-        iamUserRepository.save(user);
+    private void createNewUser(String externalId, Map<String, com.iam.core.domain.vo.UniversalData> attributes,
+            Map<String, Object> rawData, String traceId) {
+        log.info("Creating new user via engine for HR ID: {}", externalId);
 
-        var link = createIdentityLink(user.getId(), payload.getExternalId());
+        var user = iamUserUpdateService.create(externalId, attributes);
+        var link = createIdentityLink(user.getId(), externalId);
         identityLinkRepository.save(link);
 
-        publishProvisioningCommand(user, payload.getExtensions());
+        publishProvisioningCommand(user, extractRawExtensions(attributes));
 
-        // Wrap payload for history
+        // Rich History
         Map<String, Object> historyPayload = Map.of(
                 "syncType", "JOIN",
+                "mappings", generateMappings("HR", attributes),
                 "snapshot", Map.of(
                         "layer", "HR",
-                        "data", payload));
+                        "data", rawData));
 
         syncHistoryService.logSuccess(traceId, "HR_SYNC", user.getUserName(), "SAP_HR", historyPayload,
-                "User created successfully");
-        log.info("Successfully created user with ID: {}", user.getId());
+                "User created via engine");
     }
 
-    private void updateExistingUser(IdentityLink link, UserSyncPayload payload, String traceId) {
-        log.info("Updating existing user for HR ID: {}", link.getExternalId());
+    private void updateExistingUser(IdentityLink link, Map<String, com.iam.core.domain.vo.UniversalData> attributes,
+            Map<String, Object> rawData, String traceId) {
+        log.info("Updating existing user via engine for HR ID: {}", link.getExternalId());
 
-        iamUserRepository.findById(link.getIamUserId())
-                .ifPresentOrElse(
-                        user -> {
-                            updateUserFields(user, payload);
-                            updateUserExtensions(user, payload);
-                            iamUserRepository.save(user);
-                            publishProvisioningCommand(user, payload.getExtensions());
+        iamUserRepository.findById(link.getIamUserId()).ifPresentOrElse(
+                user -> {
+                    // Capture old state for diff
+                    Map<String, Object> oldState = captureState(user);
 
-                            // Wrap payload for history
-                            Map<String, Object> historyPayload = Map.of(
-                                    "syncType", "UPDATE_SIMPLE",
-                                    "snapshot", Map.of(
-                                            "layer", "HR",
-                                            "data", payload));
+                    iamUserUpdateService.update(user, attributes);
+                    publishProvisioningCommand(user, extractRawExtensions(attributes));
 
-                            syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), "SAP_HR",
-                                    historyPayload,
-                                    "User updated successfully");
-                            log.info("Successfully updated user with ID: {}", user.getId());
-                        },
-                        () -> {
-                            String msg = "IdentityLink exists but User not found for ID: " + link.getIamUserId();
-                            syncHistoryService.logFailure(traceId, "USER_UPDATE", payload.getUserName(), "SAP_HR",
-                                    payload, msg);
-                            throw new IamBusinessException(
-                                    ErrorCode.USER_NOT_FOUND,
-                                    traceId,
-                                    msg);
-                        });
+                    // Calculate changes
+                    List<Map<String, Object>> changes = calculateChanges(oldState, captureState(user));
+
+                    // Rich History
+                    Map<String, Object> historyPayload = new HashMap<String, Object>();
+                    historyPayload.put("syncType", changes.isEmpty() ? "UPDATE_SIMPLE" : "UPDATE_CRITICAL");
+                    historyPayload.put("changes", changes);
+                    historyPayload.put("mappings", generateMappings("HR", attributes));
+                    historyPayload.put("snapshot", Map.of("layer", "HR", "data", rawData));
+
+                    syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), "SAP_HR",
+                            historyPayload, "User updated via engine");
+                },
+                () -> {
+                    throw new IamBusinessException(ErrorCode.USER_NOT_FOUND, traceId,
+                            "User not found: " + link.getIamUserId());
+                });
     }
 
-    private IamUser buildNewUser(UserSyncPayload payload) {
-        var user = new IamUser();
-        user.setExternalId(payload.getExternalId());
-        updateUserFields(user, payload);
-        user.setResourceType("User");
-        user.setCreated(LocalDateTime.now());
-        user.setLastModified(LocalDateTime.now());
-
-        var extension = buildUserExtension(user, payload);
-        user.setExtension(extension);
-
-        return user;
+    private Map<String, Object> captureState(IamUser user) {
+        Map<String, Object> state = new HashMap<String, Object>();
+        state.put("userName", user.getUserName());
+        state.put("familyName", user.getFamilyName());
+        state.put("givenName", user.getGivenName());
+        state.put("title", user.getTitle());
+        state.put("active", user.isActive());
+        // Extensions could be added here if needed
+        return state;
     }
 
-    private IamUserExtension buildUserExtension(IamUser user, UserSyncPayload payload) {
-        var ext = new IamUserExtension();
-        ext.setUser(user);
-        ext.setSchemas(new ArrayList<>(List.of("urn:ietf:params:scim:schemas:core:2.0:User")));
-
-        if (payload.getExtensions() != null) {
-            payload.getExtensions().forEach((urn, data) -> {
-                if (!ext.getSchemas().contains(urn)) {
-                    ext.getSchemas().add(urn);
-                }
-                ext.getExtensions().put(urn, mapToExtensionData(urn, data));
-            });
-        }
-        return ext;
+    private List<Map<String, Object>> calculateChanges(Map<String, Object> oldState, Map<String, Object> newState) {
+        List<Map<String, Object>> changes = new ArrayList<>();
+        newState.forEach((k, v) -> {
+            Object oldVal = oldState.get(k);
+            if (v != null && !v.equals(oldVal)) {
+                changes.add(Map.of("field", k, "old", String.valueOf(oldVal), "new", String.valueOf(v)));
+            }
+        });
+        return changes;
     }
 
-    private void updateUserFields(IamUser user, UserSyncPayload payload) {
-        user.setUserName(payload.getUserName());
-        if (payload.getName() != null) {
-            user.setFamilyName(payload.getName().getFamilyName());
-            user.setGivenName(payload.getName().getGivenName());
-            user.setFormattedName(payload.getName().getFormatted());
-        }
-        user.setTitle(payload.getTitle());
-        user.setActive(payload.getActive());
-        user.setLastModified(LocalDateTime.now());
+    private List<Map<String, Object>> generateMappings(String from,
+            Map<String, com.iam.core.domain.vo.UniversalData> attributes) {
+        List<Map<String, Object>> mappings = new ArrayList<>();
+        attributes.forEach((k, v) -> {
+            mappings.add(Map.of(
+                    "fromLabel", from,
+                    "toLabel", "IAM",
+                    "fromField", k, // For now assuming 1:1 name for simplicity if not traceable
+                    "toField", k,
+                    "value", v.asString()));
+        });
+        return mappings;
     }
 
-    private void updateUserExtensions(IamUser user, UserSyncPayload payload) {
-        if (payload.getExtensions() != null && user.getExtension() != null) {
-            var ext = user.getExtension();
-            payload.getExtensions().forEach((urn, data) -> {
-                if (!ext.getSchemas().contains(urn)) {
-                    ext.getSchemas().add(urn);
-                }
-                ext.getExtensions().put(urn, mapToExtensionData(urn, data));
-            });
-        }
+    private Map<String, Object> extractRawExtensions(Map<String, com.iam.core.domain.vo.UniversalData> attributes) {
+        Map<String, Object> raw = new HashMap<String, Object>();
+        attributes.forEach((k, v) -> raw.put(k, v.getValue()));
+        return raw;
     }
 
     private IdentityLink createIdentityLink(Long iamUserId, String externalId) {
@@ -195,36 +196,6 @@ public class UserSyncService {
         link.setExternalId(externalId);
         link.setActive(true);
         return link;
-    }
-
-    private ExtensionData mapToExtensionData(String urn, Object data) {
-        if (ENTERPRISE_URN.equals(urn) && data instanceof Map<?, ?> map) {
-            return mapToEnterpriseExtension(map);
-        } else {
-            return mapToGenericExtension(data);
-        }
-    }
-
-    private EnterpriseUserExtension mapToEnterpriseExtension(Map<?, ?> map) {
-        var enterprise = new EnterpriseUserExtension();
-        enterprise.setEmployeeNumber(asString(map.get("employeeNumber")));
-        enterprise.setDepartment(asString(map.get("department")));
-        enterprise.setCostCenter(asString(map.get("costCenter")));
-        enterprise.setOrganization(asString(map.get("organization")));
-        enterprise.setDivision(asString(map.get("division")));
-        return enterprise;
-    }
-
-    private GenericExtension mapToGenericExtension(Object data) {
-        var generic = new GenericExtension();
-        if (data instanceof Map<?, ?> map) {
-            map.forEach((k, v) -> generic.add(k.toString(), v));
-        }
-        return generic;
-    }
-
-    private String asString(Object obj) {
-        return obj != null ? obj.toString() : null;
     }
 
     private void publishProvisioningCommand(IamUser user, Map<String, Object> attributes) {

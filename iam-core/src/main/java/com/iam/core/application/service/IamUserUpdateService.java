@@ -68,7 +68,7 @@ public class IamUserUpdateService {
 
     private void applyCoreAttributes(IamUser user, Map<String, UniversalData> attributes) {
         attributes.forEach((key, data) -> {
-            if (CORE_ATTRIBUTES.contains(key)) {
+            if (CORE_ATTRIBUTES.contains(key) && data != null) {
                 switch (key) {
                     case "userName" -> user.setUserName(data.asString());
                     case "active" -> {

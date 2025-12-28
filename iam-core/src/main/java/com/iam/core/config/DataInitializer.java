@@ -27,7 +27,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Profile({ "local", "dev", "default" }) // 운영 환경에서는 실행되지 않도록 제한
+@Profile({ "local", "dev", "test", "default" }) // 운영 환경에서는 실행되지 않도록 제한
 public class DataInitializer implements CommandLineRunner {
 
   private final IamUserRepository iamUserRepository;
