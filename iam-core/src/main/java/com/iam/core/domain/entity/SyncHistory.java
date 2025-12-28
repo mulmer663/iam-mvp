@@ -41,6 +41,9 @@ public class SyncHistory {
     @Column(name = "target_user")
     private String targetUser;
 
+    @Column(name = "iam_user_id")
+    private Long iamUserId;
+
     @Column(name = "message", columnDefinition = "TEXT")
     private String message; // Human readable message
 

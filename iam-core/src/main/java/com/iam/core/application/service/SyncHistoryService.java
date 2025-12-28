@@ -23,30 +23,44 @@ public class SyncHistoryService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public Long logSuccess(String traceId, String type, String targetUser, String sourceSystem, Object payload,
+    public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
+            Object payload,
             String responsePayload) {
-        return logSuccess(traceId, type, targetUser, sourceSystem, payload, responsePayload, null, null);
+        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, payload, responsePayload, null, null);
     }
 
     @Transactional
-    public Long logSuccess(String traceId, String type, String targetUser, String sourceSystem, Object payload,
+    public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
+            Object payload,
             String responsePayload, Long parentId, Long duration) {
-        return saveHistory(traceId, type, SyncConstants.STATUS_SUCCESS, targetUser, sourceSystem, null, payload,
+        return saveHistory(traceId, type, SyncConstants.STATUS_SUCCESS, targetUser, iamUserId, sourceSystem, null,
+                payload,
                 responsePayload, parentId,
                 duration);
     }
 
     @Transactional
-    public void logFailure(String traceId, String type, String targetUser, String sourceSystem, Object payload,
+    public void logFailure(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
+            Object payload,
             String errorDetails) {
-        saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, sourceSystem, null, payload, errorDetails,
+        saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, iamUserId, sourceSystem, null, payload,
+                errorDetails,
                 null, null);
     }
 
     @Transactional(readOnly = true)
     public List<HistoryResponse> getHistory(String userId, String targetUser) {
         List<SyncHistory> list;
-        if (targetUser != null && !targetUser.isBlank()) {
+        if (userId != null && !userId.isBlank()) {
+            try {
+                Long iamUserId = Long.parseLong(userId);
+                list = syncHistoryRepository.findByIamUserId(iamUserId);
+            } catch (NumberFormatException e) {
+                // Fallback or empty if not a valid Long
+                log.warn("Invalid userId format for history lookup: {}", userId);
+                list = List.of();
+            }
+        } else if (targetUser != null && !targetUser.isBlank()) {
             list = syncHistoryRepository.findByTargetUser(targetUser);
         } else {
             list = syncHistoryRepository.findAllByOrderByCreatedAtDesc();
@@ -57,7 +71,8 @@ public class SyncHistoryService {
                 .toList();
     }
 
-    private Long saveHistory(String traceId, String type, String status, String targetUser, String sourceSystem,
+    private Long saveHistory(String traceId, String type, String status, String targetUser, Long iamUserId,
+            String sourceSystem,
             String targetSystem, Object requestPayload, String responsePayload, Long parentHistoryId,
             Long durationMs) {
         try {
@@ -66,6 +81,7 @@ public class SyncHistoryService {
                     .type(type)
                     .status(status)
                     .targetUser(targetUser)
+                    .iamUserId(iamUserId)
                     .sourceSystem(sourceSystem)
                     .targetSystem(targetSystem)
                     .message(responsePayload)

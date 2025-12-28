@@ -1,11 +1,13 @@
 package com.iam.core.application.service;
 
+import com.iam.core.domain.constant.AttributeConstants;
+import com.iam.core.domain.constant.SyncConstants;
 import com.iam.core.domain.entity.EnterpriseUserExtension;
 import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.IamUserRepository;
 import com.iam.core.domain.repository.IdentityLinkRepository;
 import com.iam.core.application.dto.UserSyncEvent;
-import com.iam.core.application.dto.UserSyncPayload;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,20 +50,19 @@ class UserSyncServiceTest {
         void processHrSync_NewUser_ShouldSaveHybrid() {
                 // Given
                 String hrEmpId = "H001";
-                var payload = UserSyncPayload.builder()
-                                .externalId(hrEmpId)
-                                .userName("hong.g@iam.com")
-                                .name(UserSyncPayload.Name.builder()
-                                                .familyName("Hong")
-                                                .givenName("Gildong")
-                                                .formatted("Hong Gildong")
-                                                .build())
-                                .title("Senior Engineer")
-                                .active(true)
-                                .extensions(Map.of("empNo", hrEmpId, "deptName", "Dev Team"))
-                                .build();
+                Map<String, Object> payload = Map.of(
+                                AttributeConstants.EXTERNAL_ID, hrEmpId,
+                                AttributeConstants.USERNAME, "hong.g@iam.com",
+                                AttributeConstants.FAMILY_NAME, "Hong",
+                                AttributeConstants.GIVEN_NAME, "Gildong",
+                                AttributeConstants.FORMATTED_NAME, "Hong Gildong",
+                                AttributeConstants.TITLE, "Senior Engineer",
+                                AttributeConstants.ACTIVE, true,
+                                AttributeConstants.EMP_NO, hrEmpId,
+                                AttributeConstants.DEPT_NAME, "Dev Team");
 
-                UserSyncEvent event = new UserSyncEvent("trace-123", "SAP_HR", "USER_SYNC", LocalDateTime.now(),
+                UserSyncEvent event = new UserSyncEvent("trace-123", "SAP_HR", SyncConstants.EVENT_USER_SYNC,
+                                LocalDateTime.now(),
                                 payload);
 
                 // When
@@ -88,37 +89,36 @@ class UserSyncServiceTest {
         void processHrSync_UpdateUser_ShouldUpdateHybrid() {
                 // Given
                 String hrEmpId = "H002";
-                var firstPayload = UserSyncPayload.builder()
-                                .externalId(hrEmpId)
-                                .userName("kim.f@iam.com")
-                                .name(UserSyncPayload.Name.builder()
-                                                .familyName("Kim")
-                                                .givenName("Free")
-                                                .formatted("Kim Free")
-                                                .build())
-                                .title("Junior")
-                                .active(true)
-                                .extensions(Map.of("empNo", hrEmpId, "deptName", "Dev Team"))
-                                .build();
-                userSyncService.processSync(
-                                new UserSyncEvent("trace-1", "SAP_HR", "USER_SYNC", LocalDateTime.now(), firstPayload));
+                Map<String, Object> firstPayload = Map.of(
+                                AttributeConstants.EXTERNAL_ID, hrEmpId,
+                                AttributeConstants.USERNAME, "kim.f@iam.com",
+                                AttributeConstants.FAMILY_NAME, "Kim",
+                                AttributeConstants.GIVEN_NAME, "Free",
+                                AttributeConstants.FORMATTED_NAME, "Kim Free",
+                                AttributeConstants.TITLE, "Junior",
+                                AttributeConstants.ACTIVE, true,
+                                AttributeConstants.EMP_NO, hrEmpId,
+                                AttributeConstants.DEPT_NAME, "Dev Team");
 
-                var updatePayload = UserSyncPayload.builder()
-                                .externalId(hrEmpId)
-                                .userName("kim.f@iam.com")
-                                .name(UserSyncPayload.Name.builder()
-                                                .familyName("Kim")
-                                                .givenName("Future")
-                                                .formatted("Kim Future")
-                                                .build())
-                                .title("Senior")
-                                .active(true)
-                                .extensions(Map.of("empNo", hrEmpId, "deptName", "IT Team"))
-                                .build();
+                userSyncService.processSync(
+                                new UserSyncEvent("trace-1", "SAP_HR", SyncConstants.EVENT_USER_SYNC,
+                                                LocalDateTime.now(), firstPayload));
+
+                Map<String, Object> updatePayload = Map.of(
+                                AttributeConstants.EXTERNAL_ID, hrEmpId,
+                                AttributeConstants.USERNAME, "kim.f@iam.com",
+                                AttributeConstants.FAMILY_NAME, "Kim",
+                                AttributeConstants.GIVEN_NAME, "Future",
+                                AttributeConstants.FORMATTED_NAME, "Kim Future",
+                                AttributeConstants.TITLE, "Senior",
+                                AttributeConstants.ACTIVE, true,
+                                AttributeConstants.EMP_NO, hrEmpId,
+                                AttributeConstants.DEPT_NAME, "IT Team");
 
                 // When
                 userSyncService.processSync(
-                                new UserSyncEvent("trace-2", "SAP_HR", "USER_UPDATE", LocalDateTime.now(),
+                                new UserSyncEvent("trace-2", "SAP_HR", SyncConstants.EVENT_USER_UPDATE,
+                                                LocalDateTime.now(),
                                                 updatePayload));
 
                 // Then

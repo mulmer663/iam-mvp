@@ -11,4 +11,6 @@ public interface SyncHistoryRepository extends JpaRepository<SyncHistory, Long> 
     List<SyncHistory> findByTraceId(String traceId);
 
     List<SyncHistory> findByTargetUser(String targetUser);
+
+    List<SyncHistory> findByIamUserId(Long iamUserId);
 }

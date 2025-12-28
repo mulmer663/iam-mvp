@@ -2,9 +2,8 @@ package com.iam.core.application.service;
 
 import com.iam.core.application.dto.ProvisioningCommand;
 import com.iam.core.application.dto.UserSyncEvent;
-import com.iam.core.application.dto.UserSyncPayload;
+
 import com.iam.core.domain.constant.AttributeConstants;
-import com.iam.core.domain.constant.ScimConstants;
 import com.iam.core.domain.constant.SyncConstants;
 import com.iam.core.domain.constant.SystemConstants;
 import com.iam.core.domain.entity.*;
@@ -13,13 +12,11 @@ import com.iam.core.domain.exception.IamBusinessException;
 import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.IdentityLinkRepository;
 import com.iam.core.domain.vo.UniversalData;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,8 +38,6 @@ public class UserSyncService {
     private final TransformationService transformationService;
     private final IamUserUpdateService iamUserUpdateService;
     private final IdentityCorrelationService correlationService;
-    private final UniversalMapper universalMapper;
-    private final ObjectMapper objectMapper;
 
     private static final String PROVISION_ROUTING_KEY = "cmd.ad.user.create";
     private static final String EXCHANGE_NAME = "iam.topic";
@@ -56,8 +51,9 @@ public class UserSyncService {
         String systemId = event.systemId();
         log.info("Processing sync for system: {}, traceId: {}", systemId, traceId);
 
-        var payload = event.payload();
-        Map<String, Object> rawData = convertToMap(payload);
+        Map<String, Object> rawData = event.payload();
+        String externalId = (String) rawData.get(AttributeConstants.EXTERNAL_ID);
+        String userName = (String) rawData.get(AttributeConstants.USERNAME);
 
         try {
             // 1. Transform Attribute using Engine
@@ -65,15 +61,16 @@ public class UserSyncService {
                     rawData);
 
             // 2. Correlation & Update
-            correlationService.correlate(systemId, payload.getExternalId())
+            correlationService.correlate(systemId, externalId)
                     .ifPresentOrElse(
                             user -> updateExistingUser(user, transformed, rawData, systemId, traceId),
-                            () -> createNewUser(payload.getExternalId(), transformed, rawData, systemId, traceId));
+                            () -> createNewUser(externalId, transformed, rawData, systemId, traceId));
 
         } catch (Exception e) {
             log.error("Sync failed for traceId: {}", traceId, e);
-            syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR, payload.getUserName(), systemId,
-                    payload,
+            syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR,
+                    userName != null ? userName : "UNKNOWN", null, systemId,
+                    rawData,
                     "Error: " + e.getMessage());
 
             if (e instanceof IamBusinessException) {
@@ -81,12 +78,6 @@ public class UserSyncService {
             }
             throw new IamBusinessException(ErrorCode.MESSAGE_PROCESSING_ERROR, traceId, e.getMessage(), e);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> convertToMap(UserSyncPayload payload) {
-        // Dynamic conversion to map to avoid hard-coding fields
-        return objectMapper.convertValue(payload, Map.class);
     }
 
     private void createNewUser(String externalId, Map<String, UniversalData> attributes,
@@ -107,7 +98,8 @@ public class UserSyncService {
                         AttributeConstants.LAYER, systemId,
                         AttributeConstants.DATA, rawData));
 
-        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_CREATE, user.getUserName(), systemId,
+        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_CREATE, user.getUserName(), user.getId(),
+                systemId,
                 historyPayload,
                 "User created via engine");
     }
@@ -134,7 +126,8 @@ public class UserSyncService {
         historyPayload.put(AttributeConstants.SNAPSHOT,
                 Map.of(AttributeConstants.LAYER, systemId, AttributeConstants.DATA, rawData));
 
-        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_UPDATE, user.getUserName(), systemId,
+        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_UPDATE, user.getUserName(), user.getId(),
+                systemId,
                 historyPayload, "User updated via engine");
     }
 
@@ -154,7 +147,8 @@ public class UserSyncService {
         newState.forEach((k, v) -> {
             Object oldVal = oldState.get(k);
             if (v != null && !v.equals(oldVal)) {
-                changes.add(Map.of("field", k, "old", String.valueOf(oldVal), "new", String.valueOf(v)));
+                changes.add(Map.of(AttributeConstants.FIELD, k, AttributeConstants.OLD_VALUE, String.valueOf(oldVal),
+                        AttributeConstants.NEW_VALUE, String.valueOf(v)));
             }
         });
         return changes;
@@ -165,11 +159,11 @@ public class UserSyncService {
         List<Map<String, Object>> mappings = new ArrayList<>();
         attributes.forEach((k, v) -> {
             mappings.add(Map.of(
-                    "fromLabel", from,
-                    "toLabel", SystemConstants.SYSTEM_IAM,
-                    "fromField", k, // For now assuming 1:1 name for simplicity if not traceable
-                    "toField", k,
-                    "value", v.asString()));
+                    AttributeConstants.FROM_LABEL, from,
+                    AttributeConstants.TO_LABEL, SystemConstants.SYSTEM_IAM,
+                    AttributeConstants.FROM_FIELD, k, // For now assuming 1:1 name for simplicity if not traceable
+                    AttributeConstants.TO_FIELD, k,
+                    AttributeConstants.VALUE, v.asString()));
         });
         return mappings;
     }

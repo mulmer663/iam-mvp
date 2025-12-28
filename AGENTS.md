@@ -43,6 +43,7 @@
   - Do not use `@Autowired` on fields.
   - Do not hardcode secrets (DB passwords, API keys) in code; use environment variables.
   - Do not use System.out.println; use SLF4J logging.
+  - Do not use hardcoded strings for attribute names, event types, or status codes. Use `AttributeConstants` or `SyncConstants` instead.
 
 # Standards & References
 

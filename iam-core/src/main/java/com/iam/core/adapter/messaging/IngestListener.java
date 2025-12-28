@@ -2,7 +2,7 @@ package com.iam.core.adapter.messaging;
 
 import com.iam.core.application.service.UserSyncService;
 import com.iam.core.application.dto.UserSyncEvent;
-import com.iam.core.application.dto.UserSyncPayload;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -22,7 +22,6 @@ import java.util.UUID;
 public class IngestListener {
 
     private final UserSyncService userSyncService;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @RabbitListener(queues = com.iam.core.config.IamRabbitConfig.INGEST_QUEUE_NAME)
     public void onRawDataIngested(Map<String, Object> message) {
@@ -39,9 +38,7 @@ public class IngestListener {
                 return;
             }
 
-            // Convert raw map to DTO dynamicly using ObjectMapper
-            UserSyncPayload payload = objectMapper.convertValue(rawPayload, UserSyncPayload.class);
-            UserSyncEvent event = new UserSyncEvent(traceId, systemId, "USER_SYNC", LocalDateTime.now(), payload);
+            UserSyncEvent event = new UserSyncEvent(traceId, systemId, "USER_SYNC", LocalDateTime.now(), rawPayload);
 
             // Delegate to Application Service
             userSyncService.processSync(event);

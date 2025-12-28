@@ -18,6 +18,7 @@ public final class SyncConstants {
     public static final String EVENT_USER_UPDATE = "USER_UPDATE";
     public static final String EVENT_SYNC_ERROR = "SYNC_ERROR";
     public static final String EVENT_HR_SYNC = "HR_SYNC";
+    public static final String EVENT_USER_SYNC = "USER_SYNC";
     public static final String EVENT_AD_PROVISION = "AD_PROVISION";
 
     // Statuses
