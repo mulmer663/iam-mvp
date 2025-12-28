@@ -2,6 +2,7 @@ package com.iam.core.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iam.core.application.dto.HistoryResponse;
+import com.iam.core.domain.constant.SyncConstants;
 import com.iam.core.domain.entity.SyncHistory;
 import com.iam.core.domain.repository.SyncHistoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,14 +31,16 @@ public class SyncHistoryService {
     @Transactional
     public Long logSuccess(String traceId, String type, String targetUser, String sourceSystem, Object payload,
             String responsePayload, Long parentId, Long duration) {
-        return saveHistory(traceId, type, "SUCCESS", targetUser, sourceSystem, null, payload, responsePayload, parentId,
+        return saveHistory(traceId, type, SyncConstants.STATUS_SUCCESS, targetUser, sourceSystem, null, payload,
+                responsePayload, parentId,
                 duration);
     }
 
     @Transactional
     public void logFailure(String traceId, String type, String targetUser, String sourceSystem, Object payload,
             String errorDetails) {
-        saveHistory(traceId, type, "FAILURE", targetUser, sourceSystem, null, payload, errorDetails, null, null);
+        saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, sourceSystem, null, payload, errorDetails,
+                null, null);
     }
 
     @Transactional(readOnly = true)

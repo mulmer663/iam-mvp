@@ -33,7 +33,7 @@ public class UniversalMapper {
 
     public UniversalData toUniversalData(Object v) {
         if (v == null)
-            return null;
+            return new NullData();
 
         return switch (v) {
             case String s -> new StringData(s);

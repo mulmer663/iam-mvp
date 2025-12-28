@@ -6,7 +6,7 @@ package com.iam.core.domain.vo;
  * <strong> Don't move this interface to another package. Don't change the name
  * of this interface. </strong>
  */
-public sealed interface UniversalData permits StringData, IntData, TimeData, BooleanData {
+public sealed interface UniversalData permits StringData, IntData, TimeData, BooleanData, NullData {
     Object getValue();
 
     String asString();

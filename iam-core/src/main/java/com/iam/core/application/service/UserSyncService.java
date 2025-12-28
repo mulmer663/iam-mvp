@@ -3,15 +3,18 @@ package com.iam.core.application.service;
 import com.iam.core.application.dto.ProvisioningCommand;
 import com.iam.core.application.dto.UserSyncEvent;
 import com.iam.core.application.dto.UserSyncPayload;
+import com.iam.core.domain.constant.AttributeConstants;
+import com.iam.core.domain.constant.ScimConstants;
+import com.iam.core.domain.constant.SyncConstants;
+import com.iam.core.domain.constant.SystemConstants;
 import com.iam.core.domain.entity.*;
 import com.iam.core.domain.exception.ErrorCode;
 import com.iam.core.domain.exception.IamBusinessException;
 import com.iam.core.domain.port.MessagePublisher;
-import com.iam.core.domain.repository.IamUserRepository;
 import com.iam.core.domain.repository.IdentityLinkRepository;
+import com.iam.core.domain.vo.UniversalData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,43 +34,44 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserSyncService {
 
-    private final IamUserRepository iamUserRepository;
     private final IdentityLinkRepository identityLinkRepository;
     private final MessagePublisher messagePublisher;
     private final SyncHistoryService syncHistoryService;
     private final TransformationService transformationService;
     private final IamUserUpdateService iamUserUpdateService;
+    private final IdentityCorrelationService correlationService;
     private final UniversalMapper universalMapper;
 
     private static final String PROVISION_ROUTING_KEY = "cmd.ad.user.create";
     private static final String EXCHANGE_NAME = "iam.topic";
-    private static final String ENTERPRISE_URN = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
 
     /**
-     * HR 시스템으로부터 수신한 사용자 동기화 이벤트를 처리
+     * 원천 시스템으로부터 수신한 사용자 동기화 이벤트를 처리
      */
     @Transactional
-    public void processHrSync(UserSyncEvent event) {
+    public void processSync(UserSyncEvent event) {
         String traceId = event.traceId();
-        log.info("Processing HR sync migration for traceId: {}", traceId);
+        String systemId = event.systemId();
+        log.info("Processing sync for system: {}, traceId: {}", systemId, traceId);
 
         var payload = event.payload();
         Map<String, Object> rawData = convertToMap(payload);
 
         try {
             // 1. Transform Attribute using Engine
-            Map<String, com.iam.core.domain.vo.UniversalData> transformed = transformationService.transform("SAP_HR",
+            Map<String, UniversalData> transformed = transformationService.transform(systemId,
                     rawData);
 
             // 2. Correlation & Update
-            identityLinkRepository.findBySystemTypeAndExternalId("HR", payload.getExternalId())
+            correlationService.correlate(systemId, payload.getExternalId())
                     .ifPresentOrElse(
-                            link -> updateExistingUser(link, transformed, rawData, traceId),
-                            () -> createNewUser(payload.getExternalId(), transformed, rawData, traceId));
+                            user -> updateExistingUser(user, transformed, rawData, systemId, traceId),
+                            () -> createNewUser(payload.getExternalId(), transformed, rawData, systemId, traceId));
 
         } catch (Exception e) {
             log.error("Sync failed for traceId: {}", traceId, e);
-            syncHistoryService.logFailure(traceId, "HR_SYNC", payload.getUserName(), "SAP_HR", payload,
+            syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR, payload.getUserName(), systemId,
+                    payload,
                     "Error: " + e.getMessage());
 
             if (e instanceof IamBusinessException) {
@@ -78,82 +82,78 @@ public class UserSyncService {
     }
 
     private Map<String, Object> convertToMap(UserSyncPayload payload) {
-        Map<String, Object> map = new HashMap<String, Object>();
-        map.put("externalId", payload.getExternalId());
-        map.put("userName", payload.getUserName());
+        Map<String, Object> map = new HashMap<>();
+        map.put(AttributeConstants.EXTERNAL_ID, payload.getExternalId());
+        map.put(AttributeConstants.USERNAME, payload.getUserName());
         if (payload.getName() != null) {
-            map.put("familyName", payload.getName().getFamilyName());
-            map.put("givenName", payload.getName().getGivenName());
-            map.put("formattedName", payload.getName().getFormatted());
+            map.put(AttributeConstants.FAMILY_NAME, payload.getName().getFamilyName());
+            map.put(AttributeConstants.GIVEN_NAME, payload.getName().getGivenName());
+            map.put(AttributeConstants.FORMATTED_NAME, payload.getName().getFormatted());
         }
-        map.put("title", payload.getTitle());
-        map.put("active", payload.getActive());
+        map.put(AttributeConstants.TITLE, payload.getTitle());
+        map.put(AttributeConstants.ACTIVE, payload.getActive());
         if (payload.getExtensions() != null) {
             map.putAll(payload.getExtensions());
         }
         return map;
     }
 
-    private void createNewUser(String externalId, Map<String, com.iam.core.domain.vo.UniversalData> attributes,
-            Map<String, Object> rawData, String traceId) {
-        log.info("Creating new user via engine for HR ID: {}", externalId);
+    private void createNewUser(String externalId, Map<String, UniversalData> attributes,
+            Map<String, Object> rawData, String systemId, String traceId) {
+        log.info("Creating new user via engine for system: {}, ID: {}", systemId, externalId);
 
         var user = iamUserUpdateService.create(externalId, attributes);
-        var link = createIdentityLink(user.getId(), externalId);
+        var link = createIdentityLink(user.getId(), systemId, externalId);
         identityLinkRepository.save(link);
 
         publishProvisioningCommand(user, extractRawExtensions(attributes));
 
         // Rich History
         Map<String, Object> historyPayload = Map.of(
-                "syncType", "JOIN",
-                "mappings", generateMappings("HR", attributes),
-                "snapshot", Map.of(
-                        "layer", "HR",
-                        "data", rawData));
+                AttributeConstants.SYNC_TYPE, SyncConstants.TYPE_JOIN,
+                AttributeConstants.MAPPINGS, generateMappings(systemId, attributes),
+                AttributeConstants.SNAPSHOT, Map.of(
+                        AttributeConstants.LAYER, systemId,
+                        AttributeConstants.DATA, rawData));
 
-        syncHistoryService.logSuccess(traceId, "HR_SYNC", user.getUserName(), "SAP_HR", historyPayload,
+        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_CREATE, user.getUserName(), systemId,
+                historyPayload,
                 "User created via engine");
     }
 
-    private void updateExistingUser(IdentityLink link, Map<String, com.iam.core.domain.vo.UniversalData> attributes,
-            Map<String, Object> rawData, String traceId) {
-        log.info("Updating existing user via engine for HR ID: {}", link.getExternalId());
+    private void updateExistingUser(IamUser user, Map<String, UniversalData> attributes,
+            Map<String, Object> rawData, String systemId, String traceId) {
+        log.info("Updating existing user via engine for system: {}, userId: {}", systemId, user.getId());
 
-        iamUserRepository.findById(link.getIamUserId()).ifPresentOrElse(
-                user -> {
-                    // Capture old state for diff
-                    Map<String, Object> oldState = captureState(user);
+        // Capture old state for diff
+        Map<String, Object> oldState = captureState(user);
 
-                    iamUserUpdateService.update(user, attributes);
-                    publishProvisioningCommand(user, extractRawExtensions(attributes));
+        iamUserUpdateService.update(user, attributes);
+        publishProvisioningCommand(user, extractRawExtensions(attributes));
 
-                    // Calculate changes
-                    List<Map<String, Object>> changes = calculateChanges(oldState, captureState(user));
+        // Calculate changes
+        List<Map<String, Object>> changes = calculateChanges(oldState, captureState(user));
 
-                    // Rich History
-                    Map<String, Object> historyPayload = new HashMap<String, Object>();
-                    historyPayload.put("syncType", changes.isEmpty() ? "UPDATE_SIMPLE" : "UPDATE_CRITICAL");
-                    historyPayload.put("changes", changes);
-                    historyPayload.put("mappings", generateMappings("HR", attributes));
-                    historyPayload.put("snapshot", Map.of("layer", "HR", "data", rawData));
+        // Rich History
+        Map<String, Object> historyPayload = new HashMap<>();
+        historyPayload.put(AttributeConstants.SYNC_TYPE,
+                changes.isEmpty() ? SyncConstants.TYPE_UPDATE_SIMPLE : SyncConstants.TYPE_UPDATE_CRITICAL);
+        historyPayload.put(AttributeConstants.CHANGES, changes);
+        historyPayload.put(AttributeConstants.MAPPINGS, generateMappings(systemId, attributes));
+        historyPayload.put(AttributeConstants.SNAPSHOT,
+                Map.of(AttributeConstants.LAYER, systemId, AttributeConstants.DATA, rawData));
 
-                    syncHistoryService.logSuccess(traceId, "USER_UPDATE", user.getUserName(), "SAP_HR",
-                            historyPayload, "User updated via engine");
-                },
-                () -> {
-                    throw new IamBusinessException(ErrorCode.USER_NOT_FOUND, traceId,
-                            "User not found: " + link.getIamUserId());
-                });
+        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_UPDATE, user.getUserName(), systemId,
+                historyPayload, "User updated via engine");
     }
 
     private Map<String, Object> captureState(IamUser user) {
-        Map<String, Object> state = new HashMap<String, Object>();
-        state.put("userName", user.getUserName());
-        state.put("familyName", user.getFamilyName());
-        state.put("givenName", user.getGivenName());
-        state.put("title", user.getTitle());
-        state.put("active", user.isActive());
+        Map<String, Object> state = new HashMap<>();
+        state.put(AttributeConstants.USERNAME, user.getUserName());
+        state.put(AttributeConstants.FAMILY_NAME, user.getFamilyName());
+        state.put(AttributeConstants.GIVEN_NAME, user.getGivenName());
+        state.put(AttributeConstants.TITLE, user.getTitle());
+        state.put(AttributeConstants.ACTIVE, user.isActive());
         // Extensions could be added here if needed
         return state;
     }
@@ -170,12 +170,12 @@ public class UserSyncService {
     }
 
     private List<Map<String, Object>> generateMappings(String from,
-            Map<String, com.iam.core.domain.vo.UniversalData> attributes) {
+            Map<String, UniversalData> attributes) {
         List<Map<String, Object>> mappings = new ArrayList<>();
         attributes.forEach((k, v) -> {
             mappings.add(Map.of(
                     "fromLabel", from,
-                    "toLabel", "IAM",
+                    "toLabel", SystemConstants.SYSTEM_IAM,
                     "fromField", k, // For now assuming 1:1 name for simplicity if not traceable
                     "toField", k,
                     "value", v.asString()));
@@ -183,16 +183,16 @@ public class UserSyncService {
         return mappings;
     }
 
-    private Map<String, Object> extractRawExtensions(Map<String, com.iam.core.domain.vo.UniversalData> attributes) {
-        Map<String, Object> raw = new HashMap<String, Object>();
+    private Map<String, Object> extractRawExtensions(Map<String, UniversalData> attributes) {
+        Map<String, Object> raw = new HashMap<>();
         attributes.forEach((k, v) -> raw.put(k, v.getValue()));
         return raw;
     }
 
-    private IdentityLink createIdentityLink(Long iamUserId, String externalId) {
+    private IdentityLink createIdentityLink(Long iamUserId, String systemType, String externalId) {
         var link = new IdentityLink();
         link.setIamUserId(iamUserId);
-        link.setSystemType("HR");
+        link.setSystemType(systemType);
         link.setExternalId(externalId);
         link.setActive(true);
         return link;

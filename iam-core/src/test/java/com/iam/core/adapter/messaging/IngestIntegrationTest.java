@@ -45,11 +45,11 @@ class IngestIntegrationTest {
         @BeforeEach
         void setUp() {
                 // Setup a rule for SAP_HR
-                String ruleId = "SAP_CORE_TRANS";
+                String ruleId = "TEST_CORE_TRANS";
 
                 TransRuleMeta meta = TransRuleMeta.builder()
                                 .ruleId(ruleId)
-                                .ruleName("SAP HR Core Transformation")
+                                .ruleName("TEST HR Core Transformation")
                                 .targetAttribute("CORE")
                                 .status("ACTIVE")
                                 .build();
@@ -62,7 +62,8 @@ class IngestIntegrationTest {
                                     res.givenName = source.firstName.asString()
                                     res.title = source.position.asString()
                                     res.active = new com.iam.core.domain.vo.BooleanData(true)
-                                    res.employeeNumber = source.empNo
+                                    res.employeeNumber = source.empNo.asString()
+                                    res.externalId = source.externalId.asString()
                                     return res
                                 """;
 
@@ -76,7 +77,7 @@ class IngestIntegrationTest {
                 transRuleVersionRepository.save(version);
 
                 TransMapping mapping = TransMapping.builder()
-                                .systemId("SAP_HR")
+                                .systemId("TEST_HR")
                                 .ruleId(ruleId)
                                 .execOrder(1)
                                 .isMandatory(true)
@@ -96,14 +97,14 @@ class IngestIntegrationTest {
                                 "position", "Engineer");
                 Map<String, Object> event = Map.of(
                                 "traceId", "test-trace-1",
-                                "systemId", "SAP_HR",
+                                "systemId", "TEST_HR",
                                 "payload", payload);
                 // When
                 ingestListener.onRawDataIngested(event);
 
                 // Then
                 // 1. Check IdentityLink
-                Optional<IdentityLink> linkOpt = identityLinkRepository.findBySystemTypeAndExternalId("SAP_HR",
+                Optional<IdentityLink> linkOpt = identityLinkRepository.findBySystemTypeAndExternalId("TEST_HR",
                                 "EMP001");
                 assertThat(linkOpt).isPresent();
                 Long userId = linkOpt.get().getIamUserId();

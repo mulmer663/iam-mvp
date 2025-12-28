@@ -1,5 +1,8 @@
 package com.iam.core.config;
 
+import com.iam.core.domain.constant.ScimConstants;
+import com.iam.core.domain.constant.SyncConstants;
+import com.iam.core.domain.constant.SystemConstants;
 import com.iam.core.domain.entity.EnterpriseUserExtension;
 import com.iam.core.domain.entity.IamUser;
 import com.iam.core.domain.entity.IamUserExtension;
@@ -43,7 +46,7 @@ public class DataInitializer implements CommandLineRunner {
     initRuleEngineData();
 
     if (iamUserRepository.count() > 0) {
-      log.info("ℹ️ DB에 이미 사용자 데이터가 존재하여 사용자 초기화를 건너뜁니다.");
+      log.info("ℹ️ DB에 이미 사용자 데이터가 존재하여 사용자 초기화를 건너뜜...");
       return;
     }
 
@@ -96,15 +99,15 @@ public class DataInitializer implements CommandLineRunner {
 
     String script = """
             def res = [:]
-            res.userName = source.empNo?.asString()
-            res.familyName = source.lastName?.asString()
-            res.givenName = source.firstName?.asString()
-            res.title = source.position?.asString()
-            res.active = new com.iam.core.domain.vo.BooleanData(true)
+            res.userName = source.userName ?: source.empNo?.asString()
+            res.familyName = source.familyName?.asString()
+            res.givenName = source.givenName?.asString()
+            res.title = source.title?.asString()
+            res.active = source.active != null ? source.active : new com.iam.core.domain.vo.BooleanData(true)
 
             // Extension mapping
-            res.employeeNumber = source.empNo
-            res.department = source.deptCode
+            res.employeeNumber = source.empNo?.asString()
+            res.department = source.deptName?.asString() ?: source.deptCode?.asString()
             return res
         """;
 
@@ -118,14 +121,14 @@ public class DataInitializer implements CommandLineRunner {
     transRuleVersionRepository.save(version);
 
     TransMapping mapping = TransMapping.builder()
-        .systemId("SAP_HR")
+        .systemId(SystemConstants.SYSTEM_SAP_HR)
         .ruleId(ruleId)
         .execOrder(1)
         .isMandatory(true)
         .build();
     transMappingRepository.save(mapping);
 
-    log.info("✅ [DataInitializer] SAP_HR 규칙 매핑을 생성했습니다.");
+    log.info("✅ [DataInitializer] {} 규칙 매핑을 생성했습니다.", SystemConstants.SYSTEM_SAP_HR);
   }
 
   private void createSyncHistory(IamUser user) {
@@ -135,53 +138,58 @@ public class DataInitializer implements CommandLineRunner {
     String userName = user.getUserName();
 
     // 1. HR Sync (Join)
-    histories.add(createHistory(traceId, "HR_SYNC", "SUCCESS", userName, "New employee joined from HR",
+    histories.add(createHistory(traceId, SyncConstants.EVENT_HR_SYNC, SyncConstants.STATUS_SUCCESS, userName,
+        "New employee joined from HR",
         """
             {
               "userId": "%s",
-              "syncType": "JOIN",
+              "syncType": "%s",
               "snapshot": {
-                "layer": "HR",
+                "layer": "%s",
                 "data": { "empId": "H001", "name": "%s", "position": "Senior Engineer", "dept": "Dev Team" }
               },
               "mappings": [
-                { "fromLabel": "HR", "toLabel": "IAM", "fromField": "position", "toField": "title", "value": "Senior Engineer" }
+                { "fromLabel": "%s", "toLabel": "%s", "fromField": "position", "toField": "title", "value": "Senior Engineer" }
               ]
             }
             """
-            .formatted(userId, userName),
+            .formatted(userId, SyncConstants.TYPE_JOIN, SystemConstants.SYSTEM_HR, userName,
+                SystemConstants.SYSTEM_HR, SystemConstants.SYSTEM_IAM),
         LocalDateTime.now().minusDays(1)));
 
     // 2. IAM Core Update
-    histories.add(createHistory(traceId, "USER_UPDATE", "SUCCESS", userName, "IAM User record updated",
+    histories.add(createHistory(traceId, SyncConstants.EVENT_USER_UPDATE, SyncConstants.STATUS_SUCCESS, userName,
+        "IAM User record updated",
         """
             {
               "userId": "%s",
-              "syncType": "JOIN",
+              "syncType": "%s",
               "snapshot": {
-                "layer": "IAM",
+                "layer": "%s",
                 "data": { "id": "%s", "userName": "%s", "active": true }
               }
             }
-            """.formatted(userId, userId, user.getUserName()),
+            """.formatted(userId, SyncConstants.TYPE_JOIN, SystemConstants.SYSTEM_IAM, userId, user.getUserName()),
         LocalDateTime.now().minusDays(1).plusSeconds(5)));
 
     // 3. AD Provision
-    histories.add(createHistory(traceId, "AD_PROVISION", "SUCCESS", userName, "AD Account provisioned",
+    histories.add(createHistory(traceId, SyncConstants.EVENT_AD_PROVISION, SyncConstants.STATUS_SUCCESS, userName,
+        "AD Account provisioned",
         """
             {
               "userId": "%s",
-              "syncType": "JOIN",
+              "syncType": "%s",
               "snapshot": {
-                "layer": "AD",
+                "layer": "%s",
                 "data": { "sAMAccountName": "%s", "displayName": "%s" }
               },
               "mappings": [
-                { "fromLabel": "IAM", "toLabel": "AD", "fromField": "title", "toField": "title", "value": "Senior Engineer" }
+                { "fromLabel": "%s", "toLabel": "%s", "fromField": "title", "toField": "title", "value": "Senior Engineer" }
               ]
             }
             """
-            .formatted(userId, user.getUserName(), userName),
+            .formatted(userId, SyncConstants.TYPE_JOIN, SystemConstants.SYSTEM_AD, user.getUserName(), userName,
+                SystemConstants.SYSTEM_IAM, SystemConstants.SYSTEM_AD),
         LocalDateTime.now().minusDays(1).plusMinutes(1)));
 
     syncHistoryRepository.saveAll(histories);
@@ -191,58 +199,62 @@ public class DataInitializer implements CommandLineRunner {
     String critTraceId = "T-" + TSID.fast().toLong();
 
     criticalHistories
-        .add(createHistory(critTraceId, "HR_SYNC", "SUCCESS", userName,
+        .add(createHistory(critTraceId, SyncConstants.EVENT_HR_SYNC, SyncConstants.STATUS_SUCCESS, userName,
             "User promoted to Principal Engineer",
             """
                 {
                   "userId": "%s",
-                  "syncType": "UPDATE_CRITICAL",
+                  "syncType": "%s",
                   "changes": [{ "field": "position", "old": "Senior Engineer", "new": "Principal Engineer" }],
                   "snapshot": {
-                    "layer": "HR",
+                    "layer": "%s",
                     "data": { "empId": "H001", "name": "%s", "position": "Principal Engineer", "dept": "Dev Team" }
                   },
                   "mappings": [
-                    { "fromLabel": "HR", "toLabel": "IAM", "fromField": "position", "toField": "title", "value": "Principal Engineer" }
+                    { "fromLabel": "%s", "toLabel": "%s", "fromField": "position", "toField": "title", "value": "Principal Engineer" }
                   ]
                 }
                 """
-                .formatted(userId, userName),
+                .formatted(userId, SyncConstants.TYPE_UPDATE_CRITICAL, SystemConstants.SYSTEM_HR, userName,
+                    SystemConstants.SYSTEM_HR, SystemConstants.SYSTEM_IAM),
             LocalDateTime.now().minusHours(2)));
 
     criticalHistories.add(
-        createHistory(critTraceId, "USER_UPDATE", "SUCCESS", userName, "IAM title updated",
+        createHistory(critTraceId, SyncConstants.EVENT_USER_UPDATE, SyncConstants.STATUS_SUCCESS, userName,
+            "IAM title updated",
             """
                 {
                   "userId": "%s",
-                  "syncType": "UPDATE_CRITICAL",
+                  "syncType": "%s",
                   "changes": [{ "field": "title", "old": "Senior Engineer", "new": "Principal Engineer" }],
                   "snapshot": {
-                    "layer": "IAM",
+                    "layer": "%s",
                     "data": { "id": "%s", "title": "Principal Engineer" }
                   }
                 }
                 """
-                .formatted(userId, userId),
+                .formatted(userId, SyncConstants.TYPE_UPDATE_CRITICAL, SystemConstants.SYSTEM_IAM, userId),
             LocalDateTime.now().minusHours(2).plusSeconds(10)));
 
-    criticalHistories.add(createHistory(critTraceId, "AD_PROVISION", "SUCCESS", userName,
+    criticalHistories.add(createHistory(critTraceId, SyncConstants.EVENT_AD_PROVISION, SyncConstants.STATUS_SUCCESS,
+        userName,
         "AD title provisioned",
         """
             {
               "userId": "%s",
-              "syncType": "UPDATE_CRITICAL",
+              "syncType": "%s",
               "changes": [{ "field": "title", "old": "Senior Engineer", "new": "Principal Engineer" }],
               "snapshot": {
-                "layer": "AD",
+                "layer": "%s",
                 "data": { "sAMAccountName": "%s", "title": "Principal Engineer" }
               },
               "mappings": [
-                { "fromLabel": "IAM", "toLabel": "AD", "fromField": "title", "toField": "title", "value": "Principal Engineer" }
+                { "fromLabel": "%s", "toLabel": "%s", "fromField": "title", "toField": "title", "value": "Principal Engineer" }
               ]
             }
             """
-            .formatted(userId, user.getUserName()),
+            .formatted(userId, SyncConstants.TYPE_UPDATE_CRITICAL, SystemConstants.SYSTEM_AD, user.getUserName(),
+                SystemConstants.SYSTEM_IAM, SystemConstants.SYSTEM_AD),
         LocalDateTime.now().minusHours(2).plusMinutes(2)));
 
     syncHistoryRepository.saveAll(criticalHistories);
@@ -258,35 +270,39 @@ public class DataInitializer implements CommandLineRunner {
     };
 
     // HR & IAM steps for this trace
-    provisioningHistories.add(createHistory(provTraceId, "HR_SYNC", "SUCCESS", userName,
+    provisioningHistories.add(createHistory(provTraceId, SyncConstants.EVENT_HR_SYNC, SyncConstants.STATUS_SUCCESS,
+        userName,
         "User attributes updated in HR",
-        "{\"syncType\": \"UPDATE_SIMPLE\", \"userId\": \"%s\"}".formatted(userId),
+        "{\"syncType\": \"%s\", \"userId\": \"%s\"}".formatted(SyncConstants.TYPE_UPDATE_SIMPLE, userId),
         LocalDateTime.now().minusMinutes(30)));
-    provisioningHistories.add(createHistory(provTraceId, "USER_UPDATE", "SUCCESS", userName,
+    provisioningHistories.add(createHistory(provTraceId, SyncConstants.EVENT_USER_UPDATE, SyncConstants.STATUS_SUCCESS,
+        userName,
         "IAM Core synchronized",
-        "{\"syncType\": \"UPDATE_SIMPLE\", \"userId\": \"%s\"}".formatted(userId),
+        "{\"syncType\": \"%s\", \"userId\": \"%s\"}".formatted(SyncConstants.TYPE_UPDATE_SIMPLE, userId),
         LocalDateTime.now().minusMinutes(29)));
 
     // 20 Provisioning Events
     for (int i = 0; i < targets.length; i++) {
       String targetSystem = targets[i];
-      provisioningHistories.add(createHistory(provTraceId, "AD_PROVISION", "SUCCESS", userName,
+      provisioningHistories.add(createHistory(provTraceId, SyncConstants.EVENT_AD_PROVISION,
+          SyncConstants.STATUS_SUCCESS, userName,
           "Provisioned to " + targetSystem,
           """
               {
                 "userId": "%s",
-                "syncType": "UPDATE_SIMPLE",
+                "syncType": "%s",
                 "targetSystem": "%s",
                 "snapshot": {
                   "layer": "TARGET",
                   "data": { "account": "hong.g", "status": "active" }
                 },
                 "mappings": [
-                  { "fromLabel": "IAM", "toLabel": "%s", "fromField": "userName", "toField": "account", "value": "hong.g" }
+                  { "fromLabel": "%s", "toLabel": "%s", "fromField": "userName", "toField": "account", "value": "hong.g" }
                 ]
               }
               """
-              .formatted(userId, targetSystem, targetSystem),
+              .formatted(userId, SyncConstants.TYPE_UPDATE_SIMPLE, targetSystem, SystemConstants.SYSTEM_IAM,
+                  targetSystem),
           LocalDateTime.now().minusMinutes(28).plusSeconds(i * 5)));
     }
 
@@ -327,7 +343,7 @@ public class DataInitializer implements CommandLineRunner {
 
     // Required Schemas
     List<String> schemas = new ArrayList<>();
-    schemas.add("urn:ietf:params:scim:schemas:core:2.0:User");
+    schemas.add(ScimConstants.URN_CORE_USER);
 
     // Enterprise Extension
     EnterpriseUserExtension enterpriseExt = new EnterpriseUserExtension();
@@ -335,9 +351,9 @@ public class DataInitializer implements CommandLineRunner {
     enterpriseExt.setEmployeeNumber(empNo);
     enterpriseExt.setCostCenter(costCenter);
 
-    extension.getExtensions().put("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+    extension.getExtensions().put(ScimConstants.URN_ENTERPRISE_USER,
         enterpriseExt);
-    schemas.add("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User");
+    schemas.add(ScimConstants.URN_ENTERPRISE_USER);
 
     extension.setSchemas(schemas);
     user.setExtension(extension);

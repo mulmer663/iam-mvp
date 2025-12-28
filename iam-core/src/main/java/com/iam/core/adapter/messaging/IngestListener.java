@@ -1,18 +1,17 @@
 package com.iam.core.adapter.messaging;
 
-import com.iam.core.application.service.IdentityCorrelationService;
-import com.iam.core.application.service.IamUserUpdateService;
-import com.iam.core.application.service.SyncHistoryService;
-import com.iam.core.application.service.TransformationService;
-import com.iam.core.domain.entity.IamUser;
-import com.iam.core.domain.entity.IdentityLink;
-import com.iam.core.domain.repository.IdentityLinkRepository;
-import com.iam.core.domain.vo.UniversalData;
+import com.iam.core.application.service.UserSyncService;
+import com.iam.core.application.dto.UserSyncEvent;
+import com.iam.core.application.dto.UserSyncPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Listener for raw HR data ingestion.
@@ -23,80 +22,61 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class IngestListener {
 
-    private final TransformationService transformationService;
-    private final IdentityCorrelationService correlationService;
-    private final IamUserUpdateService userUpdateService;
-    private final IdentityLinkRepository identityLinkRepository;
-    private final SyncHistoryService syncHistoryService;
+    private final UserSyncService userSyncService;
 
     @RabbitListener(queues = com.iam.core.config.IamRabbitConfig.INGEST_QUEUE_NAME)
-    public void onRawDataIngested(Map<String, Object> event) {
-        long startTime = System.currentTimeMillis();
-        String traceId = "UNKNOWN";
-        String systemId = "UNKNOWN";
-        Map<String, Object> payload = null;
-        Long parentId = null;
+    public void onRawDataIngested(Map<String, Object> message) {
+        log.info("Received raw ingestion message: {}", message);
+
+        String traceId = (String) message.getOrDefault("traceId", UUID.randomUUID().toString());
+        String systemId = (String) message.get("systemId");
 
         try {
-            traceId = (String) event.get("traceId");
-            systemId = (String) event.get("systemId");
             @SuppressWarnings("unchecked")
-            Map<String, Object> rawPayload = (Map<String, Object>) event.get("payload");
-            payload = rawPayload;
-
-            // Extract identifier early for consistent logging
-            String externalId = (String) payload.getOrDefault("externalId", payload.get("empNo"));
-            String initialTarget = externalId != null ? externalId : "SYSTEM";
-
-            log.info("Processing ingestion event: traceId={}, systemId={}", traceId, systemId);
-
-            // 1. Initial Logging (Use initialTarget instead of "SYSTEM")
-            parentId = syncHistoryService.logSuccess(traceId, "RAW_INGEST", initialTarget, systemId, payload,
-                    "Raw data received");
-
-            // 2. Transformation
-            Map<String, UniversalData> transformedData = transformationService.transform(systemId, payload);
-            syncHistoryService.logSuccess(traceId, "TRANSFORM", initialTarget, systemId, transformedData,
-                    "Transformation completed", parentId, System.currentTimeMillis() - startTime);
-
-            // 3. Identity Correlation
-            if (externalId == null)
-                throw new RuntimeException("Missing externalId or empNo in payload");
-
-            var userOpt = correlationService.correlate(systemId, externalId);
-
-            // 4. IAM Object Update
-            IamUser user;
-            if (userOpt.isPresent()) {
-                user = userUpdateService.update(userOpt.get(), transformedData);
-                log.info("Updated existing user: traceId={}, userId={}", traceId, user.getId());
-            } else {
-                user = userUpdateService.create(externalId, transformedData);
-
-                // Create IdentityLink if performing a create
-                IdentityLink link = new IdentityLink();
-                link.setIamUserId(user.getId());
-                link.setSystemType(systemId);
-                link.setExternalId(externalId);
-                link.setActive(true);
-                identityLinkRepository.save(link);
-
-                log.info("Created new user and identity link: traceId={}, userId={}", traceId, user.getId());
+            Map<String, Object> rawPayload = (Map<String, Object>) message.get("payload");
+            if (rawPayload == null) {
+                log.error("Missing payload in ingestion message: {}", traceId);
+                return;
             }
 
-            // 5. Success Logging
-            syncHistoryService.logSuccess(traceId, "IAM_UPDATE", user.getUserName(), systemId, transformedData,
-                    "IAM User updated successfully", parentId, System.currentTimeMillis() - startTime);
+            // Convert raw map to DTO
+            UserSyncPayload payload = mapToPayload(rawPayload);
+            UserSyncEvent event = new UserSyncEvent(traceId, systemId, "USER_SYNC", LocalDateTime.now(), payload);
+
+            // Delegate to Application Service
+            userSyncService.processSync(event);
 
         } catch (Exception e) {
-            log.error("Failed to process raw ingestion: traceId={}", traceId, e);
-            syncHistoryService.logFailure(
-                    traceId,
-                    "INGEST_FAILURE",
-                    "SYSTEM",
-                    systemId,
-                    payload,
-                    "Processing failed: " + e.getMessage());
+            log.error("Failed to adapt raw ingestion: traceId={}", traceId, e);
         }
+    }
+
+    private UserSyncPayload mapToPayload(Map<String, Object> map) {
+        UserSyncPayload payload = new UserSyncPayload();
+        payload.setExternalId((String) map.get("externalId"));
+        payload.setUserName((String) map.get("userName"));
+        payload.setTitle((String) map.get("title"));
+        payload.setActive(map.get("active") instanceof Boolean b ? b : true);
+
+        // Name
+        UserSyncPayload.Name name = new UserSyncPayload.Name();
+        name.setFamilyName((String) map.get("familyName"));
+        name.setGivenName((String) map.get("givenName"));
+        name.setFormatted((String) map.get("formattedName"));
+        payload.setName(name);
+
+        // All others as extensions
+        map.forEach((k, v) -> {
+            if (!isCoreField(k)) {
+                payload.addExtension(k, v);
+            }
+        });
+
+        return payload;
+    }
+
+    private boolean isCoreField(String key) {
+        return List.of("externalId", "userName", "title", "active", "familyName", "givenName", "formattedName")
+                .contains(key);
     }
 }

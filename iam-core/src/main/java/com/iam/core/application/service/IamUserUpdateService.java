@@ -2,7 +2,7 @@ package com.iam.core.application.service;
 
 import com.iam.core.domain.entity.*;
 import com.iam.core.domain.repository.IamUserRepository;
-import com.iam.core.domain.vo.UniversalData;
+import com.iam.core.domain.vo.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -68,7 +68,7 @@ public class IamUserUpdateService {
 
     private void applyCoreAttributes(IamUser user, Map<String, UniversalData> attributes) {
         attributes.forEach((key, data) -> {
-            if (CORE_ATTRIBUTES.contains(key) && data != null) {
+            if (CORE_ATTRIBUTES.contains(key) && !(data instanceof NullData)) {
                 switch (key) {
                     case "userName" -> user.setUserName(data.asString());
                     case "active" -> {

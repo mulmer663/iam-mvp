@@ -54,17 +54,19 @@ class UserSyncServiceTest {
                                 new UserSyncPayload.Name("Hong", "Gildong", "Hong Gildong"),
                                 "Senior Engineer",
                                 true,
-                                Map.of("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
-                                                Map.of("employeeNumber", "H001", "department", "Dev Team")));
+                                Map.of("empNo", hrEmpId, "deptName", "Dev Team"));
 
-                UserSyncEvent event = new UserSyncEvent("trace-123", "SYNC_USER", LocalDateTime.now(), payload);
+                UserSyncEvent event = new UserSyncEvent("trace-123", "SAP_HR", "USER_SYNC", LocalDateTime.now(),
+                                payload);
 
                 // When
-                userSyncService.processHrSync(event);
+                userSyncService.processSync(event);
 
                 // Then
-                var link = identityLinkRepository.findBySystemTypeAndExternalId("HR", hrEmpId).get();
-                var user = iamUserRepository.findById(link.getIamUserId()).get();
+                var link = identityLinkRepository.findBySystemTypeAndExternalId("SAP_HR", hrEmpId).get();
+                Long userId = link.getIamUserId();
+                assertThat(userId).isNotNull();
+                var user = iamUserRepository.findById(userId).get();
 
                 assertThat(user.getUserName()).isEqualTo("hong.g@iam.com");
                 assertThat(user.getFamilyName()).isEqualTo("Hong");
@@ -73,6 +75,7 @@ class UserSyncServiceTest {
                                 .get("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User");
                 assertThat(extData).isInstanceOf(EnterpriseUserExtension.class);
                 assertThat(((EnterpriseUserExtension) extData).getDepartment()).isEqualTo("Dev Team");
+                assertThat(((EnterpriseUserExtension) extData).getEmployeeNumber()).isEqualTo("H001");
         }
 
         @Test
@@ -84,24 +87,26 @@ class UserSyncServiceTest {
                                 hrEmpId, "kim.f@iam.com",
                                 new UserSyncPayload.Name("Kim", "Free", "Kim Free"),
                                 "Junior", true,
-                                Map.of("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
-                                                Map.of("department", "Dev Team")));
-                userSyncService.processHrSync(new UserSyncEvent("trace-1", "SYNC", LocalDateTime.now(), firstPayload));
+                                Map.of("empNo", hrEmpId, "deptName", "Dev Team"));
+                userSyncService.processSync(
+                                new UserSyncEvent("trace-1", "SAP_HR", "USER_SYNC", LocalDateTime.now(), firstPayload));
 
                 var updatePayload = new UserSyncPayload(
                                 hrEmpId, "kim.f@iam.com",
                                 new UserSyncPayload.Name("Kim", "Future", "Kim Future"),
                                 "Senior", true,
-                                Map.of("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
-                                                Map.of("department", "IT Team")));
+                                Map.of("empNo", hrEmpId, "deptName", "IT Team"));
 
                 // When
-                userSyncService.processHrSync(
-                                new UserSyncEvent("trace-2", "UPDATE", LocalDateTime.now(), updatePayload));
+                userSyncService.processSync(
+                                new UserSyncEvent("trace-2", "SAP_HR", "USER_UPDATE", LocalDateTime.now(),
+                                                updatePayload));
 
                 // Then
-                var link = identityLinkRepository.findBySystemTypeAndExternalId("HR", hrEmpId).get();
-                var user = iamUserRepository.findById(link.getIamUserId()).get();
+                var link = identityLinkRepository.findBySystemTypeAndExternalId("SAP_HR", hrEmpId).get();
+                Long userId = link.getIamUserId();
+                assertThat(userId).isNotNull();
+                var user = iamUserRepository.findById(userId).get();
 
                 assertThat(user.getGivenName()).isEqualTo("Future");
                 assertThat(user.getTitle()).isEqualTo("Senior");
