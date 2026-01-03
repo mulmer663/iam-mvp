@@ -28,6 +28,11 @@ public enum ErrorCode {
     HR_SYSTEM_UNAVAILABLE("IAM-4301", "HR 시스템을 사용할 수 없습니다", HttpStatus.SERVICE_UNAVAILABLE),
     AD_SYSTEM_ERROR("IAM-4302", "Active Directory 연동 오류", HttpStatus.BAD_GATEWAY),
 
+    // === Rule Engine Errors (4400~4499) ===
+    TRANS_RULE_ERROR("IAM-4400", "변환 규칙 실행 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    TRANS_COMPILATION_ERROR("IAM-4401", "변환 규칙 스크립트 컴파일에 실패했습니다 (문법 오류)", HttpStatus.BAD_REQUEST),
+    TRANS_VALIDATION_ERROR("IAM-4402", "데이터 변환 검증에 실패했습니다", HttpStatus.BAD_REQUEST),
+
     // === Internal Server Errors (5000~5099) ===
     INTERNAL_SERVER_ERROR("IAM-5000", "내부 서버 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
     DATABASE_ERROR("IAM-5001", "데이터베이스 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),

@@ -16,4 +16,19 @@ public class NullData implements UniversalData {
     public String asString() {
         return "";
     }
+
+    @Override
+    public Integer asInt() {
+        return 0;
+    }
+
+    @Override
+    public Long asLong() {
+        return 0L;
+    }
+
+    @Override
+    public Boolean asBoolean() {
+        return false;
+    }
 }

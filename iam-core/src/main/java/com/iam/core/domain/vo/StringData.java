@@ -10,4 +10,31 @@ public record StringData(String value) implements UniversalData {
     public String asString() {
         return value;
     }
+
+    @Override
+    public Integer asInt() {
+        try {
+            return Integer.parseInt(value);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    @Override
+    public Long asLong() {
+        try {
+            return Long.parseLong(value);
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    @Override
+    public Double asDouble() {
+        try {
+            return Double.parseDouble(value);
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
 }

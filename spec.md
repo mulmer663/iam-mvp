@@ -65,8 +65,18 @@ graph LR
 
 런타임에 동적으로 데이터 변환 로직을 처리하며, 모든 이력은 추적 가능해야 합니다.
 
-* **동적 변환:** Groovy 스크립트를 사용하여 시스템별 매핑 룰 실행.
-  * **보안:** `SecureASTCustomizer`를 통한 화이트리스트 기반 샌드박스 실행.
+* **변환 패턴 및 규칙 매핑:**
+  * **참조 파일:** `TransFieldMapping.java`, `RuleScriptGenerator.java`
+  * **패턴 유형:**
+    * `DIRECT`: 1:1 단순 필드 배핑.
+    * `CODE`: DB(`IAM_TRANS_CODE_VALUE`) 또는 파라미터 기반 코드 매핑. 매핑 정보가 없는 경우 원본값을 유지하는 Pass-through 방식 지원.
+    * `CLASSIFY` / `REPLACE`: 키워드 포함 여부 또는 값 일치 여부에 따른 변환.
+    * `CUSTOM`: 자유도가 높은 커스텀 Groovy 스니펫 실행.
+  * **내장 검증:** 생성된 스크립트 내에 필수성(`isRequired`), 최소/최대 길이 검증 로직을 자동 포함함.
+
+* **예외 처리 및 견고성:**
+  * **정교한 예외 분류:** `RuleCompilationException`(문법), `RuleValidationException`(검증), `RuleExecutionException`(런타임) 등 상황별 전용 예외 처리.
+  * **샌드박스 보안:** `SecureASTCustomizer`를 통한 화이트리스트 기반 샌드박스 실행.
 
 * **이력 관리 (Traceability):**
   * **참조 파일:** [SyncHistory.java](file:///c:/Dev/project/iam/iam-core/src/main/java/com/iam/core/domain/entity/SyncHistory.java)
@@ -89,3 +99,6 @@ graph LR
 [x] Groovy Rule Engine 샌드박스 및 동적 변환 엔진 구현
 [x] HR Connector 스냅샷 가데이터 및 변경 이벤트 인제스트 로직
 [x] 계층적 동기화 이력 관리 (Traceability) 및 페이로드 평탄화 구현
+[x] 규칙 기반 동적 스크립트 엔진 (DIRECT/CODE/CLASSIFY/REPLACE/CUSTOM) 구현
+[x] 변환 규칙 검증 필터(필수값/길이) 및 상황별 예외 처리 고도화
+[x] 규칙 매핑 CRUD API 및 DB 기반 코드 매핑 연동 구현

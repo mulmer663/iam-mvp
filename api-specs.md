@@ -179,4 +179,62 @@ interface HistoryLog {
   message: string;
   payload?: string;
 }
+
+---
+
+## 4. Rule Engine Mapping API
+
+데이터 연동 엔진의 컬럼 매핑 및 유효성 검증 규칙을 관리하는 API입니다.
+
+### 4.1 필드 매핑 목록 조회
+
+- **Endpoint**: `GET /api/v1/rules/{ruleId}/mappings`
+- **Description**: 특정 규칙(Rule)에 설정된 모든 필드 매핑 정보를 조회합니다.
+- **Success Response (200 OK)**
+
+  ```json
+  [
+    {
+      "id": 1,
+      "sourceField": "employeeNumber",
+      "targetField": "empNo",
+      "isRequired": true,
+      "minLength": 5,
+      "maxLength": 10,
+      "transformType": "DIRECT",
+      "transformParams": null,
+      "defaultValue": null,
+      "transformScript": null
+    }
+  ]
+  ```
+
+### 4.2 필드 매핑 저장 (생성/수정)
+
+- **Endpoint**: `POST /api/v1/rules/{ruleId}/mappings`
+- **Description**: 필드 매핑 정보를 저장합니다. `id`가 포함되면 수정, 없으면 생성으로 동작합니다. 저장 시 관련 Groovy 스크립트가 자동 갱신됩니다.
+- **Request Body**
+
+  ```json
+
+{
+  "codeGroupId": "GRADE_LEVEL",
+  "sourceField": "grade",
+  "targetField": "grade",
+  "transformType": "CODE"
+}
+
+```
+  - **transformType**: `DIRECT` (기본), `CODE` (코드 변환), `CLASSIFY` (분류), `REPLACE` (값 치환), `CUSTOM` (커스텀 스크립트)
+  - **codeGroupId**: `transformType`이 `CODE`일 때 사용할 코드 변환 그룹 ID. (DB에 정의된 매핑 사용)
+  - **transformParams**:
+    - `CODE`, `REPLACE`: `key1:val1;key2:val2` 형식 (codeGroupId가 없을 때 fallback으로 사용)
+    - `CLASSIFY`: `text1:result1;text2:result2` (포함 여부 확인)
+
+### 4.3 필드 매핑 삭제
+
+- **Endpoint**: `DELETE /api/v1/rules/mappings/{mappingId}`
+- **Description**: 특정 필드 매핑을 삭제합니다. 삭제 시 관련 Groovy 스크립트가 자동 갱신됩니다.
+- **Success Response (204 No Content)**
+
 ```

@@ -163,7 +163,7 @@ public class UserSyncService {
                     AttributeConstants.TO_LABEL, SystemConstants.SYSTEM_IAM,
                     AttributeConstants.FROM_FIELD, k, // For now assuming 1:1 name for simplicity if not traceable
                     AttributeConstants.TO_FIELD, k,
-                    AttributeConstants.VALUE, v.asString()));
+                    AttributeConstants.VALUE, v.asString() != null ? v.asString() : ""));
         });
         return mappings;
     }

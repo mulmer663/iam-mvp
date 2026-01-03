@@ -10,6 +10,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import com.iam.core.domain.exception.RuleCompilationException;
+import com.iam.core.domain.exception.RuleEngineException;
+import com.iam.core.domain.exception.RuleExecutionException;
+import org.codehaus.groovy.control.CompilationFailedException;
+import java.lang.reflect.InvocationTargetException;
 
 @Service
 @Slf4j
@@ -32,15 +37,30 @@ public class RuleScriptEngine {
             Class<? extends Script> scriptClass = scriptCache.computeIfAbsent(scriptHash, hash -> {
                 log.info("Compiling new script with hash: {}", hash);
                 GroovyShell shell = new GroovyShell(compilerConfiguration);
-                return shell.parse(scriptContent).getClass();
+                try {
+                    return shell.parse(scriptContent).getClass();
+                } catch (CompilationFailedException e) {
+                    throw new RuleCompilationException(e.getMessage(), e);
+                }
             });
 
             Script script = scriptClass.getDeclaredConstructor().newInstance();
             script.setBinding(new Binding(params));
             return script.run();
+        } catch (RuleEngineException e) {
+            throw e; // Pass through our custom exceptions (like compilation error from lambda)
+        } catch (InvocationTargetException e) {
+            Throwable targetException = e.getTargetException();
+            if (targetException instanceof RuleEngineException ree) {
+                throw ree;
+            }
+            log.error("Failed to execute groovy script: {}", targetException.getMessage());
+            throw new RuleExecutionException(targetException.getMessage(), targetException);
         } catch (Exception e) {
+            if (e instanceof RuleEngineException ree)
+                throw ree;
             log.error("Failed to execute groovy script: {}", e.getMessage());
-            throw new RuntimeException("Script execution failed", e);
+            throw new RuleExecutionException(e.getMessage(), e);
         }
     }
 }

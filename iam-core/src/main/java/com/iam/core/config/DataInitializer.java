@@ -9,8 +9,12 @@ import com.iam.core.domain.entity.IamUserExtension;
 import com.iam.core.domain.repository.IamUserRepository;
 import com.iam.core.domain.repository.SyncHistoryRepository;
 import com.iam.core.domain.entity.*;
-import com.iam.core.domain.repository.*;
-
+import com.iam.core.domain.repository.TransMappingRepository;
+import com.iam.core.domain.repository.TransRuleMetaRepository;
+import com.iam.core.domain.repository.TransRuleVersionRepository;
+import com.iam.core.domain.repository.TransCodeMetaRepository;
+import com.iam.core.domain.repository.TransCodeValueRepository;
+import com.iam.core.application.service.TransMappingService;
 import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +42,9 @@ public class DataInitializer implements CommandLineRunner {
   private final TransRuleMetaRepository transRuleMetaRepository;
   private final TransRuleVersionRepository transRuleVersionRepository;
   private final TransMappingRepository transMappingRepository;
+  private final TransMappingService transMappingService;
+  private final TransCodeMetaRepository transCodeMetaRepository;
+  private final TransCodeValueRepository transCodeValueRepository;
 
   @Override
   @Transactional
@@ -128,7 +135,38 @@ public class DataInitializer implements CommandLineRunner {
         .build();
     transMappingRepository.save(mapping);
 
+    // Initial Field Mappings
+    createCodeMappings();
+    createFieldMappings(ruleId);
+
     log.info("✅ [DataInitializer] {} 규칙 매핑을 생성했습니다.", SystemConstants.SYSTEM_SAP_HR);
+  }
+
+  private void createCodeMappings() {
+    String groupId = "RANK_CODE";
+    transCodeMetaRepository.save(TransCodeMeta.builder()
+        .codeGroupId(groupId)
+        .description("Rank Code Mapping (HR -> IAM)")
+        .build());
+
+    transCodeValueRepository.saveAll(List.of(
+        TransCodeValue.builder().codeGroupId(groupId).sourceValue("A").targetValue("1").label("사원").build(),
+        TransCodeValue.builder().codeGroupId(groupId).sourceValue("B").targetValue("2").label("대리").build(),
+        TransCodeValue.builder().codeGroupId(groupId).sourceValue("C").targetValue("3").label("과장").build()));
+  }
+
+  private void createFieldMappings(String ruleId) {
+    List<TransFieldMapping> mappings = List.of(
+        TransFieldMapping.builder().ruleId(ruleId).sourceField("empNo").targetField("employeeNumber").isRequired(true)
+            .build(),
+        TransFieldMapping.builder().ruleId(ruleId).sourceField("userName").targetField("userName").build(),
+        TransFieldMapping.builder().ruleId(ruleId).sourceField("rank").targetField("rank").transformType("CODE")
+            .codeGroupId("RANK_CODE").build(),
+        TransFieldMapping.builder().ruleId(ruleId).sourceField("deptName").targetField("department").build(),
+        TransFieldMapping.builder().ruleId(ruleId).sourceField("active").targetField("active").build());
+
+    // Use the service to trigger script generation
+    mappings.forEach(transMappingService::saveMapping);
   }
 
   private void createSyncHistory(IamUser user) {
