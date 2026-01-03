@@ -101,9 +101,11 @@ public class RuleScriptGenerator {
 
             // Build the assignment with default value if needed
             if (mapping.getDefaultValue() != null) {
-                // Adjust for default value logic if not handled by pattern
-                assignedValue = "(" + assignedValue + " ?: new com.iam.core.domain.vo.StringData(\""
-                        + mapping.getDefaultValue() + "\"))";
+                // Apply default value to the raw result before wrapping in StringData
+                String rawValueExpr = assignedValue.substring(assignedValue.indexOf("(") + 1,
+                        assignedValue.lastIndexOf(")"));
+                assignedValue = "new com.iam.core.domain.vo.StringData(" + rawValueExpr + " ?: \""
+                        + mapping.getDefaultValue() + "\")";
             }
 
             // Validation logic

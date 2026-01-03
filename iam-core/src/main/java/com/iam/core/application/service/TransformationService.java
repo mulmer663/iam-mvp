@@ -45,7 +45,7 @@ public class TransformationService {
 
         // 2. Load Mappings
         List<TransMapping> mappings = mappingRepository.findBySystemIdOrderByExecOrderAsc(systemId);
-        log.info("Found {} rule mappings for system: {} (Raw Keys: {})", mappings.size(), systemId, rawData.keySet());
+        log.info("Found {} rule mappings for system: {}", mappings.size(), systemId);
 
         // 3. Execute Rules Sequentially
         for (TransMapping mapping : mappings) {
@@ -56,7 +56,6 @@ public class TransformationService {
 
                 log.debug("Executing rule: {} (order: {})", ruleId, mapping.getExecOrder());
 
-                // Rules can read sourceMap and targetMap, and return a result
                 Map<String, Object> params = new HashMap<>();
                 params.put("source", sourceMap);
                 params.put("target", targetMap);
@@ -68,13 +67,11 @@ public class TransformationService {
 
                 if (result instanceof Map<?, ?> resultMap) {
                     log.debug("Rule result: {}", resultMap);
-                    // Update targetMap with changes
                     resultMap.forEach((k, v) -> {
                         if (k instanceof String key) {
                             if (v instanceof UniversalData val) {
                                 targetMap.put(key, val);
                             } else {
-                                // Fallback: wrap if not already UniversalData
                                 targetMap.put(key, universalMapper.toUniversalData(v));
                             }
                         }
@@ -86,8 +83,6 @@ public class TransformationService {
                 if (mapping.getIsMandatory()) {
                     throw new RuntimeException("Mandatory rule execution failed: " + ruleId, e);
                 }
-                // If not mandatory, we continue to next rule?
-                // In Phase 2 we might want to log this to SyncTransformFailure.
             }
         }
 
