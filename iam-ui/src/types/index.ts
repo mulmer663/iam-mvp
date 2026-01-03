@@ -33,8 +33,8 @@ export interface User {
 }
 
 export interface AttributeMapping {
-    sourceField: string
-    targetField: string
+    fromField: string
+    toField: string
     fromLabel?: string
     toLabel?: string
     value?: string
@@ -45,7 +45,7 @@ export interface AttributeMapping {
 export interface HistoryLog {
     id: string
     traceId: string
-    type: 'HR_SYNC' | 'AD_PROVISION' | 'USER_UPDATE' | 'USER_SYNC'
+    type: 'HR_SYNC' | 'AD_PROVISION' | 'USER_UPDATE' | 'USER_SYNC' | 'USER_CREATE'
     status: 'SUCCESS' | 'PENDING' | 'FAILURE'
     target: string
     sourceSystem?: string
@@ -61,6 +61,7 @@ export interface HistoryLog {
         layer: 'HR' | 'IAM' | 'AD'
         data: Record<string, any>
     }
+    requestPayload?: string
 }
 
 export interface MillerPane {

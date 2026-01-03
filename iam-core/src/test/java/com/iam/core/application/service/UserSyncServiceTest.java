@@ -121,7 +121,7 @@ class UserSyncServiceTest {
 
                 UserSyncEvent event = new UserSyncEvent("trace-123", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
                                 LocalDateTime.now(),
-                                payload);
+                                payload, null);
 
                 // When
                 userSyncService.processSync(event);
@@ -159,7 +159,7 @@ class UserSyncServiceTest {
 
                 userSyncService.processSync(
                                 new UserSyncEvent("trace-1", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
-                                                LocalDateTime.now(), firstPayload));
+                                                LocalDateTime.now(), firstPayload, null));
 
                 Map<String, Object> updatePayload = Map.of(
                                 "externalId", hrEmpId,
@@ -175,7 +175,7 @@ class UserSyncServiceTest {
                 userSyncService.processSync(
                                 new UserSyncEvent("trace-2", SYSTEM_ID, SyncConstants.EVENT_USER_UPDATE,
                                                 LocalDateTime.now(),
-                                                updatePayload));
+                                                updatePayload, null));
 
                 // Then
                 var link = identityLinkRepository.findBySystemTypeAndExternalId(SYSTEM_ID, hrEmpId).get();
@@ -208,7 +208,7 @@ class UserSyncServiceTest {
                                 "deptName", "QA");
 
                 UserSyncEvent event = new UserSyncEvent("trace-error-1", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
-                                LocalDateTime.now(), invalidPayload);
+                                LocalDateTime.now(), invalidPayload, null);
 
                 // When & Then
                 org.junit.jupiter.api.Assertions.assertThrows(com.iam.core.domain.exception.IamBusinessException.class,

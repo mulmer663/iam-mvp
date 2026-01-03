@@ -38,7 +38,8 @@ public class IngestListener {
                 return;
             }
 
-            UserSyncEvent event = new UserSyncEvent(traceId, systemId, "USER_SYNC", LocalDateTime.now(), rawPayload);
+            UserSyncEvent event = new UserSyncEvent(traceId, systemId, "USER_SYNC", LocalDateTime.now(), rawPayload,
+                    message);
 
             // Delegate to Application Service
             userSyncService.processSync(event);

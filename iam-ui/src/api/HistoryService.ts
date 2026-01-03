@@ -12,6 +12,7 @@ interface HistoryResponse {
     time: string // Align with time in api-specs.md
     message?: string
     payload?: string // JSON string
+    requestPayload?: string
 }
 
 export const HistoryService = {
@@ -39,7 +40,8 @@ export const HistoryService = {
         }
 
         // Handle rich wrapping (syncType, snapshot) if present
-        const syncType = payloadObj.syncType || (dto.type === 'HR_SYNC' ? 'JOIN' : undefined);
+        const syncType = payloadObj.syncType ||
+            (['HR_SYNC', 'USER_CREATE', 'USER_SYNC'].includes(dto.type) ? 'JOIN' : undefined);
         const snapshot = payloadObj.snapshot || undefined;
         const mappings = payloadObj.mappings || undefined;
         const changes = payloadObj.changes || undefined;
@@ -49,6 +51,7 @@ export const HistoryService = {
         const formattedTime = dto.time ? dto.time.replace('T', ' ') : '';
 
         return {
+            ...(actualPayload || {}),
             id: dto.id,
             traceId: dto.traceId,
             type: dto.type as any,
@@ -63,10 +66,10 @@ export const HistoryService = {
             snapshot: snapshot,
             mappings: mappings,
             changes: changes,
-            // Flatten relevant fields from payload for UI compatibility
-            ...(actualPayload || {})
+            requestPayload: dto.requestPayload
         };
     }
 }
+
 
 

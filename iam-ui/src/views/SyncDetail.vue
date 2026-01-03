@@ -25,6 +25,7 @@ const props = defineProps<{
 
 const millerStore = useMillerStore()
 const isRawOpen = ref(false)
+const isMappingOpen = ref(false)
 const viewMode = ref<'changes' | 'all'>(props.event.changes && props.event.changes.length > 0 ? 'changes' : 'all')
 const searchQuery = ref('')
 const allHistory = ref<HistoryLog[]>([])
@@ -41,7 +42,7 @@ onMounted(async () => {
 
 
 const theme = computed(() => {
-  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC') return SYSTEM_THEMES.SOURCE
+  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC' || props.event.type === 'USER_CREATE') return SYSTEM_THEMES.SOURCE
   if (props.event.type === 'USER_UPDATE') return SYSTEM_THEMES.AUDIT
   return SYSTEM_THEMES.INTEGRATION
 })
@@ -54,7 +55,7 @@ const mappingLabels = computed(() => {
   if (first && first.fromLabel && first.toLabel) return { from: first.fromLabel, to: first.toLabel }
   
   // Fallback based on event type
-  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC') return { from: 'HR', to: 'IAM' }
+  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC' || props.event.type === 'USER_CREATE') return { from: 'HR', to: 'IAM' }
   if (props.event.type === 'AD_PROVISION') return { from: 'IAM', to: 'AD' }
   return { from: 'Source', to: 'Target' }
 })
@@ -146,48 +147,6 @@ const filteredEntries = computed(() => {
 
     <div class="flex-1 overflow-y-auto p-4 space-y-6">
       
-
-      <!-- Attribution Mapping (Context Aware 2-Way) -->
-      <section v-if="event.mappings && event.mappings.length > 0">
-        <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-          Attribute Mapping ({{ mappingLabels.from }} → {{ mappingLabels.to }})
-        </h3>
-        <div class="border rounded-md overflow-hidden bg-neutral-50/50">
-           <Table>
-             <TableHeader class="bg-white">
-               <TableRow class="h-8 hover:bg-transparent shadow-sm">
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.from }} Field</TableHead>
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 text-center w-[10%]"></TableHead>
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.to }} Field</TableHead>
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-                <TableRow v-for="(m, idx) in event.mappings" :key="idx" class="h-9 hover:bg-white border-b-neutral-100 last:border-0">
-                  <!-- From Field -->
-                  <TableCell class="py-1 px-3 text-[10px] font-mono" 
-                             :class="[
-                               mappingLabels.from === 'HR' ? 'text-blue-600' : '',
-                               mappingLabels.from === 'IAM' ? 'text-orange-600 font-bold' : ''
-                             ]">
-                    {{ m.sourceField }}
-                  </TableCell>
-
-                  <TableCell class="py-1 px-3 text-center"><ArrowRight class="size-2.5 text-neutral-300 mx-auto" /></TableCell>
-
-                  <!-- To Field -->
-                  <TableCell class="py-1 px-3 text-[10px] font-mono"
-                             :class="[
-                               mappingLabels.to === 'IAM' ? 'text-orange-600 font-bold' : '',
-                               mappingLabels.to !== 'IAM' ? 'text-purple-600 font-bold' : ''
-                             ]">
-                    {{ m.targetField }}
-                  </TableCell>
-                </TableRow>
-             </TableBody>
-           </Table>
-        </div>
-      </section>
-
       <!-- Layer Snapshot (SCIM Aware) -->
       <section v-if="event.snapshot || event.payload">
         <div class="flex flex-col gap-3 mb-4">
@@ -310,6 +269,66 @@ const filteredEntries = computed(() => {
         </div>
       </section>
 
+      <!-- Attribution Mapping (Context Aware 2-Way) -->
+      <section v-if="event.mappings && event.mappings.length > 0">
+        <button 
+          @click="isMappingOpen = !isMappingOpen"
+          class="flex items-center justify-between w-full p-2.5 rounded-md border transition-all group"
+          :class="isMappingOpen ? 'bg-neutral-900 border-neutral-800 mb-3' : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'"
+        >
+          <div class="flex items-center gap-3">
+             <div class="size-5 rounded flex items-center justify-center shadow-sm" :class="isMappingOpen ? 'bg-neutral-800' : 'bg-white border'">
+                <ArrowRight class="size-3" :class="isMappingOpen ? 'text-white' : 'text-neutral-400'" />
+             </div>
+             <div class="flex flex-col items-start">
+                <h3 class="text-[10px] font-black uppercase tracking-widest transition-colors"
+                    :class="isMappingOpen ? 'text-neutral-400' : 'text-neutral-600'">
+                  Attribute Mapping
+                </h3>
+                <span class="text-[8px] font-bold text-neutral-400 uppercase tracking-tighter">
+                  {{ mappingLabels.from }} → {{ mappingLabels.to }} ({{ event.mappings.length }} Fields)
+                </span>
+             </div>
+          </div>
+          <component :is="isMappingOpen ? ChevronDown : ChevronRight" class="size-4" :class="isMappingOpen ? 'text-neutral-500' : 'text-neutral-400'" />
+        </button>
+        
+        <div v-if="isMappingOpen" class="border rounded-md overflow-hidden bg-neutral-50/50">
+           <Table>
+             <TableHeader class="bg-white">
+               <TableRow class="h-8 hover:bg-transparent shadow-sm">
+                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.from }} Field</TableHead>
+                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 text-center w-[10%]"></TableHead>
+                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.to }} Field</TableHead>
+               </TableRow>
+             </TableHeader>
+             <TableBody>
+                <TableRow v-for="(m, idx) in event.mappings" :key="idx" class="h-9 hover:bg-white border-b-neutral-100 last:border-0">
+                  <!-- From Field -->
+                  <TableCell class="py-1 px-3 text-[10px] font-mono" 
+                             :class="[
+                                mappingLabels.from === 'HR' ? 'text-blue-600' : '',
+                                mappingLabels.from === 'IAM' ? 'text-orange-600 font-bold' : ''
+                             ]">
+                    {{ m.fromField }}
+                  </TableCell>
+
+                  <TableCell class="py-1 px-3 text-center"><ArrowRight class="size-2.5 text-neutral-300 mx-auto" /></TableCell>
+
+                  <!-- To Field -->
+                  <TableCell class="py-1 px-3 text-[10px] font-mono"
+                             :class="[
+                                mappingLabels.to === 'IAM' ? 'text-orange-600 font-bold' : '',
+                                mappingLabels.to !== 'IAM' ? 'text-purple-600 font-bold' : ''
+                             ]">
+                    {{ m.toField }}
+                  </TableCell>
+                </TableRow>
+             </TableBody>
+           </Table>
+        </div>
+      </section>
+
       <Separator />
 
       <!-- Sync Pipeline Visualization -->
@@ -330,7 +349,7 @@ const filteredEntries = computed(() => {
             </div>
             <div class="ml-8 space-y-1">
               <div 
-                v-for="h in allHistory.filter(x => x.traceId === event.traceId && (x.type === 'HR_SYNC' || x.type === 'USER_SYNC'))" :key="h.id"
+                v-for="h in allHistory.filter(x => x.traceId === event.traceId && (x.type === 'HR_SYNC' || x.type === 'USER_SYNC' || x.type === 'USER_CREATE'))" :key="h.id"
                 @click="openRelatedEvent(h)"
                 class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
                 :class="h.id === event.id ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : 'bg-white border-neutral-100 hover:border-blue-200'"
@@ -408,7 +427,7 @@ const filteredEntries = computed(() => {
           <component :is="isRawOpen ? ChevronDown : ChevronRight" class="size-3" />
         </button>
         <div v-if="isRawOpen" class="p-3 bg-neutral-900 rounded-b-md text-neutral-300 font-mono text-[10px] border-t border-neutral-800">
-          <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.payload || event, null, 2) }}</pre>
+          <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ event.requestPayload ? (typeof event.requestPayload === 'string' ? JSON.stringify(JSON.parse(event.requestPayload), null, 2) : JSON.stringify(event.requestPayload, null, 2)) : JSON.stringify(event.payload || event, null, 2) }}</pre>
         </div>
       </section>
 

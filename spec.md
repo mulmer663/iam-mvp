@@ -1,4 +1,4 @@
-# 📜 IAM MVP 기술 명세서 (Version 1.3 - Reference Based)
+# 📜 IAM MVP 기술 명세서 (Version 1.4 - Reference Based)
 
 ## 1. MVP 목표: "HR 데이터 수집 및 SCIM 2.0 규격 변환 -> IAM 내부 사용자 생성(Core/Extension 분리) -> 식별자 매핑 -> 대상 시스템 프로비저닝"
 
@@ -9,12 +9,14 @@ SCIM 2.0 프로토콜을 기반으로 외부 시스템(HR)으로부터 데이터
 * **iam-connector-hr (Source Event Detector):**  
   * HR 시스템의 변화(신규 입사, 정보 수정, 퇴사)를 감지합니다.
   * 복잡한 변환 없이 **원천 데이터 스냅샷**을 포함한 이벤트를 `iam.ingest` 큐로 던집니다.
+  * **보상 트랜잭션 (Compensation):** Core 처리 실패 시 `iam.event.compensation` 이벤트를 수신하여 스냅샷을 **롤백(Revert)** 하거나(업데이트 실패 시), 삭제(신규 실패 시)하여 다음 배치 시 재처리를 보장합니다.
   * 이 시점에 **`traceId`**를 생성하여 전체 프로세스의 추적성을 시작합니다.
 
 * **iam-core (Transformation & Orchestration):**  
   * 큐에서 이벤트를 수신하여 **Groovy Rule Engine**을 구동합니다.
   * 원천 데이터를 SCIM 표준 및 IAM 내부 스키마(`IamUser`, `JSONB`)로 변환합니다.
   * 변환 전/후 데이터를 `SyncHistory`에 기록하고 DB에 최종 반영합니다.
+  * **실패 감지:** 동기화 실패 시 명시적으로 **`SyncCompensationEvent`**를 발행하여 원천 시스템에 롤백을 요청합니다.
 
 * **Core Storage:** 정형 속성(Core)은 컬럼으로, 비정형 속성(Extensions)은 JSONB로 분리 저장하는 하이브리드 방식을 채택합니다.
 
@@ -27,10 +29,11 @@ graph LR
     subgraph "IAM System"
         direction TB
         subgraph "Ingestion"
-            HRC[HR Connector]
+         HRC[HR Connector]
         end
         
         MQ1((iam.ingest))
+        MQ_FAIL((iam.fail))
         
         subgraph "Core Domain (Rule Engine)"
             Logic[Sync Service]
@@ -44,6 +47,8 @@ graph LR
     MQ1 -->|3. Consume| Logic
     Logic <-->|4. Transform| Rule
     Logic <-->|5. Store & Audit| DB
+    Logic -.->|6. On Fail (Compensation)| MQ_FAIL
+    MQ_FAIL -.->|7. Revert Snapshot| HRC
 ```
 
 ## 3. 데이터 모델 전략 (Hybrid Storage)
@@ -102,3 +107,4 @@ graph LR
 [x] 규칙 기반 동적 스크립트 엔진 (DIRECT/CODE/CLASSIFY/REPLACE/CUSTOM) 구현
 [x] 변환 규칙 검증 필터(필수값/길이) 및 상황별 예외 처리 고도화
 [x] 규칙 매핑 CRUD API 및 DB 기반 코드 매핑 연동 구현
+[x] 보상 트랜잭션(Sync Compensation) 및 스냅샷 롤백 메커니즘 구현 - NEW

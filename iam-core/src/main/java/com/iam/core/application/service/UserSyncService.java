@@ -74,14 +74,16 @@ public class UserSyncService {
             // 2. Correlation & Update
             correlationService.correlate(systemId, externalId)
                     .ifPresentOrElse(
-                            user -> updateExistingUser(user, transformed, rawData, systemId, traceId),
-                            () -> createNewUser(externalId, transformed, rawData, systemId, traceId));
+                            user -> updateExistingUser(user, transformed, rawData, systemId, traceId,
+                                    event.rawMessage()),
+                            () -> createNewUser(externalId, transformed, rawData, systemId, traceId,
+                                    event.rawMessage()));
 
         } catch (Exception e) {
             log.error("Sync failed for traceId: {}", traceId, e);
             syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR,
                     userName != null ? userName : "UNKNOWN", null, systemId,
-                    rawData,
+                    event.rawMessage() != null ? event.rawMessage() : rawData,
                     "Error: " + e.getMessage());
 
             // Publish Compensation Event
@@ -101,14 +103,14 @@ public class UserSyncService {
     }
 
     private void createNewUser(String externalId, Map<String, UniversalData> attributes,
-            Map<String, Object> rawData, String systemId, String traceId) {
+            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest) {
         log.info("Creating new user via engine for system: {}, ID: {}", systemId, externalId);
 
         var user = iamUserUpdateService.create(externalId, attributes);
         var link = createIdentityLink(user.getId(), systemId, externalId);
         identityLinkRepository.save(link);
 
-        publishProvisioningCommand(user, extractRawExtensions(attributes));
+        publishProvisioningCommand(user, extractRawExtensions(attributes), traceId);
 
         // Rich History
         Map<String, Object> historyPayload = Map.of(
@@ -121,18 +123,18 @@ public class UserSyncService {
         syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_CREATE, user.getUserName(), user.getId(),
                 systemId,
                 historyPayload,
-                "User created via engine");
+                "User created via engine", null, null, originalRequest);
     }
 
     private void updateExistingUser(IamUser user, Map<String, UniversalData> attributes,
-            Map<String, Object> rawData, String systemId, String traceId) {
+            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest) {
         log.info("Updating existing user via engine for system: {}, userId: {}", systemId, user.getId());
 
         // Capture old state for diff
         Map<String, Object> oldState = captureState(user);
 
         iamUserUpdateService.update(user, attributes);
-        publishProvisioningCommand(user, extractRawExtensions(attributes));
+        publishProvisioningCommand(user, extractRawExtensions(attributes), traceId);
 
         // Calculate changes
         List<Map<String, Object>> changes = calculateChanges(oldState, captureState(user));
@@ -148,7 +150,7 @@ public class UserSyncService {
 
         syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_UPDATE, user.getUserName(), user.getId(),
                 systemId,
-                historyPayload, "User updated via engine");
+                historyPayload, "User updated via engine", null, null, originalRequest);
     }
 
     private Map<String, Object> captureState(IamUser user) {
@@ -211,9 +213,9 @@ public class UserSyncService {
         return link;
     }
 
-    private void publishProvisioningCommand(IamUser user, Map<String, Object> attributes) {
+    private void publishProvisioningCommand(IamUser user, Map<String, Object> attributes, String traceId) {
         var command = new ProvisioningCommand(
-                UUID.randomUUID().toString(),
+                traceId,
                 "CAUSE_EVENT_ID",
                 "CREATE_ACCOUNT",
                 new ProvisioningCommand.ProvisioningPayload(
@@ -225,6 +227,19 @@ public class UserSyncService {
                         attributes));
 
         messagePublisher.publish(EXCHANGE_NAME, PROVISION_ROUTING_KEY, command);
-        log.info("Published provisioning command for user: {}", user.getId());
+        log.info("Published provisioning command for user: {} (traceId: {})", user.getId(), traceId);
+
+        // Audit Logging for Provisioning
+        syncHistoryService.logSuccess(
+                traceId,
+                SyncConstants.EVENT_AD_PROVISION,
+                user.getUserName(),
+                user.getId(),
+                SystemConstants.SYSTEM_IAM,
+                Map.of("target", SystemConstants.SYSTEM_AD, "command", "PROVISION"),
+                "Provisioning request sent to AD",
+                null,
+                null,
+                command);
     }
 }

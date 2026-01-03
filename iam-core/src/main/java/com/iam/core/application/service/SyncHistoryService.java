@@ -26,26 +26,27 @@ public class SyncHistoryService {
     public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
             Object payload,
             String responsePayload) {
-        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, payload, responsePayload, null, null);
+        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, payload, responsePayload, null, null,
+                null);
     }
 
     @Transactional
     public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
             Object payload,
-            String responsePayload, Long parentId, Long duration) {
+            String responsePayload, Long parentId, Long duration, Object requestPayload) {
         return saveHistory(traceId, type, SyncConstants.STATUS_SUCCESS, targetUser, iamUserId, sourceSystem, null,
                 payload,
                 responsePayload, parentId,
-                duration);
+                duration, requestPayload);
     }
 
     @Transactional
     public void logFailure(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
-            Object payload,
+            Object requestPayload,
             String errorDetails) {
-        saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, iamUserId, sourceSystem, null, payload,
+        saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, iamUserId, sourceSystem, null, null,
                 errorDetails,
-                null, null);
+                null, null, requestPayload);
     }
 
     @Transactional(readOnly = true)
@@ -83,8 +84,8 @@ public class SyncHistoryService {
 
     private Long saveHistory(String traceId, String type, String status, String targetUser, Long iamUserId,
             String sourceSystem,
-            String targetSystem, Object requestPayload, String responsePayload, Long parentHistoryId,
-            Long durationMs) {
+            String targetSystem, Object detailPayload, String responsePayload, Long parentHistoryId,
+            Long durationMs, Object originalRequestPayload) {
         try {
             var history = SyncHistory.builder()
                     .traceId(traceId)
@@ -102,11 +103,16 @@ public class SyncHistoryService {
                     .expiresAt(LocalDateTime.now().plusDays(30))
                     .build();
 
-            if (requestPayload != null) {
-                Object unwrapped = unwrap(requestPayload);
+            if (detailPayload != null) {
+                Object unwrapped = unwrap(detailPayload);
+                String json = objectMapper.writeValueAsString(unwrapped);
+                history.setPayload(json);
+            }
+
+            if (originalRequestPayload != null) {
+                Object unwrapped = unwrap(originalRequestPayload);
                 String json = objectMapper.writeValueAsString(unwrapped);
                 history.setRequestPayload(json);
-                history.setPayload(json); // Sync with 'payload' column for CSV
             }
 
             var saved = syncHistoryRepository.save(history);
@@ -148,6 +154,7 @@ public class SyncHistoryService {
                 history.getCreatedAt(),
                 history.getMessage(),
                 history.getPayload(),
+                history.getRequestPayload(),
                 history.getParentHistoryId(),
                 history.getDurationMs());
     }

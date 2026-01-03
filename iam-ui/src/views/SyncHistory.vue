@@ -35,7 +35,7 @@ const filteredHistory = computed((): HistoryLog[] => {
   let baseList = history.value
   
   if (props.type === 'AUDIT') return baseList.filter(h => h.type === 'USER_UPDATE')
-  if (props.type === 'SOURCE') return baseList.filter(h => h.type === 'HR_SYNC')
+  if (props.type === 'SOURCE') return baseList.filter(h => ['HR_SYNC', 'USER_CREATE', 'USER_SYNC'].includes(h.type))
   return baseList.filter(h => h.type === 'AD_PROVISION')
 })
 
