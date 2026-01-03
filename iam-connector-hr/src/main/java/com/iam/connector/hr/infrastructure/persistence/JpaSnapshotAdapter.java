@@ -28,6 +28,11 @@ public class JpaSnapshotAdapter implements SnapshotPort {
         HrSnapshot snapshot = repository.findById(externalId)
                 .orElse(HrSnapshot.builder().externalId(externalId).systemId(systemId).build());
 
+        // Update previous hash for rollback capability
+        if (snapshot.getHash() != null) {
+            snapshot.setPreviousHash(snapshot.getHash());
+        }
+
         snapshot.setHash(hash);
         snapshot.setSystemId(systemId); // Ensure systemId is set correctly in updates
         repository.save(snapshot);
@@ -37,6 +42,22 @@ public class JpaSnapshotAdapter implements SnapshotPort {
     @Transactional
     public void delete(String externalId) {
         repository.deleteById(externalId);
+    }
+
+    @Override
+    @Transactional
+    public void revert(String externalId) {
+        repository.findById(externalId).ifPresent(snapshot -> {
+            if (snapshot.getPreviousHash() != null) {
+                // Revert to previous hash
+                snapshot.setHash(snapshot.getPreviousHash());
+                snapshot.setPreviousHash(null);
+                repository.save(snapshot);
+            } else {
+                // No previous hash means this was a new record -> Delete it
+                repository.delete(snapshot);
+            }
+        });
     }
 
     @Override

@@ -39,9 +39,6 @@ const filteredHistory = computed((): HistoryLog[] => {
   return baseList.filter(h => h.type === 'AD_PROVISION')
 })
 
-
-
-
 const getStatusVariant = (status: string) => {
   if (status === 'SUCCESS') return 'default'
   if (status === 'PENDING') return 'secondary'
@@ -83,48 +80,56 @@ function onRowClick(log: HistoryLog) {
     </div>
     <div class="flex-1 p-3 overflow-auto">
        <Table class="border">
-         <TableHeader class="bg-neutral-50">
-            <TableRow class="h-7 hover:bg-transparent">
-               <TableHead class="text-[10px] uppercase font-bold p-2">Trace ID</TableHead>
-               <TableHead class="text-[10px] uppercase font-bold p-2">Sync Type</TableHead>
-               <TableHead class="text-[10px] uppercase font-bold p-2">Target</TableHead>
-               <TableHead class="text-[10px] uppercase font-bold p-2 text-center">Status</TableHead>
-               <TableHead class="text-[10px] uppercase font-bold p-2 text-right">Timestamp</TableHead>
-            </TableRow>
-         </TableHeader>
-         <TableBody>
-            <TableRow 
-              v-for="log in filteredHistory" 
-              :key="log.id" 
-              @click="onRowClick(log)"
-              class="h-8 hover:bg-neutral-50 transition-colors cursor-pointer group"
-            >
-               <TableCell class="p-2 py-1 font-mono text-[10px] text-neutral-400">
-                  <div class="flex items-center gap-1">
-                     <span>{{ log.traceId }}</span>
-                     <ExternalLink class="size-2 hidden group-hover:block" />
-                  </div>
-               </TableCell>
-               <TableCell class="p-2 py-1">
-                 <Badge 
-                   v-if="log.syncType" 
-                   :variant="getSyncTypeVariant(log)" 
-                   class="h-4 px-1 text-[8px] uppercase tracking-tighter"
-                   :class="{ 'text-amber-600 bg-amber-50 border-amber-200': log.syncType === 'UPDATE_CRITICAL' }"
-                 >
-                   {{ log.syncType }}
-                 </Badge>
-                 <span v-else class="text-[9px] text-neutral-300">-</span>
-               </TableCell>
-               <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-700">{{ log.target }}</TableCell>
-               <TableCell class="p-2 py-1 text-center">
-                  <Badge :variant="getStatusVariant(log.status)" class="px-1 py-0 h-4 text-[9px] font-bold rounded-sm">
-                     {{ log.status }}
+          <TableHeader class="bg-neutral-50">
+             <TableRow class="h-7 hover:bg-transparent">
+                <TableHead class="text-[10px] uppercase font-bold p-2">Trace ID</TableHead>
+                <TableHead class="text-[10px] uppercase font-bold p-2">User</TableHead>
+                <TableHead class="text-[10px] uppercase font-bold p-2">Sync Type</TableHead>
+                <TableHead v-if="type !== 'AUDIT'" class="text-[10px] uppercase font-bold p-2">
+                   {{ type === 'SOURCE' ? 'Source' : 'Target' }}
+                </TableHead>
+                <TableHead class="text-[10px] uppercase font-bold p-2 text-center">Status</TableHead>
+                <TableHead class="text-[10px] uppercase font-bold p-2 text-right">Timestamp</TableHead>
+             </TableRow>
+          </TableHeader>
+          <TableBody>
+             <TableRow 
+               v-for="log in filteredHistory" 
+               :key="log.id" 
+               @click="onRowClick(log)"
+               class="h-8 hover:bg-neutral-50 transition-colors cursor-pointer group"
+             >
+                <TableCell class="p-2 py-1 font-mono text-[10px] text-neutral-400">
+                   <div class="flex items-center gap-1">
+                      <span>{{ log.traceId }}</span>
+                      <ExternalLink class="size-2 hidden group-hover:block" />
+                   </div>
+                </TableCell>
+                <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-600">
+                   {{ log.target }}
+                </TableCell>
+                <TableCell class="p-2 py-1">
+                  <Badge 
+                    v-if="log.syncType" 
+                    :variant="getSyncTypeVariant(log)" 
+                    class="h-4 px-1 text-[8px] uppercase tracking-tighter"
+                    :class="{ 'text-amber-600 bg-amber-50 border-amber-200': log.syncType === 'UPDATE_CRITICAL' }"
+                  >
+                    {{ log.syncType }}
                   </Badge>
-               </TableCell>
-               <TableCell class="p-2 py-1 text-right text-[10px] text-neutral-400">{{ log.time }}</TableCell>
-            </TableRow>
-         </TableBody>
+                  <span v-else class="text-[9px] text-neutral-300">-</span>
+                </TableCell>
+                <TableCell v-if="type !== 'AUDIT'" class="p-2 py-1 text-[11px] font-medium text-neutral-700">
+                   {{ type === 'SOURCE' ? (log.sourceSystem || 'HR') : (log.targetSystem || 'Target System') }}
+                </TableCell>
+                <TableCell class="p-2 py-1 text-center">
+                   <Badge :variant="getStatusVariant(log.status)" class="px-1 py-0 h-4 text-[9px] font-bold rounded-sm">
+                      {{ log.status }}
+                   </Badge>
+                </TableCell>
+                <TableCell class="p-2 py-1 text-right text-[10px] text-neutral-400">{{ log.time }}</TableCell>
+             </TableRow>
+          </TableBody>
        </Table>
     </div>
   </div>

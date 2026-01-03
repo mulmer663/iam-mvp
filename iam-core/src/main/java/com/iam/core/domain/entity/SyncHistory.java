@@ -8,7 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "sync_history", indexes = {
+@Table(name = "iam_sync_history", indexes = {
         @Index(name = "idx_sync_trace", columnList = "trace_id"),
         @Index(name = "idx_sync_target", columnList = "target_user")
 })

@@ -41,12 +41,23 @@ onMounted(async () => {
 
 
 const theme = computed(() => {
-  if (props.event.type === 'HR_SYNC') return SYSTEM_THEMES.SOURCE
+  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC') return SYSTEM_THEMES.SOURCE
   if (props.event.type === 'USER_UPDATE') return SYSTEM_THEMES.AUDIT
   return SYSTEM_THEMES.INTEGRATION
 })
 
 const snapshotTitle = computed(() => theme.value.subLabel)
+
+const mappingLabels = computed(() => {
+  if (!props.event.mappings || props.event.mappings.length === 0) return { from: 'Source', to: 'Target' }
+  const first = props.event.mappings[0]
+  if (first && first.fromLabel && first.toLabel) return { from: first.fromLabel, to: first.toLabel }
+  
+  // Fallback based on event type
+  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC') return { from: 'HR', to: 'IAM' }
+  if (props.event.type === 'AD_PROVISION') return { from: 'IAM', to: 'AD' }
+  return { from: 'Source', to: 'Target' }
+})
 
 
 function openRelatedEvent(log: HistoryLog) {
@@ -81,8 +92,8 @@ const getChange = (key: string) => {
 }
 
 const allSnapshotEntries = computed(() => {
-  if (!props.event.snapshot?.data) return []
-  const data = props.event.snapshot.data
+  const data = props.event.snapshot?.data || props.event.payload
+  if (!data) return []
   return Object.entries(data).filter(([key]) => key !== 'schemas' && !isExtension(key))
 })
 
@@ -139,15 +150,15 @@ const filteredEntries = computed(() => {
       <!-- Attribution Mapping (Context Aware 2-Way) -->
       <section v-if="event.mappings && event.mappings.length > 0">
         <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-          Attribute Mapping ({{ event.mappings?.[0]?.fromLabel }} → {{ event.mappings?.[0]?.toLabel }})
+          Attribute Mapping ({{ mappingLabels.from }} → {{ mappingLabels.to }})
         </h3>
         <div class="border rounded-md overflow-hidden bg-neutral-50/50">
            <Table>
              <TableHeader class="bg-white">
                <TableRow class="h-8 hover:bg-transparent shadow-sm">
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ event.mappings?.[0]?.fromLabel }} Field</TableHead>
+                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.from }} Field</TableHead>
                  <TableHead class="text-[9px] font-bold uppercase py-0 px-3 text-center w-[10%]"></TableHead>
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ event.mappings?.[0]?.toLabel }} Field</TableHead>
+                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.to }} Field</TableHead>
                </TableRow>
              </TableHeader>
              <TableBody>
@@ -155,10 +166,10 @@ const filteredEntries = computed(() => {
                   <!-- From Field -->
                   <TableCell class="py-1 px-3 text-[10px] font-mono" 
                              :class="[
-                               m.fromLabel === 'HR' ? 'text-blue-600' : '',
-                               m.fromLabel === 'IAM' ? 'text-orange-600 font-bold' : ''
+                               mappingLabels.from === 'HR' ? 'text-blue-600' : '',
+                               mappingLabels.from === 'IAM' ? 'text-orange-600 font-bold' : ''
                              ]">
-                    {{ m.fromField }}
+                    {{ m.sourceField }}
                   </TableCell>
 
                   <TableCell class="py-1 px-3 text-center"><ArrowRight class="size-2.5 text-neutral-300 mx-auto" /></TableCell>
@@ -166,10 +177,10 @@ const filteredEntries = computed(() => {
                   <!-- To Field -->
                   <TableCell class="py-1 px-3 text-[10px] font-mono"
                              :class="[
-                               m.toLabel === 'IAM' ? 'text-orange-600 font-bold' : '',
-                               m.toLabel !== 'IAM' ? 'text-purple-600 font-bold' : ''
+                               mappingLabels.to === 'IAM' ? 'text-orange-600 font-bold' : '',
+                               mappingLabels.to !== 'IAM' ? 'text-purple-600 font-bold' : ''
                              ]">
-                    {{ m.toField }}
+                    {{ m.targetField }}
                   </TableCell>
                 </TableRow>
              </TableBody>
@@ -178,7 +189,7 @@ const filteredEntries = computed(() => {
       </section>
 
       <!-- Layer Snapshot (SCIM Aware) -->
-      <section v-if="event.snapshot">
+      <section v-if="event.snapshot || event.payload">
         <div class="flex flex-col gap-3 mb-4">
            <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
@@ -197,14 +208,14 @@ const filteredEntries = computed(() => {
                   class="px-2 py-0.5 text-[9px] font-bold rounded-sm transition-all"
                   :class="viewMode === 'changes' && !searchQuery ? 'bg-white text-blue-600 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'"
                 >
-                  CHANGES
+                   CHANGES
                 </button>
                 <button 
                   @click="viewMode = 'all'; searchQuery = ''"
                   class="px-2 py-0.5 text-[9px] font-bold rounded-sm transition-all"
                   :class="viewMode === 'all' && !searchQuery ? 'bg-white text-neutral-700 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'"
                 >
-                  ALL
+                   ALL
                 </button>
               </div>
            </div>
@@ -278,21 +289,23 @@ const filteredEntries = computed(() => {
            </div>
 
            <!-- Extensions -->
-           <div v-for="(val, key) in event.snapshot.data" :key="key">
-              <div v-if="isExtension(key as string)" class="space-y-2">
-                 <div class="text-[9px] font-black uppercase tracking-widest flex items-center gap-2" :class="theme.text">
-                    <Separator class="flex-1" />
-                    <span>Extension: {{ (key as string).split(':').pop() }}</span>
-                    <Separator class="flex-1" />
-                 </div>
-                 <div class="grid grid-cols-2 gap-2">
-                    <div v-for="(extVal, extKey) in (val as any)" :key="extKey" 
-                         class="border rounded p-2" :class="[theme.bg, theme.border]">
-                       <div class="text-[9px] uppercase font-bold mb-0.5" :class="theme.text">{{ extKey }}</div>
-                       <div class="text-[11px] font-medium text-neutral-800">{{ extVal }}</div>
-                    </div>
-                 </div>
-              </div>
+           <div v-if="event.snapshot?.data">
+               <div v-for="(val, key) in event.snapshot.data" :key="key">
+                  <div v-if="isExtension(key as string)" class="space-y-2 mt-4">
+                     <div class="text-[9px] font-black uppercase tracking-widest flex items-center gap-2" :class="theme.text">
+                        <Separator class="flex-1" />
+                        <span>Extension: {{ (key as string).split(':').pop() }}</span>
+                        <Separator class="flex-1" />
+                     </div>
+                     <div class="grid grid-cols-2 gap-2">
+                        <div v-for="(extVal, extKey) in (val as any)" :key="extKey" 
+                             class="border rounded p-2" :class="[theme.bg, theme.border]">
+                           <div class="text-[9px] uppercase font-bold mb-0.5" :class="theme.text">{{ extKey }}</div>
+                           <div class="text-[11px] font-medium text-neutral-800">{{ extVal }}</div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
            </div>
         </div>
       </section>
@@ -317,13 +330,13 @@ const filteredEntries = computed(() => {
             </div>
             <div class="ml-8 space-y-1">
               <div 
-                v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.type === 'HR_SYNC')" :key="h.id"
+                v-for="h in allHistory.filter(x => x.traceId === event.traceId && (x.type === 'HR_SYNC' || x.type === 'USER_SYNC'))" :key="h.id"
                 @click="openRelatedEvent(h)"
                 class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
                 :class="h.id === event.id ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : 'bg-white border-neutral-100 hover:border-blue-200'"
               >
                 <div class="flex flex-col">
-                  <span class="font-bold text-neutral-700">HR System</span>
+                  <span class="font-bold text-neutral-700">{{ h.target || 'HR System' }}</span>
                   <span class="text-[9px] text-neutral-400 font-mono">{{ h.time }}</span>
                 </div>
                 <Badge :variant="h.status === 'SUCCESS' ? 'default' : 'destructive'" class="h-3 text-[8px] px-1">{{ h.status }}</Badge>
@@ -370,7 +383,7 @@ const filteredEntries = computed(() => {
                 >
                   <div class="flex items-center justify-between">
                     <span class="font-black text-neutral-500 uppercase tracking-tighter truncate max-w-[70%]">
-                      {{ h.payload?.targetSystem || 'Target System' }}
+                      {{ h.target || 'Target System' }}
                     </span>
                     <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'"></div>
                   </div>
@@ -390,12 +403,12 @@ const filteredEntries = computed(() => {
           :class="{ 'rounded-md': !isRawOpen }"
         >
           <div class="flex items-center gap-2">
-             <Code class="size-3" /> <span>RAW DATA AUDIT</span>
+             <Code class="size-3" /> <span>RAW PAYLOAD AUDIT</span>
           </div>
           <component :is="isRawOpen ? ChevronDown : ChevronRight" class="size-3" />
         </button>
         <div v-if="isRawOpen" class="p-3 bg-neutral-900 rounded-b-md text-neutral-300 font-mono text-[10px] border-t border-neutral-800">
-          <pre class="overflow-x-auto">{{ JSON.stringify(event, null, 2) }}</pre>
+          <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.payload || event, null, 2) }}</pre>
         </div>
       </section>
 

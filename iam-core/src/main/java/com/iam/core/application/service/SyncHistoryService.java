@@ -51,16 +51,26 @@ public class SyncHistoryService {
     @Transactional(readOnly = true)
     public List<HistoryResponse> getHistory(String userId, String targetUser) {
         List<SyncHistory> list;
-        if (userId != null && !userId.isBlank()) {
+        boolean hasUserId = userId != null && !userId.isBlank();
+        boolean hasTargetUser = targetUser != null && !targetUser.isBlank();
+
+        if (hasUserId && hasTargetUser) {
+            try {
+                Long iamUserId = Long.parseLong(userId);
+                list = syncHistoryRepository.findByIamUserIdOrTargetUser(iamUserId, targetUser);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid userId format, falling back to targetUser: {}", userId);
+                list = syncHistoryRepository.findByTargetUser(targetUser);
+            }
+        } else if (hasUserId) {
             try {
                 Long iamUserId = Long.parseLong(userId);
                 list = syncHistoryRepository.findByIamUserId(iamUserId);
             } catch (NumberFormatException e) {
-                // Fallback or empty if not a valid Long
-                log.warn("Invalid userId format for history lookup: {}", userId);
+                log.warn("Invalid userId format: {}", userId);
                 list = List.of();
             }
-        } else if (targetUser != null && !targetUser.isBlank()) {
+        } else if (hasTargetUser) {
             list = syncHistoryRepository.findByTargetUser(targetUser);
         } else {
             list = syncHistoryRepository.findAllByOrderByCreatedAtDesc();
@@ -133,6 +143,8 @@ public class SyncHistoryService {
                 history.getType(),
                 history.getStatus(),
                 history.getTargetUser(),
+                history.getSourceSystem(),
+                history.getTargetSystem(),
                 history.getCreatedAt(),
                 history.getMessage(),
                 history.getPayload(),

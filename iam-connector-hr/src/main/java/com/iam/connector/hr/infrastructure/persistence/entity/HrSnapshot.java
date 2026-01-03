@@ -25,6 +25,9 @@ public class HrSnapshot {
     @Column(name = "HASH_VALUE", length = 64, nullable = false)
     private String hash;
 
+    @Column(name = "PREV_HASH_VALUE", length = 64)
+    private String previousHash;
+
     @Column(name = "SYSTEM_ID", length = 50, nullable = false)
     private String systemId;
 

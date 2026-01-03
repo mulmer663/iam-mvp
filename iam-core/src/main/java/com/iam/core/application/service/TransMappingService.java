@@ -1,9 +1,7 @@
 package com.iam.core.application.service;
 
-import com.iam.core.domain.entity.TransFieldMapping;
-import com.iam.core.domain.entity.TransRuleVersion;
-import com.iam.core.domain.repository.TransFieldMappingRepository;
-import com.iam.core.domain.repository.TransRuleVersionRepository;
+import com.iam.core.domain.entity.*;
+import com.iam.core.domain.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +17,40 @@ public class TransMappingService {
 
     private final TransFieldMappingRepository fieldMappingRepository;
     private final TransRuleVersionRepository ruleVersionRepository;
+    private final TransRuleMetaRepository ruleMetaRepository;
+    private final TransMappingRepository transMappingRepository;
+    private final TransCodeMetaRepository codeMetaRepository;
+    private final TransCodeValueRepository codeValueRepository;
     private final RuleScriptGenerator scriptGenerator;
+
+    public long countRuleMeta() {
+        return ruleMetaRepository.count();
+    }
+
+    @Transactional
+    public TransRuleMeta saveRuleMeta(TransRuleMeta meta) {
+        return ruleMetaRepository.save(meta);
+    }
+
+    @Transactional
+    public TransMapping saveTransMapping(TransMapping mapping) {
+        return transMappingRepository.save(mapping);
+    }
+
+    @Transactional
+    public TransCodeMeta saveCodeMeta(TransCodeMeta meta) {
+        return codeMetaRepository.save(meta);
+    }
+
+    @Transactional
+    public void saveCodeValues(List<TransCodeValue> values) {
+        codeValueRepository.saveAll(values);
+    }
+
+    @Transactional
+    public void saveRuleVersion(TransRuleVersion version) {
+        ruleVersionRepository.save(version);
+    }
 
     public List<TransFieldMapping> getMappings(String ruleId) {
         return fieldMappingRepository.findByRuleId(ruleId);

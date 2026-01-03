@@ -37,4 +37,5 @@ public final class AttributeConstants {
     // Common Extension keys
     public static final String EMP_NO = "empNo";
     public static final String DEPT_NAME = "deptName";
+    public static final String EMAIL = "email";
 }

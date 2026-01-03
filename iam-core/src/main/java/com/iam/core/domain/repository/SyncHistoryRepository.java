@@ -13,4 +13,6 @@ public interface SyncHistoryRepository extends JpaRepository<SyncHistory, Long> 
     List<SyncHistory> findByTargetUser(String targetUser);
 
     List<SyncHistory> findByIamUserId(Long iamUserId);
+
+    List<SyncHistory> findByIamUserIdOrTargetUser(Long iamUserId, String targetUser);
 }

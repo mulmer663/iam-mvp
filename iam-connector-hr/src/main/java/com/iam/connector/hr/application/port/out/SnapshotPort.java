@@ -13,5 +13,7 @@ public interface SnapshotPort {
 
     void delete(String externalId);
 
+    void revert(String externalId);
+
     Set<String> getAllExternalIds(String systemId);
 }

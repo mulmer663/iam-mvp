@@ -6,8 +6,10 @@ interface HistoryResponse {
     traceId: string
     type: string
     status: string
-    targetUser: string // Matched with Backend SyncHistory entity
-    createdAt: string // Matched with Backend DTO
+    target: string // targetUser
+    sourceSystem?: string
+    targetSystem?: string
+    time: string // Align with time in api-specs.md
     message?: string
     payload?: string // JSON string
 }
@@ -44,14 +46,16 @@ export const HistoryService = {
         const actualPayload = payloadObj.snapshot ? payloadObj.snapshot.data : payloadObj;
 
         // Ensure time is formatted nicely (remove T if present)
-        const formattedTime = dto.createdAt ? dto.createdAt.replace('T', ' ') : '';
+        const formattedTime = dto.time ? dto.time.replace('T', ' ') : '';
 
         return {
             id: dto.id,
             traceId: dto.traceId,
             type: dto.type as any,
             status: dto.status as any,
-            target: dto.targetUser,
+            target: dto.target,
+            sourceSystem: dto.sourceSystem,
+            targetSystem: dto.targetSystem,
             time: formattedTime,
             message: dto.message,
             payload: actualPayload,

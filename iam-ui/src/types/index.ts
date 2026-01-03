@@ -33,19 +33,23 @@ export interface User {
 }
 
 export interface AttributeMapping {
-    fromLabel: string
-    toLabel: string
-    fromField: string
-    toField: string
-    value: string
+    sourceField: string
+    targetField: string
+    fromLabel?: string
+    toLabel?: string
+    value?: string
+    transformType?: string
+    transformParams?: string
 }
 
 export interface HistoryLog {
     id: string
     traceId: string
-    type: 'HR_SYNC' | 'AD_PROVISION' | 'USER_UPDATE'
+    type: 'HR_SYNC' | 'AD_PROVISION' | 'USER_UPDATE' | 'USER_SYNC'
     status: 'SUCCESS' | 'PENDING' | 'FAILURE'
     target: string
+    sourceSystem?: string
+    targetSystem?: string
     time: string
     userId?: string
     userName?: string

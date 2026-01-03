@@ -34,55 +34,48 @@ class IngestIntegrationTest {
         private IdentityLinkRepository identityLinkRepository;
 
         @Autowired
-        private TransRuleMetaRepository transRuleMetaRepository;
+        private com.iam.core.application.service.TransMappingService transMappingService;
 
-        @Autowired
-        private TransRuleVersionRepository transRuleVersionRepository;
-
-        @Autowired
-        private TransMappingRepository transMappingRepository;
+        private static final String SYSTEM_ID = "TEST_HR_INGEST";
+        private static final String RULE_ID = "TEST_INGEST_RULE";
 
         @BeforeEach
         void setUp() {
-                // Setup a rule for SAP_HR
-                String ruleId = "TEST_CORE_TRANS";
+                if (transMappingService.getMappings(RULE_ID).isEmpty()) {
+                        // 1. Rule Meta
+                        transMappingService.saveRuleMeta(TransRuleMeta.builder()
+                                        .ruleId(RULE_ID)
+                                        .ruleName("Test Ingest Rule")
+                                        .targetAttribute("CORE")
+                                        .status("ACTIVE")
+                                        .build());
 
-                TransRuleMeta meta = TransRuleMeta.builder()
-                                .ruleId(ruleId)
-                                .ruleName("TEST HR Core Transformation")
-                                .targetAttribute("CORE")
-                                .status("ACTIVE")
-                                .build();
-                transRuleMetaRepository.save(meta);
+                        // 2. Trans Mapping
+                        transMappingService.saveTransMapping(TransMapping.builder()
+                                        .systemId(SYSTEM_ID)
+                                        .ruleId(RULE_ID)
+                                        .execOrder(1)
+                                        .isMandatory(true)
+                                        .build());
 
-                String script = """
-                                    def res = [:]
-                                    res.userName = source.empNo.asString()
-                                    res.familyName = source.lastName.asString()
-                                    res.givenName = source.firstName.asString()
-                                    res.title = source.position.asString()
-                                    res.active = new com.iam.core.domain.vo.BooleanData(true)
-                                    res.employeeNumber = source.empNo.asString()
-                                    res.externalId = source.externalId.asString()
-                                    return res
-                                """;
+                        // 3. Field Mappings (Triggers script generation)
+                        java.util.List<com.iam.core.domain.entity.TransFieldMapping> mappings = java.util.List.of(
+                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                                        .sourceField("empNo").targetField("userName").isRequired(true)
+                                                        .build(),
+                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                                        .sourceField("lastName").targetField("familyName").build(),
+                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                                        .sourceField("firstName").targetField("givenName").build(),
+                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                                        .sourceField("position").targetField("title").build(),
+                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                                        .sourceField("active").targetField("active").build(),
+                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                                        .sourceField("empNo").targetField("employeeNumber").build());
 
-                TransRuleVersion version = TransRuleVersion.builder()
-                                .ruleId(ruleId)
-                                .versionNo(1)
-                                .scriptContent(script)
-                                .scriptHash("hash123")
-                                .isCurrent(true)
-                                .build();
-                transRuleVersionRepository.save(version);
-
-                TransMapping mapping = TransMapping.builder()
-                                .systemId("TEST_HR")
-                                .ruleId(ruleId)
-                                .execOrder(1)
-                                .isMandatory(true)
-                                .build();
-                transMappingRepository.save(mapping);
+                        mappings.forEach(transMappingService::saveMapping);
+                }
         }
 
         @Test
@@ -94,17 +87,18 @@ class IngestIntegrationTest {
                                 "empNo", "20230001",
                                 "firstName", "Gildong",
                                 "lastName", "Hong",
-                                "position", "Engineer");
+                                "position", "Engineer",
+                                "active", true);
                 Map<String, Object> event = Map.of(
                                 "traceId", "test-trace-1",
-                                "systemId", "TEST_HR",
+                                "systemId", SYSTEM_ID,
                                 "payload", payload);
                 // When
                 ingestListener.onRawDataIngested(event);
 
                 // Then
                 // 1. Check IdentityLink
-                Optional<IdentityLink> linkOpt = identityLinkRepository.findBySystemTypeAndExternalId("TEST_HR",
+                Optional<IdentityLink> linkOpt = identityLinkRepository.findBySystemTypeAndExternalId(SYSTEM_ID,
                                 "EMP001");
                 assertThat(linkOpt).isPresent();
                 Long userId = linkOpt.get().getIamUserId();

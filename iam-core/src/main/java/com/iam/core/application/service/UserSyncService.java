@@ -40,6 +40,7 @@ public class UserSyncService {
     private final IdentityCorrelationService correlationService;
 
     private static final String PROVISION_ROUTING_KEY = "cmd.ad.user.create";
+    private static final String COMPENSATION_ROUTING_KEY = "iam.event.compensation";
     private static final String EXCHANGE_NAME = "iam.topic";
 
     /**
@@ -56,9 +57,19 @@ public class UserSyncService {
         String userName = (String) rawData.get(AttributeConstants.USERNAME);
 
         try {
+            // 0. Pre-validation: Ensure externalId exists in raw data
+            if (externalId == null || externalId.isBlank()) {
+                throw new IamBusinessException(ErrorCode.MISSING_REQUIRED_FIELD, traceId,
+                        "externalId is missing in raw payload");
+            }
+
             // 1. Transform Attribute using Engine
             Map<String, UniversalData> transformed = transformationService.transform(systemId,
                     rawData);
+
+            // 1.1 Validation: Ensure mandatory fields (like userName) are present after
+            // transformation
+            validateRequiredAttributes(transformed, traceId);
 
             // 2. Correlation & Update
             correlationService.correlate(systemId, externalId)
@@ -72,6 +83,15 @@ public class UserSyncService {
                     userName != null ? userName : "UNKNOWN", null, systemId,
                     rawData,
                     "Error: " + e.getMessage());
+
+            // Publish Compensation Event
+            if (externalId != null && !externalId.isBlank()) {
+                com.iam.core.domain.event.SyncCompensationEvent compEvent = new com.iam.core.domain.event.SyncCompensationEvent(
+                        traceId, systemId, externalId, e.getMessage(), java.time.LocalDateTime.now());
+                messagePublisher.publish(EXCHANGE_NAME, COMPENSATION_ROUTING_KEY, compEvent);
+                log.info("Published compensation event for traceId: {}, system: {}, externalId: {}", traceId, systemId,
+                        externalId);
+            }
 
             if (e instanceof IamBusinessException) {
                 throw e;
@@ -166,6 +186,14 @@ public class UserSyncService {
                     AttributeConstants.VALUE, v.asString() != null ? v.asString() : ""));
         });
         return mappings;
+    }
+
+    private void validateRequiredAttributes(Map<String, UniversalData> attributes, String traceId) {
+        UniversalData userNameData = attributes.get(AttributeConstants.USERNAME);
+        if (userNameData == null || userNameData.asString().isBlank()) {
+            throw new IamBusinessException(ErrorCode.MISSING_REQUIRED_FIELD, traceId,
+                    "Mandatory attribute 'userName' is missing after transformation");
+        }
     }
 
     private Map<String, Object> extractRawExtensions(Map<String, UniversalData> attributes) {
