@@ -17,6 +17,7 @@ public enum ErrorCode {
     USER_NOT_FOUND("IAM-4100", "사용자를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     USER_ALREADY_EXISTS("IAM-4101", "이미 존재하는 사용자입니다", HttpStatus.CONFLICT),
     EXTERNAL_ID_ALREADY_EXISTS("IAM-4102", "이미 연동된 외부 시스템 식별자입니다", HttpStatus.CONFLICT),
+    RESOURCE_NOT_FOUND("IAM-4103", "찾을 수 없는 리소스 입니다", HttpStatus.NOT_FOUND),
 
     // === Authentication & Authorization (4200~4299) ===
     UNAUTHORIZED("IAM-4200", "인증이 필요합니다", HttpStatus.UNAUTHORIZED),

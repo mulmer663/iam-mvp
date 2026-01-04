@@ -34,6 +34,20 @@ public class TransMappingController {
         return ResponseEntity.ok(toDto(saved));
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<List<TransFieldMappingDto>> getMappingsHistory(
+            @RequestParam String systemId,
+            @RequestParam Long revId) {
+
+        // 서비스에서 해당 리비전의 엔티티 리스트를 가져옴
+        List<TransFieldMapping> historyMappings = mappingService.getMappingsAtRevision(systemId, revId);
+
+        // 기존 toDto 메서드를 사용하여 DTO 리스트로 변환하여 반환
+        return ResponseEntity.ok(historyMappings.stream()
+                .map(this::toDto)
+                .toList());
+    }
+
     @DeleteMapping("/mappings/{mappingId}")
     public ResponseEntity<Void> deleteMapping(@PathVariable Long mappingId) {
         mappingService.deleteMapping(mappingId);

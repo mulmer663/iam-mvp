@@ -8,7 +8,10 @@ import com.iam.core.domain.entity.IamUser;
 import com.iam.core.domain.exception.ErrorCode;
 import com.iam.core.domain.exception.IamBusinessException;
 import com.iam.core.domain.repository.IamUserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.envers.AuditReader;
+import org.hibernate.envers.AuditReaderFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +26,7 @@ import java.util.Map;
 public class UserQueryService {
 
         private final IamUserRepository iamUserRepository;
+        private final EntityManager entityManager;
         private static final String ENTERPRISE_URN = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
 
         public ScimListResponse<ScimUserResponse> getAllUsers() {
@@ -40,6 +44,22 @@ public class UserQueryService {
                                                 ErrorCode.USER_NOT_FOUND,
                                                 "API",
                                                 "User not found: " + id));
+        }
+
+        public ScimUserResponse getUserAtRevision(Long userId, Long revId) {
+                AuditReader reader = AuditReaderFactory.get(entityManager);
+
+                // Envers가 이 시점의 IamUser와 연관된 IamUserExtension을 함께 찾아줍니다.
+                IamUser auditedUser = reader.find(IamUser.class, userId, revId);
+
+                if (auditedUser == null) {
+                        throw new IamBusinessException(
+                                ErrorCode.USER_NOT_FOUND,
+                                "API",
+                                "Revision " + revId + " not found for user: " + userId);
+                }
+
+                return toScimUser(auditedUser);
         }
 
         private ScimUserResponse toScimUser(IamUser user) {
@@ -88,5 +108,35 @@ public class UserQueryService {
                                                                 : null,
                                                 "/scim/v2/Users/" + user.getId()))
                                 .build();
+        }
+
+        public ScimUserResponse getUserAtTraceId(Long id, String traceId) {
+                AuditReader reader = AuditReaderFactory.get(entityManager);
+
+                // 1. getSingleResult 대신 List로 조회하여 예외 방지
+                List<Number> revisionIds = entityManager.createQuery(
+                                "SELECT cre.id FROM CustomRevisionEntity cre WHERE cre.traceId = :traceId", Number.class)
+                        .setParameter("traceId", traceId)
+                        .getResultList();
+
+                if (revisionIds.isEmpty()) {
+                        // 정의하신 IAM-4103 에러 코드를 사용하여 예외를 던집니다.
+                        throw new IamBusinessException(
+                                ErrorCode.RESOURCE_NOT_FOUND,
+                                traceId,
+                                "해당 트레이스 ID에 해당하는 리비전이 없습니다.");
+                }
+
+                Number revisionNumber = revisionIds.get(0);
+
+                // 2. 찾은 리비전 번호로 당시 엔티티 복원
+                IamUser auditedUser = reader.find(IamUser.class, id, revisionNumber);
+
+                if (auditedUser == null) {
+                        throw new IamBusinessException(ErrorCode.USER_NOT_FOUND, traceId, "해당 시점에 사용자가 존재하지 않습니다.");
+                }
+
+                // 3. 기존에 잘 만들어두신 toScimUser 메서드 활용
+                return toScimUser(auditedUser);
         }
 }
