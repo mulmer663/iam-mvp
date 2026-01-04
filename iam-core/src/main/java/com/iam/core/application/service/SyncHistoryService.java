@@ -6,6 +6,8 @@ import com.iam.core.domain.entity.SyncHistory;
 import com.iam.core.domain.repository.SyncHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +28,7 @@ public class SyncHistoryService {
     @Transactional
     public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId,
                            String sourceSystem, String targetSystem, Map<String, Object> resultData, String message) {
-        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, targetSystem, resultData, message, null, null, null, 0L);
+        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, targetSystem, resultData, message, null, null, 0L, 0L);
     }
 
     /**
@@ -35,10 +37,12 @@ public class SyncHistoryService {
     @Transactional
     public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId,
                            String sourceSystem, String targetSystem, Map<String, Object> resultData,
-                           String message, Long parentId, Long duration, Map<String, Object> requestPayload, Long revId) {
+                           String message, Long parentId,
+                           Map<String, Object> requestPayload,
+                           long userRevId, long ruleRevId) {
 
         return saveHistory(traceId, type, SyncConstants.STATUS_SUCCESS, targetUser, iamUserId,
-                sourceSystem, targetSystem, resultData, message, parentId, duration, requestPayload, revId);
+                sourceSystem, targetSystem, resultData, message, parentId, requestPayload, userRevId, ruleRevId);
     }
 
     /**
@@ -47,44 +51,33 @@ public class SyncHistoryService {
     @Transactional
     public Long logFailure(String traceId, String type, String targetUser, Long iamUserId,
                            String sourceSystem, String targetSystem, Map<String, Object> requestPayload,
-                           String errorDetails, long revId) {
+                           String errorDetails, long ruleRevId) {
         return saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, iamUserId,
-                sourceSystem, targetSystem, null, errorDetails, null, null, requestPayload, revId);
+                sourceSystem, targetSystem, null, errorDetails, null, requestPayload, 0L, ruleRevId);
     }
 
     @Transactional(readOnly = true)
-    public List<HistoryResponse> getHistory(String userId, String targetUser) {
-        // ... (조회 로직은 기존과 동일하되 가독성을 위해 유지)
-        return fetchHistories(userId, targetUser).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<HistoryResponse> getHistory(Long iamUserId, String targetUser, Pageable pageable) {
+        // 1. 다이나믹 쿼리를 위한 로직 (QueryDSL이 없다면 간단한 조건별 호출로 정리)
+        Page<SyncHistory> histories = fetchHistories(iamUserId, targetUser, pageable);
+
+        return histories.map(this::toResponse);
     }
 
-    private List<SyncHistory> fetchHistories(String userId, String targetUser) {
-        boolean hasUserId = userId != null && !userId.isBlank();
-        boolean hasTargetUser = targetUser != null && !targetUser.isBlank();
-
-        if (hasUserId && hasTargetUser) {
-            try {
-                return syncHistoryRepository.findByIamUserIdOrTargetUser(Long.parseLong(userId), targetUser);
-            } catch (NumberFormatException e) {
-                return syncHistoryRepository.findByTargetUser(targetUser);
-            }
-        } else if (hasUserId) {
-            try {
-                return syncHistoryRepository.findByIamUserId(Long.parseLong(userId));
-            } catch (NumberFormatException e) {
-                return List.of();
-            }
-        } else if (hasTargetUser) {
-            return syncHistoryRepository.findByTargetUser(targetUser);
+    private Page<SyncHistory> fetchHistories(Long iamUserId, String targetUser, Pageable pageable) {
+        if (iamUserId != null && targetUser != null) {
+            return syncHistoryRepository.findByIamUserIdOrTargetUser(iamUserId, targetUser, pageable);
+        } else if (iamUserId != null) {
+            return syncHistoryRepository.findByIamUserId(iamUserId, pageable);
+        } else if (targetUser != null && !targetUser.isBlank()) {
+            return syncHistoryRepository.findByTargetUser(targetUser, pageable);
         }
-        return syncHistoryRepository.findAllByOrderByCreatedAtDesc();
+        return syncHistoryRepository.findAll(pageable); // 최신순 정렬은 Pageable에서 처리
     }
 
     private Long saveHistory(String traceId, String type, String status, String targetUser, Long iamUserId,
                              String sourceSystem, String targetSystem, Map<String, Object> resultData, String message,
-                             Long parentHistoryId, Long durationMs, Map<String, Object> requestPayload, Long revId) {
+                             Long parentHistoryId, Map<String, Object> requestPayload, Long userRevId, Long ruleRevId) {
         try {
             var history = SyncHistory.builder()
                     .traceId(traceId)
@@ -97,11 +90,10 @@ public class SyncHistoryService {
                     .message(message)
                     .resultData(resultData)
                     .parentHistoryId(parentHistoryId)
-                    .durationMs(durationMs)
                     .requestPayload(requestPayload)
-                    .revId(revId != null ? revId : 0L) // rev_id가 nullable=false이므로 기본값 처리
-                    .completedAt(LocalDateTime.now())
-                    .expiresAt(LocalDateTime.now().plusDays(30))
+                    .userRevId(userRevId != null ? userRevId : 0L)
+                    .ruleRevId(ruleRevId != null ? ruleRevId : 0L)
+                    .expiresAt(LocalDateTime.now().plusDays(90))
                     .build();
 
             var saved = syncHistoryRepository.save(history);
@@ -127,7 +119,7 @@ public class SyncHistoryService {
                 history.getResultData(),
                 history.getRequestPayload(),
                 history.getParentHistoryId(),
-                history.getDurationMs(),
-                history.getRevId());
+                history.getUserRevId(),
+                history.getRuleRevId());
     }
 }

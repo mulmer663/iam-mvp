@@ -1,5 +1,6 @@
 package com.iam.core.application.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iam.core.application.dto.ProvisioningCommand;
 import com.iam.core.application.dto.TransformationResult;
 import com.iam.core.application.dto.UserSyncEvent;
@@ -16,15 +17,15 @@ import com.iam.core.domain.exception.UserSyncPersistenceException;
 import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.IdentityLinkRepository;
 import com.iam.core.domain.vo.UniversalData;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.envers.AuditReader;
+import org.hibernate.envers.AuditReaderFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 사용자 동기화 비즈니스 로직을 처리하는 Service
@@ -41,6 +42,8 @@ public class UserSyncService {
     private final TransformationService transformationService;
     private final IamUserUpdateService iamUserUpdateService;
     private final IdentityCorrelationService correlationService;
+    private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
 
     private static final String PROVISION_ROUTING_KEY = "cmd.ad.user.create";
     private static final String COMPENSATION_ROUTING_KEY = "iam.event.compensation";
@@ -63,8 +66,11 @@ public class UserSyncService {
             // 1. [단계: 데이터 변환] Transformation 단계
             transResult = performTransformation(systemId, rawData, traceId);
 
-            // 2. [단계: 동기화 반영] Correlation & Persistence 단계
-            performUserSync(transResult, rawData, systemId, traceId);
+            // 2. 사용자 정보 반영 (Core Logic) 및 후처리에 필요한 컨텍스트 반환
+            SyncContext context = performUserSync(transResult, rawData, systemId, traceId);
+
+            // 3. 공통 후처리 (Side Effects: Provisioning & Logging)
+            postProcessSync(context, transResult, event);
 
         } catch (TransformationException te) {
             // 변환 단계 실패: 엔진 오류 혹은 필수 규칙 위반
@@ -96,7 +102,7 @@ public class UserSyncService {
             var result = transformationService.transform(systemId, rawData);
             validateRequiredAttributes(result.data(), traceId); //
             return result;
-        } catch (TransformationException te) {
+        } catch (TransformationException | IamBusinessException te) {
             log.error("Transformation step failed: {}", te.getMessage());
             throw te;
         } catch (Exception e) {
@@ -107,44 +113,109 @@ public class UserSyncService {
     /**
      * [분리] 실제 DB 반영 및 상관관계 처리
      */
-    private void performUserSync(TransformationResult result, Map<String, Object> rawData, String systemId, String traceId) {
+    private SyncContext performUserSync(TransformationResult result, Map<String, Object> rawData, String systemId, String traceId) {
         String externalId = (String) rawData.get(AttributeConstants.EXTERNAL_ID);
-        String userName = (String) result.data().get(AttributeConstants.USERNAME).asString();
-
-        // 1. 먼저 상관관계 분석을 통해 기존 사용자를 찾음
         var optionalUser = correlationService.correlate(systemId, externalId);
-
-        // 2. 실패 시 사용할 iamUserId를 미리 확보 (있을 경우만)
         Long existingUserId = optionalUser.map(IamUser::getId).orElse(null);
 
         try {
-            optionalUser.ifPresentOrElse(
-                    user -> updateExistingUser(user, result.data(), rawData, systemId, traceId, rawData, result.revId()),
-                    () -> createNewUser(externalId, result.data(), rawData, systemId, traceId, rawData, result.revId()));
+            return optionalUser.map(user -> handleUpdate(user, result.data()))
+                    .orElseGet(() -> handleCreate(externalId, result.data(), systemId));
         } catch (Exception e) {
-            // 수정 실패 시 (existingUserId가 존재할 때) 전용 예외로 던짐
             if (existingUserId != null) {
                 throw new UserSyncPersistenceException(ErrorCode.USER_PERSISTENCE_ERROR, traceId, e.getMessage(), existingUserId, e);
             }
-            // 신규 생성 실패 시 기존 IamBusinessException 활용
             throw new IamBusinessException(ErrorCode.USER_PERSISTENCE_ERROR, traceId, e.getMessage(), e);
         }
+    }
+
+    private void postProcessSync(SyncContext context, TransformationResult transResult, UserSyncEvent event) {
+        AuditReader reader = AuditReaderFactory.get(entityManager);
+        long userRevId;
+        try {
+            // 해당 사용자의 리비전 목록 중 마지막 번호 추출
+            Number revisionNumber = reader.getRevisionNumberForDate(new Date());
+            userRevId = revisionNumber.longValue();
+        } catch (Exception e) {
+            log.warn("Failed to fetch user revision, defaulting to 0. TraceId: {}", event.traceId());
+            userRevId = 0L;
+        }
+
+        // 1. 외부 시스템 프로비저닝 명령 발행
+        publishProvisioningCommand(context.user(), extractRawExtensions(transResult.data()), event.traceId(), userRevId);
+
+        // 2. 통합 이력 저장 (Normalized)
+        syncHistoryService.logSuccess(
+                event.traceId(),
+                context.eventType(),
+                context.user().getUserName(),
+                context.user().getId(),
+                event.systemId(),
+                SystemConstants.SYSTEM_IAM,
+                context.resultSnapshot(),
+                context.logMessage(),
+                null,
+                Map.of("event", event),
+                userRevId,
+                transResult.revId());
     }
 
     /**
      * [공통] 실패 이력 기록 및 보상 트랜잭션 발행
      */
-    private void handleSyncFailure(String traceId, String systemId, String userName, Map<String, Object> payload, String errorMsg, long revId, Long iamUserId) {
+    private void handleSyncFailure(String traceId, String systemId, String userName, Map<String, Object> payload, String errorMsg, long ruleRevId, Long iamUserId) {
         syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR,
                 userName != null ? userName : "UNKNOWN", iamUserId, systemId, SystemConstants.SYSTEM_IAM,
-                payload, errorMsg, revId);
+                payload, errorMsg, ruleRevId);
 
         // 보상 이벤트 발행 로직
         sendCompensationEvent(traceId, systemId, payload, errorMsg);
     }
 
+    private SyncContext handleCreate(String externalId, Map<String, UniversalData> attributes, String systemId) {
+        log.info("Creating user: {}", externalId);
+        var user = iamUserUpdateService.create(externalId, attributes);
+        identityLinkRepository.save(createIdentityLink(user.getId(), systemId, externalId));
+
+        return new SyncContext(user, SyncConstants.EVENT_USER_CREATE, createUserResultData(user), "User created via engine");
+    }
+
+    private Map<String, Object> createUserResultData(IamUser user) {
+        Map<String, Object> result = new HashMap<>();
+        result.put(AttributeConstants.SYNC_TYPE, SyncConstants.EVENT_USER_CREATE);
+        result.put("status", "CREATED");
+        // 상세 정보는 revId를 통해 AUD에서 조회하므로 최소한의 메타데이터만 남김
+        return result;
+    }
+
+    private SyncContext handleUpdate(IamUser user, Map<String, UniversalData> attributes) {
+        log.info("Updating user: {}", user.getId());
+        Map<String, Object> oldState = captureState(user);
+        iamUserUpdateService.update(user, attributes);
+
+        return new SyncContext(user, SyncConstants.EVENT_USER_UPDATE, modifyUserResultData(user, oldState), "User updated via engine");
+    }
+
+    private Map<String, Object> modifyUserResultData(IamUser user, Map<String, Object> oldState) {
+        Map<String, Object> newState = captureState(user); // Extension 포함하도록 captureState 개선 필요
+        List<Map<String, Object>> changes = calculateChanges(oldState, newState);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put(AttributeConstants.CHANGES, changes);
+        result.put(AttributeConstants.SYNC_TYPE,
+                changes.isEmpty() ? SyncConstants.TYPE_UPDATE_SIMPLE : SyncConstants.TYPE_UPDATE_CRITICAL);
+        return result;
+    }
+
     /**
-     *  보상 이벤트 발행 로직
+     * 후처리에 필요한 데이터를 전달하기 위한 내부 Record
+     */
+    private record SyncContext(IamUser user, String eventType, Map<String, Object> resultSnapshot, String logMessage) {
+
+    }
+
+    /**
+     * 보상 이벤트 발행 로직
      */
     private void sendCompensationEvent(String traceId, String systemId, Map<String, Object> payload, String errorMsg) {
         String externalId = (String) payload.get(AttributeConstants.EXTERNAL_ID);
@@ -168,74 +239,65 @@ public class UserSyncService {
         }
     }
 
-    private void createNewUser(String externalId, Map<String, UniversalData> attributes,
-                               Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
-                               long appliedRules) {
-        log.info("Creating new user via engine for system: {}, ID: {}", systemId, externalId);
-
-        var user = iamUserUpdateService.create(externalId, attributes);
-        var link = createIdentityLink(user.getId(), systemId, externalId);
-        identityLinkRepository.save(link);
-
-        publishProvisioningCommand(user, extractRawExtensions(attributes), traceId);
-
-        // Normalized History: No more huge mappings nested data
-        Map<String, Object> resultSnapshot = extractRawExtensions(attributes);
-
-        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_CREATE, user.getUserName(), user.getId(),
-                systemId,
-                SystemConstants.SYSTEM_IAM,
-                resultSnapshot,
-                "User created via engine", null, null, rawData, appliedRules);
-    }
-
-    private void updateExistingUser(IamUser user, Map<String, UniversalData> attributes,
-                                    Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
-                                    long appliedRules) {
-        log.info("Updating existing user via engine for system: {}, userId: {}", systemId, user.getId());
-
-        // Capture old state for diff
-        Map<String, Object> oldState = captureState(user);
-
-        iamUserUpdateService.update(user, attributes);
-        publishProvisioningCommand(user, extractRawExtensions(attributes), traceId);
-
-        // Calculate changes
-        List<Map<String, Object>> changes = calculateChanges(oldState, captureState(user));
-
-        // Result Data
-        Map<String, Object> resultSnapshot = new HashMap<>();
-        resultSnapshot.put(AttributeConstants.CHANGES, changes);
-        resultSnapshot.put(AttributeConstants.SYNC_TYPE,
-                changes.isEmpty() ? SyncConstants.TYPE_UPDATE_SIMPLE : SyncConstants.TYPE_UPDATE_CRITICAL);
-
-        syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_UPDATE, user.getUserName(), user.getId(),
-                systemId,
-                SystemConstants.SYSTEM_IAM,
-                resultSnapshot,
-                "User updated via engine", null, null, rawData, appliedRules);
-    }
-
     private Map<String, Object> captureState(IamUser user) {
+        if (user == null) return Collections.emptyMap();
+
         Map<String, Object> state = new HashMap<>();
+
+        // 1. IamUser 기본 속성 추출
         state.put(AttributeConstants.USERNAME, user.getUserName());
         state.put(AttributeConstants.FAMILY_NAME, user.getFamilyName());
         state.put(AttributeConstants.GIVEN_NAME, user.getGivenName());
         state.put(AttributeConstants.TITLE, user.getTitle());
         state.put(AttributeConstants.ACTIVE, user.isActive());
-        // Extensions could be added here if needed
+        state.put(AttributeConstants.EXTERNAL_ID, user.getExternalId());
+
+        // 2. IamUserExtension 내의 다형성 확장 데이터 추출
+        if (user.getExtension() != null && user.getExtension().getExtensions() != null) {
+            user.getExtension().getExtensions().forEach((schemaUri, extensionData) -> {
+                // ExtensionData(예: EnterpriseUserExtension)를 Map으로 변환하여 평면화
+                try {
+                    // ObjectMapper를 사용하여 객체의 필드들을 Map으로 변환
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> attrMap = objectMapper.convertValue(extensionData, Map.class);
+
+                    if (attrMap != null) {
+                        attrMap.forEach((attrKey, attrValue) -> {
+                            // "urn:uri:attrName" 형식의 키 생성
+                            state.put(schemaUri + ":" + attrKey, attrValue);
+                        });
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to capture extension state for schema: {}", schemaUri);
+                }
+            });
+        }
+
         return state;
     }
 
     private List<Map<String, Object>> calculateChanges(Map<String, Object> oldState, Map<String, Object> newState) {
         List<Map<String, Object>> changes = new ArrayList<>();
-        newState.forEach((k, v) -> {
-            Object oldVal = oldState.get(k);
-            if (v != null && !v.equals(oldVal)) {
-                changes.add(Map.of(AttributeConstants.FIELD, k, AttributeConstants.OLD_VALUE, String.valueOf(oldVal),
-                        AttributeConstants.NEW_VALUE, String.valueOf(v)));
+
+        newState.forEach((key, newValue) -> {
+            Object oldValue = oldState.get(key);
+
+            // 두 값이 모두 null이거나 같으면 무시
+            if (Objects.equals(oldValue, newValue)) return;
+
+            // 문자열 변환 및 비교 (null은 빈 문자열로 처리하거나 "null"로 명시)
+            String oldStr = (oldValue == null) ? "null" : String.valueOf(oldValue);
+            String newStr = (newValue == null) ? "null" : String.valueOf(newValue);
+
+            if (!oldStr.equals(newStr)) {
+                changes.add(Map.of(
+                        AttributeConstants.FIELD, key,
+                        AttributeConstants.OLD_VALUE, oldStr,
+                        AttributeConstants.NEW_VALUE, newStr
+                ));
             }
         });
+
         return changes;
     }
 
@@ -262,41 +324,41 @@ public class UserSyncService {
         return link;
     }
 
-    private void publishProvisioningCommand(IamUser user, Map<String, Object> attributes, String traceId) {
-        var command = new ProvisioningCommand(
-                traceId,
-                "CAUSE_EVENT_ID",
-                "CREATE_ACCOUNT",
-                new ProvisioningCommand.ProvisioningPayload(
-                        user.getUserName(),
-                        user.getFamilyName(),
-                        user.getGivenName(),
-                        user.getFormattedName(),
-                        user.isActive(),
-                        attributes));
+    private void publishProvisioningCommand(IamUser user, Map<String, Object> attributes, String traceId, long userRevId) {
+        // 1. AD 규격에 맞는 Command 생성 (이것이 IAM이 보낸 최종 Payload)
+        var adPayload = new ProvisioningCommand.AdProvisioningPayload(
+                user.getUserName(),                              // sAMAccountName
+                user.getUserName() + "@global-iam.com",          // userPrincipalName (예시)
+                null,                                            // DN (커넥터에서 생성하거나 규칙에 따름)
+                user.getFamilyName(),                            // sn
+                user.getGivenName(),                             // givenName
+                user.getFormattedName(),                         // displayName
+                user.getTitle(),                                 // title
+                (String) attributes.get("email"),                // mail
+                user.isActive(),                                 // enabled
+                attributes                                       // 나머지 확장 속성
+        );
 
+        var command = new ProvisioningCommand(traceId, "CAUSE_EVENT_ID", "CREATE", adPayload);
+
+        // 2. 메시지 발행
         messagePublisher.publish(EXCHANGE_NAME, PROVISION_ROUTING_KEY, command);
         log.info("Published provisioning command for user: {} (traceId: {})", user.getId(), traceId);
 
-        // Audit Logging for Provisioning
-        // Convert command to Map for JSONB storage
-        Map<String, Object> cmdMap = new HashMap<>();
-        cmdMap.put("target", SystemConstants.SYSTEM_AD);
-        cmdMap.put("command", "PROVISION");
-        cmdMap.put("payload", command); // Jackson/Hibernate will handle serialization
-
+        // 3. AD 연동 이력 기록 (SyncHistory 활용)
         syncHistoryService.logSuccess(
                 traceId,
-                SyncConstants.EVENT_AD_PROVISION,
+                SyncConstants.EVENT_AD_PROVISION, // "AD_PROVISION" 이벤트 타입
                 user.getUserName(),
                 user.getId(),
-                SystemConstants.SYSTEM_IAM,
-                SystemConstants.SYSTEM_AD,
-                cmdMap,
+                SystemConstants.SYSTEM_IAM,      // Source: IAM
+                SystemConstants.SYSTEM_AD,       // Target: AD
+                Map.of("status", "SENT", "target", "AD"), // resultData: 일단 전송 상태 기록
                 "Provisioning request sent to AD",
                 null,
-                null,
-                null,
-                null);
+                Map.of("command", command),      // requestPayload: IAM이 보낸 전문 통째로 저장
+                userRevId,                       // 이 명령의 근거가 된 유저 리비전
+                0L                               // 규칙 리비전 (필요 시 할당)
+        );
     }
 }

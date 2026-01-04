@@ -1,5 +1,6 @@
 package com.iam.core.config;
 
+import com.iam.core.application.dto.UserSyncEvent;
 import com.iam.core.application.service.IamUserUpdateService;
 import com.iam.core.application.service.SyncHistoryService;
 import com.iam.core.domain.constant.AttributeConstants;
@@ -35,137 +36,156 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Profile({ "local", "dev", "test", "default" }) // 운영 환경에서는 실행되지 않도록 제한
+@Profile({"local", "dev", "test", "default"}) // 운영 환경에서는 실행되지 않도록 제한
 public class DataInitializer implements CommandLineRunner {
 
-  private final IamUserRepository iamUserRepository;
-  private final IamUserUpdateService iamUserUpdateService;
-  private final SyncHistoryService syncHistoryService;
-  private final TransMappingService transMappingService;
+    private final IamUserRepository iamUserRepository;
+    private final IamUserUpdateService iamUserUpdateService;
+    private final SyncHistoryService syncHistoryService;
+    private final TransMappingService transMappingService;
 
-  @Override
-  @Transactional
-  public void run(String... args) throws Exception {
-    initRuleEngineData();
+    @Override
+    @Transactional
+    public void run(String... args) throws Exception {
+        initRuleEngineData();
 
-    if (iamUserRepository.count() > 0) {
-      log.info("ℹ️ DB 데이터 존재로 초기화 건너뜜");
-      return;
+        if (iamUserRepository.count() > 0) {
+            log.info("ℹ️ DB 데이터 존재로 초기화 건너뜜");
+            return;
+        }
+
+        log.info("🚀 샘플 데이터 생성 시작...");
+
+        // 1. 사용자 생성 (Service 호출 방식)
+        IamUser admin = createUserViaService("super.admin", "Michael", "Admin", "IT Director", true, "michael.admin@global-iam.com", "GLOBAL-IT", "ADM001");
+        IamUser jane = createUserViaService("jane.doe", "Jane", "Doe", "External Auditor", true, "jane.doe@audit-firm.com", "AUDIT-01", "EXT-101");
+        createUserViaService("john.smith", "John", "Smith", "Security Analyst", true, "john.smith@global-iam.com", "SEC-OPS", "SEC-888");
+
+        log.info("✅ 사용자 데이터 생성 완료");
+
+        // 2. 이력 생성 (Service 호출 방식)
+        createSyncHistoryViaService(jane);
     }
 
-    log.info("🚀 샘플 데이터 생성 시작...");
+    private IamUser createUserViaService(String userName, String given, String family, String title, boolean active, String email, String dept, String empNo) {
+        // 맵 구조로 attributes 생성 (Service 입력 규격에 맞춤)
+        Map<String, UniversalData> attributes = new HashMap<>();
+        attributes.put("userName", new com.iam.core.domain.vo.StringData(userName));
+        attributes.put("givenName", new com.iam.core.domain.vo.StringData(given));
+        attributes.put("familyName", new com.iam.core.domain.vo.StringData(family));
+        attributes.put("title", new com.iam.core.domain.vo.StringData(title));
+        attributes.put("active", new com.iam.core.domain.vo.BooleanData(active));
+        attributes.put("email", new com.iam.core.domain.vo.StringData(email));
+        attributes.put("department", new com.iam.core.domain.vo.StringData(dept));
+        attributes.put("employeeNumber", new com.iam.core.domain.vo.StringData(empNo));
 
-    // 1. 사용자 생성 (Service 호출 방식)
-    IamUser admin = createUserViaService("super.admin", "Michael", "Admin", "IT Director", true, "michael.admin@global-iam.com", "GLOBAL-IT", "ADM001");
-    IamUser jane = createUserViaService("jane.doe", "Jane", "Doe", "External Auditor", true, "jane.doe@audit-firm.com", "AUDIT-01", "EXT-101");
-    createUserViaService("john.smith", "John", "Smith", "Security Analyst", true, "john.smith@global-iam.com", "SEC-OPS", "SEC-888");
+        return iamUserUpdateService.create(empNo, attributes);
+    }
 
-    log.info("✅ 사용자 데이터 생성 완료");
+    private void initRuleEngineData() {
+        if (transMappingService.countRuleMeta() > 0)
+            return;
 
-    // 2. 이력 생성 (Service 호출 방식)
-    createSyncHistoryViaService(jane);
-  }
+        log.info("🚀 [DataInitializer] 규칙 엔진 초기 데이터 생성을 시작합니다...");
 
-  private IamUser createUserViaService(String userName, String given, String family, String title, boolean active, String email, String dept, String empNo) {
-    // 맵 구조로 attributes 생성 (Service 입력 규격에 맞춤)
-    Map<String, UniversalData> attributes = new HashMap<>();
-    attributes.put("userName", new com.iam.core.domain.vo.StringData(userName));
-    attributes.put("givenName", new com.iam.core.domain.vo.StringData(given));
-    attributes.put("familyName", new com.iam.core.domain.vo.StringData(family));
-    attributes.put("title", new com.iam.core.domain.vo.StringData(title));
-    attributes.put("active", new com.iam.core.domain.vo.BooleanData(active));
-    attributes.put("email", new com.iam.core.domain.vo.StringData(email));
-    attributes.put("department", new com.iam.core.domain.vo.StringData(dept));
-    attributes.put("employeeNumber", new com.iam.core.domain.vo.StringData(empNo));
+        String ruleId = "SAP_CORE_TRANS";
+        transMappingService.saveRuleMeta(TransRuleMeta.builder()
+                .ruleId(ruleId)
+                .ruleName("SAP HR Core Transformation")
+                .targetAttribute("CORE")
+                .status("ACTIVE")
+                .build());
 
-    return iamUserUpdateService.create(empNo, attributes);
-  }
+        transMappingService.saveTransMapping(TransMapping.builder()
+                .systemId(SystemConstants.SYSTEM_SAP_HR)
+                .ruleId(ruleId)
+                .execOrder(1)
+                .isMandatory(true)
+                .build());
 
-  private void initRuleEngineData() {
-    if (transMappingService.countRuleMeta() > 0)
-      return;
+        // Initial Field Mappings
+        createCodeMappings();
+        createFieldMappings(ruleId);
 
-    log.info("🚀 [DataInitializer] 규칙 엔진 초기 데이터 생성을 시작합니다...");
+        log.info("✅ [DataInitializer] {} 규칙 매핑을 생성했습니다.", SystemConstants.SYSTEM_SAP_HR);
+    }
 
-    String ruleId = "SAP_CORE_TRANS";
-    transMappingService.saveRuleMeta(TransRuleMeta.builder()
-        .ruleId(ruleId)
-        .ruleName("SAP HR Core Transformation")
-        .targetAttribute("CORE")
-        .status("ACTIVE")
-        .build());
+    private void createCodeMappings() {
+        String groupId = "RANK_CODE";
+        transMappingService.saveCodeMeta(TransCodeMeta.builder()
+                .codeGroupId(groupId)
+                .description("Rank Code Mapping (HR -> IAM)")
+                .build());
 
-    transMappingService.saveTransMapping(TransMapping.builder()
-        .systemId(SystemConstants.SYSTEM_SAP_HR)
-        .ruleId(ruleId)
-        .execOrder(1)
-        .isMandatory(true)
-        .build());
+        transMappingService.saveCodeValues(List.of(
+                TransCodeValue.builder().codeGroupId(groupId).sourceValue("A").targetValue("1").label("사원").build(),
+                TransCodeValue.builder().codeGroupId(groupId).sourceValue("B").targetValue("2").label("대리").build(),
+                TransCodeValue.builder().codeGroupId(groupId).sourceValue("C").targetValue("3").label("과장").build()));
+    }
 
-    // Initial Field Mappings
-    createCodeMappings();
-    createFieldMappings(ruleId);
+    private void createFieldMappings(String ruleId) {
+        List<TransFieldMapping> mappings = List.of(
+                // 1. Core Attributes (IamUser fields)
+                TransFieldMapping.builder().ruleId(ruleId).sourceField("email").targetField("userName").isRequired(true)
+                        .build(),
+                TransFieldMapping.builder().ruleId(ruleId).sourceField("lastName").targetField("familyName").build(),
+                TransFieldMapping.builder().ruleId(ruleId).sourceField("firstName").targetField("givenName").build(),
+                TransFieldMapping.builder().ruleId(ruleId).sourceField("position").targetField("title").build(),
 
-    log.info("✅ [DataInitializer] {} 규칙 매핑을 생성했습니다.", SystemConstants.SYSTEM_SAP_HR);
-  }
+                // 2. Active Status (Custom logic to handle "ACTIVE" -> true)
+                TransFieldMapping.builder().ruleId(ruleId).sourceField("status").targetField("active")
+                        .transformType("CUSTOM")
+                        .transformScript("new com.iam.core.domain.vo.BooleanData(source.status?.asString() == 'ACTIVE')")
+                        .build(),
 
-  private void createCodeMappings() {
-    String groupId = "RANK_CODE";
-    transMappingService.saveCodeMeta(TransCodeMeta.builder()
-        .codeGroupId(groupId)
-        .description("Rank Code Mapping (HR -> IAM)")
-        .build());
+                // 3. Extension Attributes (EnterpriseUserExtension)
+                TransFieldMapping.builder().ruleId(ruleId).sourceField("empNo").targetField("employeeNumber").isRequired(true)
+                        .build(),
+                TransFieldMapping.builder().ruleId(ruleId).sourceField("deptCode").targetField("department").build());
 
-    transMappingService.saveCodeValues(List.of(
-        TransCodeValue.builder().codeGroupId(groupId).sourceValue("A").targetValue("1").label("사원").build(),
-        TransCodeValue.builder().codeGroupId(groupId).sourceValue("B").targetValue("2").label("대리").build(),
-        TransCodeValue.builder().codeGroupId(groupId).sourceValue("C").targetValue("3").label("과장").build()));
-  }
+        // Use the service to trigger script generation
+        mappings.forEach(transMappingService::saveMapping);
+    }
 
-  private void createFieldMappings(String ruleId) {
-    List<TransFieldMapping> mappings = List.of(
-        // 1. Core Attributes (IamUser fields)
-        TransFieldMapping.builder().ruleId(ruleId).sourceField("email").targetField("userName").isRequired(true)
-            .build(),
-        TransFieldMapping.builder().ruleId(ruleId).sourceField("lastName").targetField("familyName").build(),
-        TransFieldMapping.builder().ruleId(ruleId).sourceField("firstName").targetField("givenName").build(),
-        TransFieldMapping.builder().ruleId(ruleId).sourceField("position").targetField("title").build(),
+    private void createSyncHistoryViaService(IamUser user) {
+        String traceId = "T-" + TSID.fast().toLong();
+        String systemId = "SAP_HR";
 
-        // 2. Active Status (Custom logic to handle "ACTIVE" -> true)
-        TransFieldMapping.builder().ruleId(ruleId).sourceField("status").targetField("active")
-            .transformType("CUSTOM")
-            .transformScript("new com.iam.core.domain.vo.BooleanData(source.status?.asString() == 'ACTIVE')")
-            .build(),
+        // 1. 실제 런타임과 동일한 UserSyncEvent 전문(Full Object) 생성
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("empNo", "EXT-101");
+        payload.put("email", user.getUserName());
+        payload.put("status", "ACTIVE");
+        payload.put("firstName", user.getGivenName());
+        payload.put("lastName", user.getFamilyName());
 
-        // 3. Extension Attributes (EnterpriseUserExtension)
-        TransFieldMapping.builder().ruleId(ruleId).sourceField("empNo").targetField("employeeNumber").isRequired(true)
-            .build(),
-        TransFieldMapping.builder().ruleId(ruleId).sourceField("deptCode").targetField("department").build());
+        UserSyncEvent mockEvent = new UserSyncEvent(
+                traceId,
+                systemId,
+                SyncConstants.EVENT_USER_CREATE, // "USER_CREATE"
+                java.time.LocalDateTime.now(),   // timestamp
+                payload                          // payload
+        );
 
-    // Use the service to trigger script generation
-    mappings.forEach(transMappingService::saveMapping);
-  }
+        // 2. 결과 데이터 시뮬레이션 (전체 스냅샷 대신 최소 메타데이터만)
+        Map<String, Object> resultSnapshot = new HashMap<>();
+        resultSnapshot.put(AttributeConstants.SYNC_TYPE, SyncConstants.EVENT_USER_CREATE);
+        resultSnapshot.put("status", "CREATED");
 
-  private void createSyncHistoryViaService(IamUser user) {
-    String traceId = "T-" + TSID.fast().toLong();
-
-    // Raw Data 시뮬레이션
-    Map<String, Object> rawData = Map.of("email", user.getUserName(), "status", "ACTIVE", "empNo", "EXT-101");
-
-    // 성공 결과 스냅샷 시뮬레이션
-    Map<String, Object> resultSnapshot = Map.of("user_id", user.getId(), "username", user.getUserName(), "layer", "IAM_CORE");
-
-    // Service 호출하여 이력 기록
-    syncHistoryService.logSuccess(
-            traceId,
-            SyncConstants.EVENT_USER_CREATE,
-            user.getUserName(),
-            user.getId(),
-            "SAP_HR",
-            SystemConstants.SYSTEM_IAM,
-            resultSnapshot,
-            "User created via DataInitializer",
-            null, 150L, rawData, 1L // revId를 1로 가상 지정
-    );
-  }
+        // 3. Service 호출하여 이력 기록 (수정된 파라미터 반영)
+        syncHistoryService.logSuccess(
+                traceId,
+                SyncConstants.EVENT_USER_CREATE,
+                user.getUserName(),
+                user.getId(),
+                systemId,
+                SystemConstants.SYSTEM_IAM,
+                resultSnapshot,
+                "User created via DataInitializer",
+                null,                // parentId
+                Map.of("event", mockEvent), // requestPayload: Event 객체를 통째로 저장
+                1L,                  // userRevId: 가상의 사용자 리비전
+                1L                   // ruleRevId: 가상의 규칙 리비전
+        );
+    }
 }

@@ -42,7 +42,9 @@ public class IamUserUpdateService {
         updateExtensions(user, attributes);
 
         user.setLastModified(LocalDateTime.now());
-        return iamUserRepository.save(user);
+        IamUser save = iamUserRepository.save(user);
+        iamUserRepository.flush();
+        return save;
     }
 
     /**

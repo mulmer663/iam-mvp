@@ -15,6 +15,6 @@ public record HistoryResponse(
         java.util.Map<String, Object> resultData,
         java.util.Map<String, Object> requestPayload,
         Long parentHistoryId,
-        Long durationMs,
-        Long revId) {
+        Long userRevId,
+        Long ruleRevId) {
 }

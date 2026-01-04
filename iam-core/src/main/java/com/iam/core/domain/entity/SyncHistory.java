@@ -55,10 +55,13 @@ public class SyncHistory {
 
     @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     @Column(name = "result_data", columnDefinition = "jsonb")
-    private java.util.Map<String, Object> resultData; // Final SCIM/IAM data or error details
+    private java.util.Map<String, Object> resultData; // 변경 내역(Diff) 또는 에러 상세 정보
 
-    @Column(name = "rev_id", nullable = false)
-    private Long revId; // rev id
+    @Column(name = "user_rev_id", nullable = false)
+    private Long userRevId; // 실제 사용자의 변경 리비전
+
+    @Column(name = "rule_rev_id", nullable = false)
+    private Long ruleRevId; // 변환 규칙의 리비전
 
     @Builder.Default
     @Column(name = "retry_count")
@@ -67,15 +70,9 @@ public class SyncHistory {
     @Column(name = "parent_history_id")
     private Long parentHistoryId;
 
-    @Column(name = "duration_ms")
-    private Long durationMs;
-
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "completed_at")
-    private LocalDateTime completedAt;
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;

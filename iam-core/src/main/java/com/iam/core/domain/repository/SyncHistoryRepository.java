@@ -1,6 +1,8 @@
 package com.iam.core.domain.repository;
 
 import com.iam.core.domain.entity.SyncHistory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -10,9 +12,9 @@ public interface SyncHistoryRepository extends JpaRepository<SyncHistory, Long> 
 
     List<SyncHistory> findByTraceId(String traceId);
 
-    List<SyncHistory> findByTargetUser(String targetUser);
+    Page<SyncHistory> findByTargetUser(String targetUser, Pageable pageable);
 
-    List<SyncHistory> findByIamUserId(Long iamUserId);
+    Page<SyncHistory> findByIamUserId(Long iamUserId, Pageable pageable);
 
-    List<SyncHistory> findByIamUserIdOrTargetUser(Long iamUserId, String targetUser);
+    Page<SyncHistory> findByIamUserIdOrTargetUser(Long iamUserId, String targetUser, Pageable pageable);
 }
