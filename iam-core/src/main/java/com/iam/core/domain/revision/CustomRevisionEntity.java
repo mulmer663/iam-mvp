@@ -10,7 +10,7 @@ import org.hibernate.envers.RevisionEntity;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "revinfo") // 기본 테이블 이름을 사용하거나 변경 가능
+@Table(name = "iam_rev_info") // 기본 테이블 이름을 사용하거나 변경 가능
 @RevisionEntity(UserRevisionListener.class) // 아래에서 만들 리스너 지정
 @Getter
 @Setter

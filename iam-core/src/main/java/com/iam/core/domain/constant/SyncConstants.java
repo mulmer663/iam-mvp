@@ -25,4 +25,8 @@ public final class SyncConstants {
     // Statuses
     public static final String STATUS_SUCCESS = "SUCCESS";
     public static final String STATUS_FAILURE = "FAILURE";
+
+    // MDC
+    public static final String TRACE_ID = "traceId";
+    public static final String OPERATION_TYPE = "operationType";
 }

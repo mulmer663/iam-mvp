@@ -83,31 +83,60 @@ graph LR
   * **정교한 예외 분류:** `RuleCompilationException`(문법), `RuleValidationException`(검증), `RuleExecutionException`(런타임) 등 상황별 전용 예외 처리.
   * **샌드박스 보안:** `SecureASTCustomizer`를 통한 화이트리스트 기반 샌드박스 실행.
 
-* **이력 관리 (Traceability):**
-  * **참조 파일:** [SyncHistory.java](file:///c:/Dev/project/iam/iam-core/src/main/java/com/iam/core/domain/entity/SyncHistory.java)
-  * **추적성 강화:** 모든 이벤트는 `traceId`를 공유하며, `parent_history_id`를 통한 단계별 부모-자식 관계를 형성하여 `HR -> Core -> AD` 흐름을 추적함.
-  * **정규화 및 최적화:**
-    * 기존 `payload` 문자열 컬럼을 제거하고 `request_payload`, `result_data`를 **JSONB** (`Map<String, Object>`)로 전환하여 효율적인 쿼리와 스토리지 관리 실현.
-    * **`applied_rules`** 컬럼을 도입, 변환 시점에 적용된 `TransRuleVersion`의 ID 리스트를 저장하여 정확한 로직 추적성 확보.
-  * **메타데이터:** `duration_ms`를 통해 처리 속도 측정, `expires_at`으로 보관 주기 관리.
-  * **데이터 평탄화:** `UniversalData` 구조를 자동으로 언래핑하여 JSON 페이로드 가독성을 확보함.
+## 5. 이력 관리 및 데이터 추적성 (Traceability)
 
-* **데이터베이스:** `IAM_TRANS_RULE_META`, `IAM_TRANS_RULE_VERSION` 등 규칙 버전 관리 테이블 참조 (`schema.sql`).
+IAM 시스템은 데이터의 변경 전후를 완벽하게 추적하고, 장애 발생 시 특정 시점의 상태를 복원할 수 있는 다중 이력 관리 체계를 갖추고 있습니다.
 
-## 5. 개발 가이드 (AI 참조용)
+### 5.1 시스템 동기화 장부 (Sync History)
+* **참조 파일:** `SyncHistory.java`, `SyncHistoryService.java`
+* **추적 ID (traceId):** 모든 이벤트는 생성 시점부터 고유한 `traceId`를 공유하며, 이를 통해 `HR -> Core -> AD` 전체 흐름을 관통하여 추적합니다.
+* **데이터 최적화:** * 기존의 단순 문자열 `payload`를 제거하고, **JSONB** 형식을 사용하는 `request_payload`와 `result_data`로 전환하였습니다.
+  * **`request_payload`**: 유입된 `UserSyncEvent` 전문(Object)을 저장하여 당시의 원천 데이터 컨텍스트를 보존합니다.
+  * **`result_data`**: 변경된 필드(`diff`) 및 처리 결과 메타데이터만 저장하여 스토리지 효율을 높였습니다.
+* **시점 일관성 (Dual Revisions):**
+  * **`user_rev_id`**: Hibernate Envers를 통해 기록된 당시 사용자 엔티티의 리비전 번호입니다.
+  * **`rule_rev_id`**: 당시 데이터 변환에 적용되었던 Groovy 스크립트 및 매핑 설정의 리비전 번호입니다.
+* **보관 정책:** `expires_at` 컬럼을 통해 30일(기본값) 후 자동 삭제되도록 관리합니다. (중복 데이터인 `duration_ms` 및 `completed_at`은 `created_at`으로 통합 관리하여 제거됨)
 
+### 5.2 데이터 스냅샷 및 복원 (Audit Snapshot)
+* **기술 스택:** Hibernate Envers (Audit Reader)
+* **복원 메커니즘:**
+  * **리비전 기반 복원:** `user_rev_id`를 사용하여 특정 시점의 `IamUser` 및 `Extension` 엔티티를 SCIM 2.0 규격으로 완벽하게 복원합니다.
+  * **Trace ID 기반 복원:** `CustomRevisionEntity`를 통해 엔버스의 리비전에 `traceId`를 직접 심어, 장부의 ID만으로도 당시의 데이터 상태를 즉시 조회할 수 있습니다.
+* **규칙 복원:** `rule_rev_id`와 `system_id`를 조합하여 동기화 당시에 실행되었던 Groovy 스크립트 내용과 컬럼 매핑 정보를 조회할 수 있습니다.
+
+### 5.3 주요 API 명세 (이력 관련)
+* **사용자 이력 스냅샷:** `GET /api/v1/history/users/{id}/trace_id/{traceId}`
+* **컬럼 매핑 이력:** `GET /api/v1/rules/history?systemId={id}&revId={revId}`
+* **동기화 목록 조회:** `GET /api/v1/history` (Pageable 지원 및 필터링 최적화)
+
+## 6. 개발 가이드 (AI 참조용)
+* **엔티티 수정 시:** `@Audited`가 선언된 엔티티 변경 시 반드시 `UserRevisionListener`를 통해 `traceId`가 리비전에 기록되도록 보장해야 합니다.
+* **API 개발 시:** 조회 시 결과가 없을 경우 `NoResultException` 대신 `IAM-4103 (RESOURCE_NOT_FOUND)` 에러 코드를 사용하여 일관된 응답을 제공합니다.
 * **Primary Key:** 모든 주요 테이블은 **TSID** (Time-Sorted Unique Identifier)를 사용합니다.
 * **Validation:** `userName` 및 `externalId`에 유니크 제약 조건을 보장합니다.
 * **Consistency:** 코드 수정 시 반드시 이 문서의 아키텍처 방향성을 유지하고, 구현 결과는 다시 이 문서의 '구현 현황' 섹션에 업데이트합니다.
 
-## 6. 구현 현황 (Status)
+## 7. 구현 현황 (Status)
 
-[x] Core/Extension 하이브리드 스토리지 설계
-[x] TSID 기반 엔티티 구조 설계
-[x] Groovy Rule Engine 샌드박스 및 동적 변환 엔진 구현
-[x] HR Connector 스냅샷 가데이터 및 변경 이벤트 인제스트 로직
-[x] 계층적 동기화 이력 관리 (Traceability) 및 페이로드 평탄화 구현
-[x] 규칙 기반 동적 스크립트 엔진 (DIRECT/CODE/CLASSIFY/REPLACE/CUSTOM) 구현
-[x] 변환 규칙 검증 필터(필수값/길이) 및 상황별 예외 처리 고도화
-[x] 규칙 매핑 CRUD API 및 DB 기반 코드 매핑 연동 구현
-[x] 보상 트랜잭션(Sync Compensation) 및 스냅샷 롤백 메커니즘 구현 - NEW
+### 7.1 데이터 모델 및 영속성 (Data Model)
+
+- **엔티티 통합**: `IamUser` + `IamUserExtension` (OneToOne) 통합 관리 완료
+- **감사 추적**: Hibernate Envers 기반 핵심 엔티티 리비전 기록 완료
+- **커스텀 리비전**: `traceId`를 리비전에 직접 기록하는 `CustomRevisionEntity` 구현 완료
+
+### 7.2 동기화 장부 및 이력 (Sync & History)
+
+- **이력 최적화**: 중복 필드(`duration_ms`, `completed_at`) 제거 및 `created_at` 단일화 완료
+- **페이로드 보존**: `UserSyncEvent` 전문을 JSONB(`request_payload`)로 저장 로직 완료
+- **조회 최적화**: 조건별 동적 필터링 및 페이지네이션 기반 조회 API 구현 완료
+### 7.3 스냅샷 복원 및 조회 (Snapshot Recovery)
+
+- **Revision 조회**: 특정 `revId` 시점의 사용자 SCIM 프로필 복구 API 구현 완료
+- **Trace ID 조회**: 비즈니스 `traceId` 기반 시점 데이터 복구 API 구현 완료
+- **매핑 이력 조회**: 특정 시스템 및 시점의 컬럼 매핑 리스트 복원 API 구현 완료
+
+### 7.4 연동 및 프로비저닝 (Integration)
+
+- **AD 연동**: AD 전용 `ProvisioningCommand` 발행 및 이력 통합 기록 완료
+- **진행 중**: AD 커넥터로부터의 응답(Result) 수신 및 `SyncHistory` 상태 업데이트 로직 구현 중

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "identity_link", indexes = {
+@Table(name = "iam_identity_link", indexes = {
         @Index(name = "idx_link_external", columnList = "system_type, external_id")
 })
 @Getter

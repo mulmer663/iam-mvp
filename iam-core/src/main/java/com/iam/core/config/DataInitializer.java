@@ -3,31 +3,26 @@ package com.iam.core.config;
 import com.iam.core.application.dto.UserSyncEvent;
 import com.iam.core.application.service.IamUserUpdateService;
 import com.iam.core.application.service.SyncHistoryService;
-import com.iam.core.domain.constant.AttributeConstants;
-import com.iam.core.domain.constant.ScimConstants;
-import com.iam.core.domain.constant.SyncConstants;
-import com.iam.core.domain.constant.SystemConstants;
-import com.iam.core.domain.entity.EnterpriseUserExtension;
-import com.iam.core.domain.entity.IamUser;
-import com.iam.core.domain.entity.IamUserExtension;
-import com.iam.core.domain.repository.IamUserRepository;
-import com.iam.core.domain.repository.SyncHistoryRepository;
-import com.iam.core.domain.entity.*;
 import com.iam.core.application.service.TransMappingService;
+import com.iam.core.domain.constant.AttributeConstants;
+import com.iam.core.domain.constant.SystemConstants;
+import com.iam.core.domain.entity.*;
+import com.iam.core.domain.repository.IamUserRepository;
+import com.iam.core.domain.vo.StringData;
 import com.iam.core.domain.vo.UniversalData;
 import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.iam.core.domain.constant.SyncConstants.*;
 
 /**
  * 로컬 개발 환경용 초기 데이터 이니셜라이저.
@@ -45,39 +40,46 @@ public class DataInitializer implements CommandLineRunner {
     private final TransMappingService transMappingService;
 
     @Override
-    @Transactional
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         initRuleEngineData();
 
-        if (iamUserRepository.count() > 0) {
-            log.info("ℹ️ DB 데이터 존재로 초기화 건너뜜");
-            return;
+        String traceId = "T-" + TSID.fast().toLong();
+        MDC.put(TRACE_ID, traceId);
+        MDC.put(OPERATION_TYPE, EVENT_USER_CREATE);
+
+        try {
+            if (iamUserRepository.count() > 0) {
+                log.info("ℹ️ DB 데이터 존재로 초기화 건너뜜");
+                return;
+            }
+
+            log.info("🚀 샘플 데이터 생성 시작...");
+
+            // 2. 각 서비스 호출 시점에 트랜잭션이 수행되도록 함
+            IamUser admin = createUserViaService("super.admin", "Michael", "Admin", "IT Director", true, "michael.admin@global-iam.com", "GLOBAL-IT", "ADM001");
+            IamUser jane = createUserViaService("jane.doe", "Jane", "Doe", "External Auditor", true, "jane.doe@audit-firm.com", "AUDIT-01", "EXT-101");
+
+            log.info("✅ 사용자 데이터 생성 완료");
+
+            // 3. 이력 생성
+            createSyncHistoryViaService(jane, traceId);
+
+        } finally {
+            MDC.clear(); // 반드시 마지막에 clear
         }
-
-        log.info("🚀 샘플 데이터 생성 시작...");
-
-        // 1. 사용자 생성 (Service 호출 방식)
-        IamUser admin = createUserViaService("super.admin", "Michael", "Admin", "IT Director", true, "michael.admin@global-iam.com", "GLOBAL-IT", "ADM001");
-        IamUser jane = createUserViaService("jane.doe", "Jane", "Doe", "External Auditor", true, "jane.doe@audit-firm.com", "AUDIT-01", "EXT-101");
-        createUserViaService("john.smith", "John", "Smith", "Security Analyst", true, "john.smith@global-iam.com", "SEC-OPS", "SEC-888");
-
-        log.info("✅ 사용자 데이터 생성 완료");
-
-        // 2. 이력 생성 (Service 호출 방식)
-        createSyncHistoryViaService(jane);
     }
 
     private IamUser createUserViaService(String userName, String given, String family, String title, boolean active, String email, String dept, String empNo) {
         // 맵 구조로 attributes 생성 (Service 입력 규격에 맞춤)
         Map<String, UniversalData> attributes = new HashMap<>();
-        attributes.put("userName", new com.iam.core.domain.vo.StringData(userName));
-        attributes.put("givenName", new com.iam.core.domain.vo.StringData(given));
-        attributes.put("familyName", new com.iam.core.domain.vo.StringData(family));
-        attributes.put("title", new com.iam.core.domain.vo.StringData(title));
+        attributes.put("userName", new StringData(userName));
+        attributes.put("givenName", new StringData(given));
+        attributes.put("familyName", new StringData(family));
+        attributes.put("title", new StringData(title));
         attributes.put("active", new com.iam.core.domain.vo.BooleanData(active));
-        attributes.put("email", new com.iam.core.domain.vo.StringData(email));
-        attributes.put("department", new com.iam.core.domain.vo.StringData(dept));
-        attributes.put("employeeNumber", new com.iam.core.domain.vo.StringData(empNo));
+        attributes.put("email", new StringData(email));
+        attributes.put("department", new StringData(dept));
+        attributes.put("employeeNumber", new StringData(empNo));
 
         return iamUserUpdateService.create(empNo, attributes);
     }
@@ -147,8 +149,7 @@ public class DataInitializer implements CommandLineRunner {
         mappings.forEach(transMappingService::saveMapping);
     }
 
-    private void createSyncHistoryViaService(IamUser user) {
-        String traceId = "T-" + TSID.fast().toLong();
+    private void createSyncHistoryViaService(IamUser user, String traceId) {
         String systemId = "SAP_HR";
 
         // 1. 실제 런타임과 동일한 UserSyncEvent 전문(Full Object) 생성
@@ -162,20 +163,20 @@ public class DataInitializer implements CommandLineRunner {
         UserSyncEvent mockEvent = new UserSyncEvent(
                 traceId,
                 systemId,
-                SyncConstants.EVENT_USER_CREATE, // "USER_CREATE"
+                EVENT_USER_CREATE, // "USER_CREATE"
                 java.time.LocalDateTime.now(),   // timestamp
                 payload                          // payload
         );
 
         // 2. 결과 데이터 시뮬레이션 (전체 스냅샷 대신 최소 메타데이터만)
         Map<String, Object> resultSnapshot = new HashMap<>();
-        resultSnapshot.put(AttributeConstants.SYNC_TYPE, SyncConstants.EVENT_USER_CREATE);
+        resultSnapshot.put(AttributeConstants.SYNC_TYPE, EVENT_USER_CREATE);
         resultSnapshot.put("status", "CREATED");
 
         // 3. Service 호출하여 이력 기록 (수정된 파라미터 반영)
         syncHistoryService.logSuccess(
                 traceId,
-                SyncConstants.EVENT_USER_CREATE,
+                EVENT_USER_CREATE,
                 user.getUserName(),
                 user.getId(),
                 systemId,
