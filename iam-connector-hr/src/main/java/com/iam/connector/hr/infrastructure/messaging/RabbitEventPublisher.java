@@ -1,6 +1,7 @@
 package com.iam.connector.hr.infrastructure.messaging;
 
 import com.iam.connector.hr.application.port.out.EventPublisher;
+import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -24,7 +25,7 @@ public class RabbitEventPublisher implements EventPublisher {
     @Override
     public void publish(String systemId, Map<String, Object> payload) {
         Map<String, Object> event = new HashMap<>();
-        String traceId = UUID.randomUUID().toString();
+        String traceId = "T-" + TSID.fast().toLong();
 
         event.put("traceId", traceId);
         event.put("systemId", systemId);

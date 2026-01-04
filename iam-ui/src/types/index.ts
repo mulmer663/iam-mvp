@@ -54,14 +54,17 @@ export interface HistoryLog {
     userId?: string
     userName?: string
     syncType?: 'JOIN' | 'REJOIN' | 'UPDATE_SIMPLE' | 'UPDATE_CRITICAL' | 'LEAVE'
-    payload?: Record<string, any>
+    requestPayload?: Record<string, any>
+    resultData?: Record<string, any>
+    appliedRules?: number[]
+    // Computed/Derived for UI convenience
+    payload?: Record<string, any> // Deprecated but kept for compatibility logic
     changes?: Array<{ field: string, old: string, new: string }>
     mappings?: AttributeMapping[]
     snapshot?: {
         layer: 'HR' | 'IAM' | 'AD'
         data: Record<string, any>
     }
-    requestPayload?: string
 }
 
 export interface MillerPane {

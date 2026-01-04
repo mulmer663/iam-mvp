@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 사용자 동기화 비즈니스 로직을 처리하는 Service
@@ -64,8 +63,9 @@ public class UserSyncService {
             }
 
             // 1. Transform Attribute using Engine
-            Map<String, UniversalData> transformed = transformationService.transform(systemId,
-                    rawData);
+            var transformationResult = transformationService.transform(systemId, rawData);
+            Map<String, UniversalData> transformed = transformationResult.data();
+            List<Long> appliedRules = transformationResult.appliedRuleVersionIds();
 
             // 1.1 Validation: Ensure mandatory fields (like userName) are present after
             // transformation
@@ -75,15 +75,15 @@ public class UserSyncService {
             correlationService.correlate(systemId, externalId)
                     .ifPresentOrElse(
                             user -> updateExistingUser(user, transformed, rawData, systemId, traceId,
-                                    event.rawMessage()),
+                                    event.rawMessage(), appliedRules),
                             () -> createNewUser(externalId, transformed, rawData, systemId, traceId,
-                                    event.rawMessage()));
+                                    event.rawMessage(), appliedRules));
 
         } catch (Exception e) {
             log.error("Sync failed for traceId: {}", traceId, e);
             syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR,
                     userName != null ? userName : "UNKNOWN", null, systemId,
-                    event.rawMessage() != null ? event.rawMessage() : rawData,
+                    event.rawMessage() != null ? (Map<String, Object>) event.rawMessage() : rawData,
                     "Error: " + e.getMessage());
 
             // Publish Compensation Event
@@ -103,7 +103,8 @@ public class UserSyncService {
     }
 
     private void createNewUser(String externalId, Map<String, UniversalData> attributes,
-            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest) {
+            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
+            List<Long> appliedRules) {
         log.info("Creating new user via engine for system: {}, ID: {}", systemId, externalId);
 
         var user = iamUserUpdateService.create(externalId, attributes);
@@ -112,22 +113,18 @@ public class UserSyncService {
 
         publishProvisioningCommand(user, extractRawExtensions(attributes), traceId);
 
-        // Rich History
-        Map<String, Object> historyPayload = Map.of(
-                AttributeConstants.SYNC_TYPE, SyncConstants.TYPE_JOIN,
-                AttributeConstants.MAPPINGS, generateMappings(systemId, attributes),
-                AttributeConstants.SNAPSHOT, Map.of(
-                        AttributeConstants.LAYER, systemId,
-                        AttributeConstants.DATA, rawData));
+        // Normalized History: No more huge mappings nested data
+        Map<String, Object> resultSnapshot = extractRawExtensions(attributes);
 
         syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_CREATE, user.getUserName(), user.getId(),
                 systemId,
-                historyPayload,
-                "User created via engine", null, null, originalRequest);
+                resultSnapshot,
+                "User created via engine", null, null, rawData, appliedRules);
     }
 
     private void updateExistingUser(IamUser user, Map<String, UniversalData> attributes,
-            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest) {
+            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
+            List<Long> appliedRules) {
         log.info("Updating existing user via engine for system: {}, userId: {}", systemId, user.getId());
 
         // Capture old state for diff
@@ -139,18 +136,16 @@ public class UserSyncService {
         // Calculate changes
         List<Map<String, Object>> changes = calculateChanges(oldState, captureState(user));
 
-        // Rich History
-        Map<String, Object> historyPayload = new HashMap<>();
-        historyPayload.put(AttributeConstants.SYNC_TYPE,
+        // Result Data
+        Map<String, Object> resultSnapshot = new HashMap<>();
+        resultSnapshot.put(AttributeConstants.CHANGES, changes);
+        resultSnapshot.put(AttributeConstants.SYNC_TYPE,
                 changes.isEmpty() ? SyncConstants.TYPE_UPDATE_SIMPLE : SyncConstants.TYPE_UPDATE_CRITICAL);
-        historyPayload.put(AttributeConstants.CHANGES, changes);
-        historyPayload.put(AttributeConstants.MAPPINGS, generateMappings(systemId, attributes));
-        historyPayload.put(AttributeConstants.SNAPSHOT,
-                Map.of(AttributeConstants.LAYER, systemId, AttributeConstants.DATA, rawData));
 
         syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_UPDATE, user.getUserName(), user.getId(),
                 systemId,
-                historyPayload, "User updated via engine", null, null, originalRequest);
+                resultSnapshot,
+                "User updated via engine", null, null, rawData, appliedRules);
     }
 
     private Map<String, Object> captureState(IamUser user) {
@@ -174,20 +169,6 @@ public class UserSyncService {
             }
         });
         return changes;
-    }
-
-    private List<Map<String, Object>> generateMappings(String from,
-            Map<String, UniversalData> attributes) {
-        List<Map<String, Object>> mappings = new ArrayList<>();
-        attributes.forEach((k, v) -> {
-            mappings.add(Map.of(
-                    AttributeConstants.FROM_LABEL, from,
-                    AttributeConstants.TO_LABEL, SystemConstants.SYSTEM_IAM,
-                    AttributeConstants.FROM_FIELD, k, // For now assuming 1:1 name for simplicity if not traceable
-                    AttributeConstants.TO_FIELD, k,
-                    AttributeConstants.VALUE, v.asString() != null ? v.asString() : ""));
-        });
-        return mappings;
     }
 
     private void validateRequiredAttributes(Map<String, UniversalData> attributes, String traceId) {
@@ -230,16 +211,23 @@ public class UserSyncService {
         log.info("Published provisioning command for user: {} (traceId: {})", user.getId(), traceId);
 
         // Audit Logging for Provisioning
+        // Convert command to Map for JSONB storage
+        Map<String, Object> cmdMap = new HashMap<>();
+        cmdMap.put("target", SystemConstants.SYSTEM_AD);
+        cmdMap.put("command", "PROVISION");
+        cmdMap.put("payload", command); // Jackson/Hibernate will handle serialization
+
         syncHistoryService.logSuccess(
                 traceId,
                 SyncConstants.EVENT_AD_PROVISION,
                 user.getUserName(),
                 user.getId(),
                 SystemConstants.SYSTEM_IAM,
-                Map.of("target", SystemConstants.SYSTEM_AD, "command", "PROVISION"),
+                cmdMap,
                 "Provisioning request sent to AD",
                 null,
                 null,
-                command);
+                null,
+                null);
     }
 }

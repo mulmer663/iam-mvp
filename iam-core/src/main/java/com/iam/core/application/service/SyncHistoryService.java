@@ -1,6 +1,5 @@
 package com.iam.core.application.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iam.core.application.dto.HistoryResponse;
 import com.iam.core.domain.constant.SyncConstants;
 import com.iam.core.domain.entity.SyncHistory;
@@ -20,33 +19,33 @@ import java.util.Map;
 public class SyncHistoryService {
 
     private final SyncHistoryRepository syncHistoryRepository;
-    private final ObjectMapper objectMapper;
 
     @Transactional
     public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
-            Object payload,
-            String responsePayload) {
-        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, payload, responsePayload, null, null,
+            Map<String, Object> resultData,
+            String message) {
+        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, resultData, message, null, null, null,
                 null);
     }
 
     @Transactional
     public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
-            Object payload,
-            String responsePayload, Long parentId, Long duration, Object requestPayload) {
+            Map<String, Object> resultData,
+            String message, Long parentId, Long duration, Map<String, Object> requestPayload,
+            List<Long> appliedRules) {
         return saveHistory(traceId, type, SyncConstants.STATUS_SUCCESS, targetUser, iamUserId, sourceSystem, null,
-                payload,
-                responsePayload, parentId,
-                duration, requestPayload);
+                resultData,
+                message, parentId,
+                duration, requestPayload, appliedRules);
     }
 
     @Transactional
     public void logFailure(String traceId, String type, String targetUser, Long iamUserId, String sourceSystem,
-            Object requestPayload,
+            Map<String, Object> requestPayload,
             String errorDetails) {
         saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, iamUserId, sourceSystem, null, null,
                 errorDetails,
-                null, null, requestPayload);
+                null, null, requestPayload, null);
     }
 
     @Transactional(readOnly = true)
@@ -84,8 +83,8 @@ public class SyncHistoryService {
 
     private Long saveHistory(String traceId, String type, String status, String targetUser, Long iamUserId,
             String sourceSystem,
-            String targetSystem, Object detailPayload, String responsePayload, Long parentHistoryId,
-            Long durationMs, Object originalRequestPayload) {
+            String targetSystem, Map<String, Object> resultData, String message, Long parentHistoryId,
+            Long durationMs, Map<String, Object> requestPayload, List<Long> appliedRules) {
         try {
             var history = SyncHistory.builder()
                     .traceId(traceId)
@@ -95,25 +94,15 @@ public class SyncHistoryService {
                     .iamUserId(iamUserId)
                     .sourceSystem(sourceSystem)
                     .targetSystem(targetSystem)
-                    .message(responsePayload)
-                    .responsePayload(responsePayload)
+                    .message(message)
+                    .resultData(resultData)
                     .parentHistoryId(parentHistoryId)
                     .durationMs(durationMs)
+                    .requestPayload(requestPayload)
+                    .appliedRules(appliedRules)
                     .completedAt(LocalDateTime.now())
                     .expiresAt(LocalDateTime.now().plusDays(30))
                     .build();
-
-            if (detailPayload != null) {
-                Object unwrapped = unwrap(detailPayload);
-                String json = objectMapper.writeValueAsString(unwrapped);
-                history.setPayload(json);
-            }
-
-            if (originalRequestPayload != null) {
-                Object unwrapped = unwrap(originalRequestPayload);
-                String json = objectMapper.writeValueAsString(unwrapped);
-                history.setRequestPayload(json);
-            }
 
             var saved = syncHistoryRepository.save(history);
             log.info("Saved sync history [{}]: {} - {} (ID: {})", status, type, traceId, saved.getId());
@@ -122,24 +111,6 @@ public class SyncHistoryService {
             log.error("Failed to save sync history", e);
             return null;
         }
-    }
-
-    private Object unwrap(Object payload) {
-        if (payload == null)
-            return null;
-
-        if (payload instanceof com.iam.core.domain.vo.UniversalData ud) {
-            return ud.getValue();
-        } else if (payload instanceof Map<?, ?> map) {
-            java.util.Map<Object, Object> unwrapped = new java.util.HashMap<>();
-            map.forEach((k, v) -> unwrapped.put(k, unwrap(v)));
-            return unwrapped;
-        } else if (payload instanceof Iterable<?> it) {
-            java.util.List<Object> list = new java.util.ArrayList<>();
-            it.forEach(i -> list.add(unwrap(i)));
-            return list;
-        }
-        return payload;
     }
 
     private HistoryResponse toResponse(SyncHistory history) {
@@ -153,9 +124,10 @@ public class SyncHistoryService {
                 history.getTargetSystem(),
                 history.getCreatedAt(),
                 history.getMessage(),
-                history.getPayload(),
+                history.getResultData(),
                 history.getRequestPayload(),
                 history.getParentHistoryId(),
-                history.getDurationMs());
+                history.getDurationMs(),
+                history.getAppliedRules());
     }
 }

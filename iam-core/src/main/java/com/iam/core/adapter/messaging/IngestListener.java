@@ -3,6 +3,7 @@ package com.iam.core.adapter.messaging;
 import com.iam.core.application.service.UserSyncService;
 import com.iam.core.application.dto.UserSyncEvent;
 
+import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -27,7 +28,7 @@ public class IngestListener {
     public void onRawDataIngested(Map<String, Object> message) {
         log.info("Received raw ingestion message: {}", message);
 
-        String traceId = (String) message.getOrDefault("traceId", UUID.randomUUID().toString());
+        String traceId = (String) message.getOrDefault("traceId", "T-" + TSID.fast().toLong());
         String systemId = (String) message.get("systemId");
 
         try {

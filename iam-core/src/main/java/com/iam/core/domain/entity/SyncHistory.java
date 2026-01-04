@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -47,14 +49,17 @@ public class SyncHistory {
     @Column(name = "message", columnDefinition = "TEXT")
     private String message; // Human readable message
 
-    @Column(name = "payload", columnDefinition = "TEXT")
-    private String payload; // Copy of requestPayload/responsePayload for CSV compat
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "request_payload", columnDefinition = "jsonb")
+    private java.util.Map<String, Object> requestPayload; // Raw snapshot or pre-transformation data
 
-    @Column(name = "request_payload", columnDefinition = "TEXT")
-    private String requestPayload; // Raw snapshot or pre-transformation data
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "result_data", columnDefinition = "jsonb")
+    private java.util.Map<String, Object> resultData; // Final SCIM/IAM data or error details
 
-    @Column(name = "response_payload", columnDefinition = "TEXT")
-    private String responsePayload; // Final SCIM/IAM data or error details
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "applied_rules", columnDefinition = "jsonb")
+    private java.util.List<Long> appliedRules; // List of TransRuleVersion IDs
 
     @Builder.Default
     @Column(name = "retry_count")

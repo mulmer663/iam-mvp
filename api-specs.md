@@ -161,7 +161,15 @@ interface ScimUser {
       "target": "HR",
       "time": "2023-10-27T10:30:00",
       "message": "User created successfully",
-      "payload": "{\"userName\":\"johndoe\"}"
+      "requestPayload": {
+        "userName": "johndoe",
+        "email": "john@exmaple.com"
+      },
+      "resultData": {
+        "action": "CREATE",
+        "userId": 123
+      },
+      "appliedRules": [1, 2]
     }
   ]
   ```
@@ -177,7 +185,9 @@ interface HistoryLog {
   target: string;
   time: string;
   message: string;
-  payload?: string;
+  requestPayload?: Record<string, any>;
+  resultData?: Record<string, any>;
+  appliedRules?: number[];
 }
 
 ---

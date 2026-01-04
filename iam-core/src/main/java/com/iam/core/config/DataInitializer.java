@@ -38,7 +38,6 @@ public class DataInitializer implements CommandLineRunner {
   private final IamUserRepository iamUserRepository;
   private final SyncHistoryRepository syncHistoryRepository;
   private final TransMappingService transMappingService;
-  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
   @Override
   @Transactional
@@ -199,38 +198,32 @@ public class DataInitializer implements CommandLineRunner {
       mappings.add(createMapping("HR", "IAM", "deptCode", "department", dept));
       mappings.add(createMapping("HR", "IAM", "status", "active", "true"));
 
-      Map<String, Object> historyPayload = new HashMap<>();
-      historyPayload.put(SyncConstants.TYPE_JOIN, SyncConstants.TYPE_JOIN);
-      // fixing map key structure
-      Map<String, Object> payloadMap = new HashMap<>();
-      payloadMap.put(AttributeConstants.SYNC_TYPE, SyncConstants.TYPE_JOIN);
-      payloadMap.put(AttributeConstants.MAPPINGS, mappings);
-      payloadMap.put(AttributeConstants.SNAPSHOT, Map.of(
-          AttributeConstants.LAYER, "SAP_HR",
-          AttributeConstants.DATA, hrRawData));
+      // fix map key structure
+      Map<String, Object> requestPayloadMap = new HashMap<>(hrRawData);
 
-      String payloadJson = objectMapper.writeValueAsString(payloadMap);
+      Map<String, Object> resultSnapshot = new HashMap<>();
+      // In real scenario, resultData would be the transformed user props or changes
+      resultSnapshot.put(AttributeConstants.LAYER, "IAM_CORE");
+      resultSnapshot.put("user_id", userId);
+      resultSnapshot.put("username", userName);
 
       histories
           .add(createHistory(traceId, SyncConstants.EVENT_USER_CREATE, SyncConstants.STATUS_SUCCESS, userId, userName,
               "SAP_HR", SystemConstants.SYSTEM_IAM, "User created via engine",
-              payloadJson,
+              resultSnapshot, requestPayloadMap,
               LocalDateTime.now().minusDays(1)));
 
       // 2. AD Provisioning
-      Map<String, Object> adPayloadMap = new HashMap<>();
-      adPayloadMap.put(AttributeConstants.SYNC_TYPE, SyncConstants.TYPE_JOIN);
-      adPayloadMap.put(AttributeConstants.SNAPSHOT, Map.of(
-          AttributeConstants.LAYER, "AD",
-          AttributeConstants.DATA, Map.of("sAMAccountName", userName, "displayName", firstName + " " + lastName)));
-      adPayloadMap.put(AttributeConstants.MAPPINGS, List.of(
-          createMapping("IAM", "AD", "userName", "sAMAccountName", userName)));
-      String adPayloadJson = objectMapper.writeValueAsString(adPayloadMap);
+      Map<String, Object> adCmdPayload = new HashMap<>();
+      adCmdPayload.put(AttributeConstants.SYNC_TYPE, SyncConstants.TYPE_JOIN);
+      adCmdPayload.put("command", "PROVISION");
+      adCmdPayload.put("target", "AD");
+      adCmdPayload.put("data", Map.of("sAMAccountName", userName, "displayName", firstName + " " + lastName));
 
       histories
           .add(createHistory(traceId, SyncConstants.EVENT_AD_PROVISION, SyncConstants.STATUS_SUCCESS, userId, userName,
               SystemConstants.SYSTEM_IAM, SystemConstants.SYSTEM_AD, "Provisioned to AD",
-              adPayloadJson,
+              adCmdPayload, null,
               LocalDateTime.now().minusDays(1).plusMinutes(1)));
 
       syncHistoryRepository.saveAll(histories);
@@ -252,7 +245,8 @@ public class DataInitializer implements CommandLineRunner {
   }
 
   private com.iam.core.domain.entity.SyncHistory createHistory(String traceId, String type, String status,
-      Long iamUserId, String target, String sourceSystem, String targetSystem, String msg, String payload,
+      Long iamUserId, String target, String sourceSystem, String targetSystem, String msg,
+      Map<String, Object> resultData, Map<String, Object> requestPayload,
       LocalDateTime time) {
     return com.iam.core.domain.entity.SyncHistory.builder()
         .traceId(traceId)
@@ -262,9 +256,9 @@ public class DataInitializer implements CommandLineRunner {
         .targetUser(target)
         .sourceSystem(sourceSystem)
         .targetSystem(targetSystem)
-        .requestPayload(payload)
-        .payload(payload)
-        .responsePayload(msg)
+        .requestPayload(requestPayload)
+        .resultData(resultData)
+        .message(msg)
         .createdAt(time)
         .build();
   }

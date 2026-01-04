@@ -1,5 +1,6 @@
 package com.iam.core.application.service;
 
+import com.iam.core.application.dto.TransformationResult;
 import com.iam.core.domain.entity.TransMapping;
 import com.iam.core.domain.entity.TransRuleVersion;
 import com.iam.core.domain.repository.TransMappingRepository;
@@ -36,12 +37,13 @@ public class TransformationService {
      * @return Transformed data as a Map of attribute names to UniversalData
      */
     @Transactional(readOnly = true)
-    public Map<String, UniversalData> transform(String systemId, Map<String, Object> rawData) {
+    public TransformationResult transform(String systemId, Map<String, Object> rawData) {
         log.info("Starting transformation for system: {}", systemId);
 
         // 1. Initial State: Map common attributes or keep it empty
         Map<String, UniversalData> sourceMap = universalMapper.map(rawData);
         Map<String, UniversalData> targetMap = new HashMap<>(sourceMap);
+        java.util.List<Long> appliedRuleIds = new java.util.ArrayList<>();
 
         // 2. Load Mappings
         List<TransMapping> mappings = mappingRepository.findBySystemIdOrderByExecOrderAsc(systemId);
@@ -55,6 +57,7 @@ public class TransformationService {
                         .orElseThrow(() -> new RuntimeException("Active rule version not found: " + ruleId));
 
                 log.debug("Executing rule: {} (order: {})", ruleId, mapping.getExecOrder());
+                appliedRuleIds.add(currentVersion.getVerId());
 
                 Map<String, Object> params = new HashMap<>();
                 params.put("source", sourceMap);
@@ -86,6 +89,6 @@ public class TransformationService {
             }
         }
 
-        return targetMap;
+        return new TransformationResult(targetMap, appliedRuleIds);
     }
 }

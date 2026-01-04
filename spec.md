@@ -86,7 +86,10 @@ graph LR
 * **이력 관리 (Traceability):**
   * **참조 파일:** [SyncHistory.java](file:///c:/Dev/project/iam/iam-core/src/main/java/com/iam/core/domain/entity/SyncHistory.java)
   * **추적성 강화:** 모든 이벤트는 `traceId`를 공유하며, `parent_history_id`를 통한 단계별 부모-자식 관계를 형성하여 `HR -> Core -> AD` 흐름을 추적함.
-  * **메타데이터:** `duration_ms`를 통해 각 변환/반영 단계별 처리 속도를 측정하고, `expires_at`을 통해 이력 보관 주기를 관리함.
+  * **정규화 및 최적화:**
+    * 기존 `payload` 문자열 컬럼을 제거하고 `request_payload`, `result_data`를 **JSONB** (`Map<String, Object>`)로 전환하여 효율적인 쿼리와 스토리지 관리 실현.
+    * **`applied_rules`** 컬럼을 도입, 변환 시점에 적용된 `TransRuleVersion`의 ID 리스트를 저장하여 정확한 로직 추적성 확보.
+  * **메타데이터:** `duration_ms`를 통해 처리 속도 측정, `expires_at`으로 보관 주기 관리.
   * **데이터 평탄화:** `UniversalData` 구조를 자동으로 언래핑하여 JSON 페이로드 가독성을 확보함.
 
 * **데이터베이스:** `IAM_TRANS_RULE_META`, `IAM_TRANS_RULE_VERSION` 등 규칙 버전 관리 테이블 참조 (`schema.sql`).

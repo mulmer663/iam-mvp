@@ -9,10 +9,11 @@ interface HistoryResponse {
     target: string // targetUser
     sourceSystem?: string
     targetSystem?: string
-    time: string // Align with time in api-specs.md
+    time: string
     message?: string
-    payload?: string // JSON string
-    requestPayload?: string
+    requestPayload?: Record<string, any>
+    resultData?: Record<string, any>
+    appliedRules?: number[]
 }
 
 export const HistoryService = {
@@ -30,28 +31,32 @@ export const HistoryService = {
     },
 
     toHistoryLog(dto: HistoryResponse): HistoryLog {
-        let payloadObj: any = {};
-        try {
-            if (dto.payload) {
-                payloadObj = JSON.parse(dto.payload);
-            }
-        } catch (e) {
-            console.error('Failed to parse history payload', e);
+        const resultData = dto.resultData || {};
+        const requestPayload = dto.requestPayload || {};
+
+        // 1. Extract specific UI helpers from resultData if available
+        // For USER_UPDATE, changes and syncType are in resultData
+        const changes = resultData.changes || undefined;
+        let syncType = resultData.syncType;
+
+        // Fallback syncType logic for legacy or simple joins
+        if (!syncType && ['HR_SYNC', 'USER_CREATE', 'USER_SYNC'].includes(dto.type)) {
+            syncType = 'JOIN';
         }
 
-        // Handle rich wrapping (syncType, snapshot) if present
-        const syncType = payloadObj.syncType ||
-            (['HR_SYNC', 'USER_CREATE', 'USER_SYNC'].includes(dto.type) ? 'JOIN' : undefined);
-        const snapshot = payloadObj.snapshot || undefined;
-        const mappings = payloadObj.mappings || undefined;
-        const changes = payloadObj.changes || undefined;
-        const actualPayload = payloadObj.snapshot ? payloadObj.snapshot.data : payloadObj;
+        // 2. Mappings are no longer stored in payload, so we might not have them
+        // unless we fetch them or they are legacy. 
+        // We will leave mappings undefined for now (UI shows appliedRules instead).
+        const mappings = resultData.mappings || undefined;
+
+        // 3. Snapshot logic
+        // For Join, requestPayload IS the snapshot data
+        const snapshotData = requestPayload;
 
         // Ensure time is formatted nicely (remove T if present)
         const formattedTime = dto.time ? dto.time.replace('T', ' ') : '';
 
         return {
-            ...(actualPayload || {}),
             id: dto.id,
             traceId: dto.traceId,
             type: dto.type as any,
@@ -61,12 +66,23 @@ export const HistoryService = {
             targetSystem: dto.targetSystem,
             time: formattedTime,
             message: dto.message,
-            payload: actualPayload,
+
+            // Core Data
+            requestPayload: dto.requestPayload,
+            resultData: dto.resultData,
+            appliedRules: dto.appliedRules,
+
+            // UI Helpers
             syncType: syncType as any,
-            snapshot: snapshot,
-            mappings: mappings,
             changes: changes,
-            requestPayload: dto.requestPayload
+            mappings: mappings,
+
+            // Legacy Compatibility / UI View Helpers
+            payload: resultData, // Some UI parts use payload as the "result" or "main data"
+            snapshot: snapshotData ? {
+                layer: (dto.sourceSystem || 'HR') as any,
+                data: snapshotData
+            } : undefined
         };
     }
 }

@@ -93,7 +93,7 @@ const getChange = (key: string) => {
 }
 
 const allSnapshotEntries = computed(() => {
-  const data = props.event.snapshot?.data || props.event.payload
+  const data = props.event.requestPayload || props.event.snapshot?.data || props.event.payload
   if (!data) return []
   return Object.entries(data).filter(([key]) => key !== 'schemas' && !isExtension(key))
 })
@@ -269,8 +269,8 @@ const filteredEntries = computed(() => {
         </div>
       </section>
 
-      <!-- Attribution Mapping (Context Aware 2-Way) -->
-      <section v-if="event.mappings && event.mappings.length > 0">
+      <!-- Attribution Mapping (Context Aware 2-Way) or Applied Rules -->
+      <section v-if="(event.mappings && event.mappings.length > 0) || (event.appliedRules && event.appliedRules.length > 0)">
         <button 
           @click="isMappingOpen = !isMappingOpen"
           class="flex items-center justify-between w-full p-2.5 rounded-md border transition-all group"
@@ -281,12 +281,17 @@ const filteredEntries = computed(() => {
                 <ArrowRight class="size-3" :class="isMappingOpen ? 'text-white' : 'text-neutral-400'" />
              </div>
              <div class="flex flex-col items-start">
-                <h3 class="text-[10px] font-black uppercase tracking-widest transition-colors"
+                <h3 v-if="event.mappings && event.mappings.length > 0" class="text-[10px] font-black uppercase tracking-widest transition-colors"
                     :class="isMappingOpen ? 'text-neutral-400' : 'text-neutral-600'">
                   Attribute Mapping
                 </h3>
+                <h3 v-else class="text-[10px] font-black uppercase tracking-widest transition-colors"
+                    :class="isMappingOpen ? 'text-neutral-400' : 'text-neutral-600'">
+                  Applied Transformation Rules
+                </h3>
                 <span class="text-[8px] font-bold text-neutral-400 uppercase tracking-tighter">
-                  {{ mappingLabels.from }} → {{ mappingLabels.to }} ({{ event.mappings.length }} Fields)
+                   <span v-if="event.mappings">{{ mappingLabels.from }} → {{ mappingLabels.to }} ({{ event.mappings.length }} Fields)</span>
+                   <span v-else>{{ event.appliedRules?.length }} Rules Applied</span>
                 </span>
              </div>
           </div>
@@ -294,7 +299,8 @@ const filteredEntries = computed(() => {
         </button>
         
         <div v-if="isMappingOpen" class="border rounded-md overflow-hidden bg-neutral-50/50">
-           <Table>
+           <!-- Mappings Table --> 
+           <Table v-if="event.mappings && event.mappings.length > 0">
              <TableHeader class="bg-white">
                <TableRow class="h-8 hover:bg-transparent shadow-sm">
                  <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.from }} Field</TableHead>
@@ -304,7 +310,6 @@ const filteredEntries = computed(() => {
              </TableHeader>
              <TableBody>
                 <TableRow v-for="(m, idx) in event.mappings" :key="idx" class="h-9 hover:bg-white border-b-neutral-100 last:border-0">
-                  <!-- From Field -->
                   <TableCell class="py-1 px-3 text-[10px] font-mono" 
                              :class="[
                                 mappingLabels.from === 'HR' ? 'text-blue-600' : '',
@@ -312,10 +317,7 @@ const filteredEntries = computed(() => {
                              ]">
                     {{ m.fromField }}
                   </TableCell>
-
                   <TableCell class="py-1 px-3 text-center"><ArrowRight class="size-2.5 text-neutral-300 mx-auto" /></TableCell>
-
-                  <!-- To Field -->
                   <TableCell class="py-1 px-3 text-[10px] font-mono"
                              :class="[
                                 mappingLabels.to === 'IAM' ? 'text-orange-600 font-bold' : '',
@@ -326,6 +328,14 @@ const filteredEntries = computed(() => {
                 </TableRow>
              </TableBody>
            </Table>
+
+           <!-- Applied Rules List -->
+           <div v-else class="p-3 bg-white">
+              <div v-for="ruleId in event.appliedRules" :key="ruleId" class="flex items-center gap-2 mb-1">
+                 <div class="px-2 py-0.5 bg-neutral-100 text-[10px] font-mono rounded text-neutral-600">Rule Version: {{ ruleId }}</div>
+                 <div class="text-[10px] text-neutral-400">Successfully executed</div>
+              </div>
+           </div>
         </div>
       </section>
 
@@ -426,8 +436,18 @@ const filteredEntries = computed(() => {
           </div>
           <component :is="isRawOpen ? ChevronDown : ChevronRight" class="size-3" />
         </button>
-        <div v-if="isRawOpen" class="p-3 bg-neutral-900 rounded-b-md text-neutral-300 font-mono text-[10px] border-t border-neutral-800">
-          <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ event.requestPayload ? (typeof event.requestPayload === 'string' ? JSON.stringify(JSON.parse(event.requestPayload), null, 2) : JSON.stringify(event.requestPayload, null, 2)) : JSON.stringify(event.payload || event, null, 2) }}</pre>
+        <div v-if="isRawOpen" class="p-3 bg-neutral-900 rounded-b-md text-neutral-300 font-mono text-[10px] border-t border-neutral-800 flex flex-col gap-4">
+          <div v-if="event.requestPayload">
+             <div class="text-[9px] text-neutral-500 font-bold mb-1">REQUEST PAYLOAD</div>
+             <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.requestPayload, null, 2) }}</pre>
+          </div>
+          <div v-if="event.resultData">
+             <div class="text-[9px] text-neutral-500 font-bold mb-1">RESULT DATA</div>
+             <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.resultData, null, 2) }}</pre>
+          </div>
+          <div v-if="!event.requestPayload && !event.resultData">
+             <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.payload || event, null, 2) }}</pre>
+          </div>
         </div>
       </section>
 
