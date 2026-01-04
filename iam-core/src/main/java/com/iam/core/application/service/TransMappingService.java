@@ -7,7 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -16,7 +20,6 @@ import java.util.UUID;
 public class TransMappingService {
 
     private final TransFieldMappingRepository fieldMappingRepository;
-    private final TransRuleVersionRepository ruleVersionRepository;
     private final TransRuleMetaRepository ruleMetaRepository;
     private final TransMappingRepository transMappingRepository;
     private final TransCodeMetaRepository codeMetaRepository;
@@ -47,11 +50,6 @@ public class TransMappingService {
         codeValueRepository.saveAll(values);
     }
 
-    @Transactional
-    public void saveRuleVersion(TransRuleVersion version) {
-        ruleVersionRepository.save(version);
-    }
-
     public List<TransFieldMapping> getMappings(String ruleId) {
         return fieldMappingRepository.findByRuleId(ruleId);
     }
@@ -79,31 +77,26 @@ public class TransMappingService {
         List<TransFieldMapping> mappings = fieldMappingRepository.findByRuleId(ruleId);
         String generatedScript = scriptGenerator.generate(mappings);
 
-        // Deactivate current version
-        ruleVersionRepository.findByRuleIdAndIsCurrentTrue(ruleId).ifPresent(v -> {
-            v.setIsCurrent(false);
-            ruleVersionRepository.save(v);
-        });
+        // 2. 해당 Rule의 메인 Version 엔티티를 찾거나 새로 생성
+        TransRuleMeta version = ruleMetaRepository.findById(ruleId)
+                .orElse(new TransRuleMeta());
 
-        List<TransRuleVersion> allVersions = ruleVersionRepository.findAll();
-        // Get max version number for this rule
-        Integer nextVer = allVersions.stream()
-                .filter(v -> ruleId.equals(v.getRuleId()))
-                .map(TransRuleVersion::getVersionNo)
-                .max(Integer::compareTo)
-                .orElse(0) + 1;
+        // 3. 내용 업데이트
+        version.setRuleId(ruleId);
+        version.setScriptContent(generatedScript);
+        version.setScriptHash(calculateHash(generatedScript));
 
-        // Create new version
-        TransRuleVersion newVersion = TransRuleVersion.builder()
-                .ruleId(ruleId)
-                .versionNo(nextVer)
-                .scriptContent(generatedScript)
-                .scriptHash(UUID.randomUUID().toString()) // Real hash could be SHA-256
-                .changeLog("Auto-generated from field mappings")
-                .isCurrent(true)
-                .createdBy("SYSTEM")
-                .build();
+        // 4. 저장 (이 순간 REVINFO와 TRANS_RULE_VERSION_AUD가 동시에 쌓임)
+        ruleMetaRepository.save(version);
+    }
 
-        ruleVersionRepository.save(newVersion);
+    private String calculateHash(String scriptContent) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(scriptContent.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("Hash calculation failed", e);
+        }
     }
 }

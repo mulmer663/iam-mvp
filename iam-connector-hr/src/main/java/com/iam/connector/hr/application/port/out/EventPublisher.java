@@ -6,5 +6,5 @@ import java.util.Map;
  * Port for publishing HR events.
  */
 public interface EventPublisher {
-    void publish(String systemId, Map<String, Object> payload);
+    void publish(String systemId, String eventType, Map<String, Object> payload);
 }

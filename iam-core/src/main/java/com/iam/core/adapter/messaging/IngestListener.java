@@ -4,8 +4,11 @@ import com.iam.core.application.service.UserSyncService;
 import com.iam.core.application.dto.UserSyncEvent;
 
 import io.hypersistence.tsid.TSID;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -25,28 +28,19 @@ public class IngestListener {
     private final UserSyncService userSyncService;
 
     @RabbitListener(queues = com.iam.core.config.IamRabbitConfig.INGEST_QUEUE_NAME)
-    public void onRawDataIngested(Map<String, Object> message) {
+    public void onRawDataIngested(@Valid UserSyncEvent message) {
         log.info("Received raw ingestion message: {}", message);
 
-        String traceId = (String) message.getOrDefault("traceId", "T-" + TSID.fast().toLong());
-        String systemId = (String) message.get("systemId");
-
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> rawPayload = (Map<String, Object>) message.get("payload");
-            if (rawPayload == null) {
-                log.error("Missing payload in ingestion message: {}", traceId);
-                return;
-            }
-
-            UserSyncEvent event = new UserSyncEvent(traceId, systemId, "USER_SYNC", LocalDateTime.now(), rawPayload,
-                    message);
-
+            MDC.put("traceId", message.traceId());
+            MDC.put("operationType", message.eventType());
             // Delegate to Application Service
-            userSyncService.processSync(event);
+            userSyncService.processSync(message);
 
         } catch (Exception e) {
-            log.error("Failed to adapt raw ingestion: traceId={}", traceId, e);
+            log.error("Failed to adapt raw ingestion: traceId={}", message.traceId(), e);
+        } finally {
+            MDC.clear();
         }
     }
 }

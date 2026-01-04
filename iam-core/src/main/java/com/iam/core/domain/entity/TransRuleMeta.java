@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.envers.Audited;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Audited
 public class TransRuleMeta {
     @Id
     @Column(name = "RULE_ID", length = 50)
@@ -30,7 +32,14 @@ public class TransRuleMeta {
 
     @Builder.Default
     @Column(name = "STATUS", length = 20)
-    private String status = "DRAFT"; // DRAFT, ACTIVE, RETIRED
+    private String status = "DRAFT";
+
+    // 기존 TransRuleVersion에 있던 필드들을 통합
+    @Column(name = "SCRIPT_CONTENT", columnDefinition = "TEXT")
+    private String scriptContent;
+
+    @Column(name = "SCRIPT_HASH", length = 64)
+    private String scriptHash;
 
     @CreationTimestamp
     @Column(name = "CREATED_AT", updatable = false)

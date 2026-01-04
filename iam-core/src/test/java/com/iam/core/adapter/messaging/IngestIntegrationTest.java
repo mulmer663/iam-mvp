@@ -1,8 +1,10 @@
 package com.iam.core.adapter.messaging;
 
+import com.iam.core.application.dto.UserSyncEvent;
 import com.iam.core.domain.entity.*;
 import com.iam.core.domain.port.MessagePublisher;
-import com.iam.core.domain.repository.*;
+import com.iam.core.domain.repository.IamUserRepository;
+import com.iam.core.domain.repository.IdentityLinkRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -89,12 +92,10 @@ class IngestIntegrationTest {
                                 "lastName", "Hong",
                                 "position", "Engineer",
                                 "active", true);
-                Map<String, Object> event = Map.of(
-                                "traceId", "test-trace-1",
-                                "systemId", SYSTEM_ID,
-                                "payload", payload);
+                UserSyncEvent userSyncEvent = new UserSyncEvent("test-trace-1", SYSTEM_ID, "USER_CREATE", LocalDateTime.now(), payload);
+
                 // When
-                ingestListener.onRawDataIngested(event);
+                ingestListener.onRawDataIngested(userSyncEvent);
 
                 // Then
                 // 1. Check IdentityLink

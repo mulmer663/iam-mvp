@@ -11,6 +11,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework.boot:spring-boot-starter-json'
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
+    implementation 'org.hibernate.orm:hibernate-envers'
 
     // Groovy Support
     implementation 'org.apache.groovy:groovy:4.0.15'

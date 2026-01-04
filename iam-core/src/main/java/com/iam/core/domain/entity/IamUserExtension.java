@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.envers.Audited;
 import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Audited
 public class IamUserExtension {
     @Id
     @Column(name = "user_id")

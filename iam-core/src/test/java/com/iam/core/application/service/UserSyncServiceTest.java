@@ -121,7 +121,7 @@ class UserSyncServiceTest {
 
                 UserSyncEvent event = new UserSyncEvent("trace-123", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
                                 LocalDateTime.now(),
-                                payload, null);
+                                payload);
 
                 // When
                 userSyncService.processSync(event);
@@ -159,7 +159,7 @@ class UserSyncServiceTest {
 
                 userSyncService.processSync(
                                 new UserSyncEvent("trace-1", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
-                                                LocalDateTime.now(), firstPayload, null));
+                                                LocalDateTime.now(), firstPayload));
 
                 Map<String, Object> updatePayload = Map.of(
                                 "externalId", hrEmpId,
@@ -175,7 +175,7 @@ class UserSyncServiceTest {
                 userSyncService.processSync(
                                 new UserSyncEvent("trace-2", SYSTEM_ID, SyncConstants.EVENT_USER_UPDATE,
                                                 LocalDateTime.now(),
-                                                updatePayload, null));
+                                                updatePayload));
 
                 // Then
                 var link = identityLinkRepository.findBySystemTypeAndExternalId(SYSTEM_ID, hrEmpId).get();
@@ -208,10 +208,10 @@ class UserSyncServiceTest {
                                 "deptName", "QA");
 
                 UserSyncEvent event = new UserSyncEvent("trace-error-1", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
-                                LocalDateTime.now(), invalidPayload, null);
+                                LocalDateTime.now(), invalidPayload);
 
                 // When & Then
-                org.junit.jupiter.api.Assertions.assertThrows(com.iam.core.domain.exception.IamBusinessException.class,
+                org.junit.jupiter.api.Assertions.assertThrows(com.iam.core.domain.exception.TransformationException.class,
                                 () -> {
                                         userSyncService.processSync(event);
                                 });

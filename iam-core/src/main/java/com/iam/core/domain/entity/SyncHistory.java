@@ -57,9 +57,8 @@ public class SyncHistory {
     @Column(name = "result_data", columnDefinition = "jsonb")
     private java.util.Map<String, Object> resultData; // Final SCIM/IAM data or error details
 
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
-    @Column(name = "applied_rules", columnDefinition = "jsonb")
-    private java.util.List<Long> appliedRules; // List of TransRuleVersion IDs
+    @Column(name = "rev_id", nullable = false)
+    private Long revId; // rev id
 
     @Builder.Default
     @Column(name = "retry_count")

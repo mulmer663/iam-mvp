@@ -1,14 +1,18 @@
 package com.iam.core.application.service;
 
 import com.iam.core.application.dto.ProvisioningCommand;
+import com.iam.core.application.dto.TransformationResult;
 import com.iam.core.application.dto.UserSyncEvent;
 
 import com.iam.core.domain.constant.AttributeConstants;
 import com.iam.core.domain.constant.SyncConstants;
 import com.iam.core.domain.constant.SystemConstants;
 import com.iam.core.domain.entity.*;
+import com.iam.core.domain.event.SyncCompensationEvent;
 import com.iam.core.domain.exception.ErrorCode;
 import com.iam.core.domain.exception.IamBusinessException;
+import com.iam.core.domain.exception.TransformationException;
+import com.iam.core.domain.exception.UserSyncPersistenceException;
 import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.IdentityLinkRepository;
 import com.iam.core.domain.vo.UniversalData;
@@ -49,62 +53,124 @@ public class UserSyncService {
     public void processSync(UserSyncEvent event) {
         String traceId = event.traceId();
         String systemId = event.systemId();
-        log.info("Processing sync for system: {}, traceId: {}", systemId, traceId);
-
         Map<String, Object> rawData = event.payload();
-        String externalId = (String) rawData.get(AttributeConstants.EXTERNAL_ID);
         String userName = (String) rawData.get(AttributeConstants.USERNAME);
 
+        // 단계별 결과 보관용 변수
+        TransformationResult transResult = null;
+
         try {
-            // 0. Pre-validation: Ensure externalId exists in raw data
-            if (externalId == null || externalId.isBlank()) {
-                throw new IamBusinessException(ErrorCode.MISSING_REQUIRED_FIELD, traceId,
-                        "externalId is missing in raw payload");
-            }
+            // 1. [단계: 데이터 변환] Transformation 단계
+            transResult = performTransformation(systemId, rawData, traceId);
 
-            // 1. Transform Attribute using Engine
-            var transformationResult = transformationService.transform(systemId, rawData);
-            Map<String, UniversalData> transformed = transformationResult.data();
-            List<Long> appliedRules = transformationResult.appliedRuleVersionIds();
+            // 2. [단계: 동기화 반영] Correlation & Persistence 단계
+            performUserSync(transResult, rawData, systemId, traceId);
 
-            // 1.1 Validation: Ensure mandatory fields (like userName) are present after
-            // transformation
-            validateRequiredAttributes(transformed, traceId);
-
-            // 2. Correlation & Update
-            correlationService.correlate(systemId, externalId)
-                    .ifPresentOrElse(
-                            user -> updateExistingUser(user, transformed, rawData, systemId, traceId,
-                                    event.rawMessage(), appliedRules),
-                            () -> createNewUser(externalId, transformed, rawData, systemId, traceId,
-                                    event.rawMessage(), appliedRules));
-
+        } catch (TransformationException te) {
+            // 변환 단계 실패: 엔진 오류 혹은 필수 규칙 위반
+            handleSyncFailure(traceId, systemId, userName, rawData, te.getMessage(), te.getRevId(), null);
+            throw te;
+        } catch (UserSyncPersistenceException spe) {
+            // 전용 예외에서 iamUserId를 추출하여 이력 기록
+            long revId = (transResult != null) ? transResult.revId() : 0L;
+            handleSyncFailure(traceId, systemId, userName, rawData, spe.getMessage(), revId, spe.getIamUserId());
+            throw spe;
+        } catch (IamBusinessException ibe) {
+            // 비즈니스 로직 실패: 중복 데이터, 유효성 검사 실패 등
+            long revId = (transResult != null) ? transResult.revId() : 0L;
+            handleSyncFailure(traceId, systemId, userName, rawData, ibe.getMessage(), revId, null);
+            throw ibe;
         } catch (Exception e) {
-            log.error("Sync failed for traceId: {}", traceId, e);
-            syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR,
-                    userName != null ? userName : "UNKNOWN", null, systemId,
-                    event.rawMessage() != null ? (Map<String, Object>) event.rawMessage() : rawData,
-                    "Error: " + e.getMessage());
-
-            // Publish Compensation Event
-            if (externalId != null && !externalId.isBlank()) {
-                com.iam.core.domain.event.SyncCompensationEvent compEvent = new com.iam.core.domain.event.SyncCompensationEvent(
-                        traceId, systemId, externalId, e.getMessage(), java.time.LocalDateTime.now());
-                messagePublisher.publish(EXCHANGE_NAME, COMPENSATION_ROUTING_KEY, compEvent);
-                log.info("Published compensation event for traceId: {}, system: {}, externalId: {}", traceId, systemId,
-                        externalId);
-            }
-
-            if (e instanceof IamBusinessException) {
-                throw e;
-            }
+            // 기타 예상치 못한 런타임 오류
+            long revId = (transResult != null) ? transResult.revId() : 0L;
+            handleSyncFailure(traceId, systemId, userName, rawData, "Unexpected error: " + e.getMessage(), revId, null);
             throw new IamBusinessException(ErrorCode.MESSAGE_PROCESSING_ERROR, traceId, e.getMessage(), e);
         }
     }
 
+    /**
+     * [분리] 변환 로직 처리 및 검증
+     */
+    private TransformationResult performTransformation(String systemId, Map<String, Object> rawData, String traceId) {
+        try {
+            var result = transformationService.transform(systemId, rawData);
+            validateRequiredAttributes(result.data(), traceId); //
+            return result;
+        } catch (TransformationException te) {
+            log.error("Transformation step failed: {}", te.getMessage());
+            throw te;
+        } catch (Exception e) {
+            throw new TransformationException(e.getMessage(), 0L, e);
+        }
+    }
+
+    /**
+     * [분리] 실제 DB 반영 및 상관관계 처리
+     */
+    private void performUserSync(TransformationResult result, Map<String, Object> rawData, String systemId, String traceId) {
+        String externalId = (String) rawData.get(AttributeConstants.EXTERNAL_ID);
+        String userName = (String) result.data().get(AttributeConstants.USERNAME).asString();
+
+        // 1. 먼저 상관관계 분석을 통해 기존 사용자를 찾음
+        var optionalUser = correlationService.correlate(systemId, externalId);
+
+        // 2. 실패 시 사용할 iamUserId를 미리 확보 (있을 경우만)
+        Long existingUserId = optionalUser.map(IamUser::getId).orElse(null);
+
+        try {
+            optionalUser.ifPresentOrElse(
+                    user -> updateExistingUser(user, result.data(), rawData, systemId, traceId, rawData, result.revId()),
+                    () -> createNewUser(externalId, result.data(), rawData, systemId, traceId, rawData, result.revId()));
+        } catch (Exception e) {
+            // 수정 실패 시 (existingUserId가 존재할 때) 전용 예외로 던짐
+            if (existingUserId != null) {
+                throw new UserSyncPersistenceException(ErrorCode.USER_PERSISTENCE_ERROR, traceId, e.getMessage(), existingUserId, e);
+            }
+            // 신규 생성 실패 시 기존 IamBusinessException 활용
+            throw new IamBusinessException(ErrorCode.USER_PERSISTENCE_ERROR, traceId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * [공통] 실패 이력 기록 및 보상 트랜잭션 발행
+     */
+    private void handleSyncFailure(String traceId, String systemId, String userName, Map<String, Object> payload, String errorMsg, long revId, Long iamUserId) {
+        syncHistoryService.logFailure(traceId, SyncConstants.EVENT_SYNC_ERROR,
+                userName != null ? userName : "UNKNOWN", iamUserId, systemId, SystemConstants.SYSTEM_IAM,
+                payload, errorMsg, revId);
+
+        // 보상 이벤트 발행 로직
+        sendCompensationEvent(traceId, systemId, payload, errorMsg);
+    }
+
+    /**
+     *  보상 이벤트 발행 로직
+     */
+    private void sendCompensationEvent(String traceId, String systemId, Map<String, Object> payload, String errorMsg) {
+        String externalId = (String) payload.get(AttributeConstants.EXTERNAL_ID);
+        if (externalId != null && !externalId.isBlank()) {
+            // 이벤트 객체 생성 (당시의 시간과 에러 메시지 포함)
+            SyncCompensationEvent compEvent =
+                    new SyncCompensationEvent(
+                            traceId,
+                            systemId,
+                            externalId,
+                            errorMsg,
+                            java.time.LocalDateTime.now()
+                    );
+
+            // 전용 Exchange와 Routing Key를 사용하여 메시지 발행
+            messagePublisher.publish(EXCHANGE_NAME, COMPENSATION_ROUTING_KEY, compEvent);
+
+            log.info("Published compensation event - traceId: {}, system: {}, externalId: {}, reason: {}", traceId, systemId, externalId, errorMsg);
+        } else {
+            log.warn("Skipped compensation event due to missing externalId - traceId: {}", traceId);
+        }
+    }
+
     private void createNewUser(String externalId, Map<String, UniversalData> attributes,
-            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
-            List<Long> appliedRules) {
+                               Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
+                               long appliedRules) {
         log.info("Creating new user via engine for system: {}, ID: {}", systemId, externalId);
 
         var user = iamUserUpdateService.create(externalId, attributes);
@@ -118,13 +184,14 @@ public class UserSyncService {
 
         syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_CREATE, user.getUserName(), user.getId(),
                 systemId,
+                SystemConstants.SYSTEM_IAM,
                 resultSnapshot,
                 "User created via engine", null, null, rawData, appliedRules);
     }
 
     private void updateExistingUser(IamUser user, Map<String, UniversalData> attributes,
-            Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
-            List<Long> appliedRules) {
+                                    Map<String, Object> rawData, String systemId, String traceId, Object originalRequest,
+                                    long appliedRules) {
         log.info("Updating existing user via engine for system: {}, userId: {}", systemId, user.getId());
 
         // Capture old state for diff
@@ -144,6 +211,7 @@ public class UserSyncService {
 
         syncHistoryService.logSuccess(traceId, SyncConstants.EVENT_USER_UPDATE, user.getUserName(), user.getId(),
                 systemId,
+                SystemConstants.SYSTEM_IAM,
                 resultSnapshot,
                 "User updated via engine", null, null, rawData, appliedRules);
     }
@@ -223,6 +291,7 @@ public class UserSyncService {
                 user.getUserName(),
                 user.getId(),
                 SystemConstants.SYSTEM_IAM,
+                SystemConstants.SYSTEM_AD,
                 cmdMap,
                 "Provisioning request sent to AD",
                 null,

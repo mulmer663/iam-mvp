@@ -36,7 +36,8 @@ public enum ErrorCode {
     // === Internal Server Errors (5000~5099) ===
     INTERNAL_SERVER_ERROR("IAM-5000", "내부 서버 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
     DATABASE_ERROR("IAM-5001", "데이터베이스 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
-    MESSAGE_PROCESSING_ERROR("IAM-5002", "메시지 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR);
+    MESSAGE_PROCESSING_ERROR("IAM-5002", "메시지 처리 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    USER_PERSISTENCE_ERROR("IAM-5003", "사용자 정보 저장 또는 수정 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;
     private final String message;

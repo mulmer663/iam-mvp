@@ -57,8 +57,6 @@ public class RuleScriptEngine {
             log.error("Failed to execute groovy script: {}", targetException.getMessage());
             throw new RuleExecutionException(targetException.getMessage(), targetException);
         } catch (Exception e) {
-            if (e instanceof RuleEngineException ree)
-                throw ree;
             log.error("Failed to execute groovy script: {}", e.getMessage());
             throw new RuleExecutionException(e.getMessage(), e);
         }

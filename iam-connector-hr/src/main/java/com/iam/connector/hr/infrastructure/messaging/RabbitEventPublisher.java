@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Component
 @Slf4j
@@ -23,13 +22,13 @@ public class RabbitEventPublisher implements EventPublisher {
     private static final String ROUTING_KEY_PREFIX = "hr.event.";
 
     @Override
-    public void publish(String systemId, Map<String, Object> payload) {
+    public void publish(String systemId, String eventType, Map<String, Object> payload) {
         Map<String, Object> event = new HashMap<>();
         String traceId = "T-" + TSID.fast().toLong();
 
         event.put("traceId", traceId);
         event.put("systemId", systemId);
-        event.put("eventType", "USER_SYNC");
+        event.put("eventType", eventType);
         event.put("timestamp", LocalDateTime.now().toString());
         event.put("payload", payload);
 

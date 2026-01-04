@@ -46,13 +46,13 @@ public class ChangeDetectionService {
             if (existingHashOpt.isEmpty()) {
                 // New record
                 log.info("New record detected: {}", externalId);
-                eventPublisher.publish(systemId, record.data());
+                eventPublisher.publish(systemId, "USER_CREATE", record.data());
                 snapshotPort.save(externalId, record.hash(), systemId);
                 addCount++;
             } else if (!existingHashOpt.get().equals(record.hash())) {
                 // Modified record
                 log.info("Modified record detected: {}", externalId);
-                eventPublisher.publish(systemId, record.data());
+                eventPublisher.publish(systemId, "USER_UPDATE", record.data());
                 snapshotPort.save(externalId, record.hash(), systemId);
                 updateCount++;
             } else {
@@ -74,7 +74,7 @@ public class ChangeDetectionService {
             // AGENTS.md says "Reconciliation: Treat as DELETE/TERMINATION event"
 
             // Simple approach: send an empty or status=INACTIVE payload
-            eventPublisher.publish(systemId,
+            eventPublisher.publish(systemId, "USER_DELETE",
                     java.util.Map.of("externalId", deletedId, "status", "INACTIVE", "empNo", deletedId));
 
             snapshotPort.delete(deletedId);

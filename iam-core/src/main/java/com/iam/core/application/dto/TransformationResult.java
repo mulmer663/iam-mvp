@@ -13,5 +13,5 @@ import java.util.Map;
  */
 public record TransformationResult(
         Map<String, UniversalData> data,
-        List<Long> appliedRuleVersionIds) {
+        Long revId) {
 }

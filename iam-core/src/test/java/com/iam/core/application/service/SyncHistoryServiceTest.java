@@ -1,5 +1,6 @@
 package com.iam.core.application.service;
 
+import com.iam.core.domain.constant.SystemConstants;
 import com.iam.core.domain.entity.SyncHistory;
 import com.iam.core.domain.port.MessagePublisher;
 import com.iam.core.domain.repository.SyncHistoryRepository;
@@ -39,7 +40,7 @@ class SyncHistoryServiceTest {
         Map<String, Object> resultData = Map.of("key", "value");
 
         // When
-        syncHistoryService.logSuccess(traceId, type, target, null, "TEST_SYSTEM", resultData, "Success message");
+        syncHistoryService.logSuccess(traceId, type, target, null, "TEST_SYSTEM", SystemConstants.SYSTEM_IAM, resultData, "Success message");
 
         // Then
         var histories = syncHistoryRepository.findByTraceId(traceId);
@@ -62,7 +63,7 @@ class SyncHistoryServiceTest {
         String target = "user2";
 
         // When
-        syncHistoryService.logFailure(traceId, type, target, null, "TEST_SYSTEM", null, "Failure reason");
+        syncHistoryService.logFailure(traceId, type, target, null, "TEST_SYSTEM", SystemConstants.SYSTEM_IAM, null, "Failure reason", 0L);
 
         // Then
         var histories = syncHistoryRepository.findByTraceId(traceId);
