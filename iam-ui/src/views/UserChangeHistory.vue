@@ -1,62 +1,138 @@
 <script setup lang="ts">
-import { History, ArrowRight } from 'lucide-vue-next'
+import { HistoryService } from '@/api/HistoryService'
+import { History, Clock, ExternalLink } from 'lucide-vue-next'
+import { onMounted, ref } from 'vue'
+import type { UserRevisionHistory } from '@/types'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useMillerStore } from '@/stores/miller'
+import { formatDateTime } from '@/utils/date'
+import OperationBadge from '@/components/common/OperationBadge.vue'
 
+const props = defineProps<{
+  userId?: string
+  traceId?: string
+  paneIndex?: number
+}>()
 
-interface ChangeEvent {
-  field: string
-  before: string
-  after: string
-  date: string
-  actor: string
+const millerStore = useMillerStore()
+const revisions = ref<UserRevisionHistory[]>([])
+const loading = ref(false)
+
+onMounted(async () => {
+    loading.value = true
+    try {
+        const response = await HistoryService.getUserRevisionHistory({ 
+            userId: props.userId,
+            traceId: props.traceId
+        })
+        revisions.value = response.content
+    } catch (e) {
+        console.error('Failed to load revision history', e)
+    } finally {
+        loading.value = false
+    }
+})
+
+function openSnapshotDetail(rev: UserRevisionHistory) {
+  // Map UserRevisionHistory to HistoryLog structure for SyncDetail compatibility
+  const syntheticEvent = {
+    id: rev.revId,
+    traceId: rev.traceId,
+    eventType: 'USER_UPDATE', // Triggers SYSTEM_THEMES.AUDIT (Orange)
+    status: 'SUCCESS',
+    target: rev.profile.userName,
+    time: rev.timestamp,
+    syncType: rev.operationType,
+    snapshot: { data: rev.profile },
+    payload: rev.profile,
+    operator: rev.operatorId
+  }
+
+  const detailPane = {
+    id: `rev-detail-${rev.revId}`,
+    type: 'SyncDetail',
+    title: `Event: ${rev.traceId}`,
+    data: { event: syntheticEvent }
+  }
+
+  if (typeof props.paneIndex === 'number') {
+    millerStore.setPane(props.paneIndex + 1, detailPane)
+  } else {
+    millerStore.pushPane(detailPane)
+  }
 }
 
-const MOCK_CHANGES: ChangeEvent[] = [
-  { field: 'position', before: 'Junior Dev', after: 'Senior Dev', date: '2023-12-01 10:00', actor: 'HR_ADMIN' },
-  { field: 'deptCode', before: 'DEPT02', after: 'DEPT01', date: '2023-11-15 14:20', actor: 'SYSTEM' },
-  { field: 'status', before: 'INACTIVE', after: 'ACTIVE', date: '2023-10-10 09:00', actor: 'MANAGER_04' },
-  { field: 'email', before: 'old@example.com', after: 'gh.hong@example.com', date: '2023-09-01 11:30', actor: 'SELF' },
-]
+
 </script>
 
 <template>
   <div class="h-full flex flex-col bg-white">
-    <div class="p-3 border-b border-neutral-100 bg-neutral-50/30">
+    <!-- Header -->
+    <div class="h-10 border-b border-neutral-100 flex items-center px-4 bg-white shrink-0 justify-between">
       <div class="flex items-center gap-2">
-        <History class="size-3.5 text-neutral-400" />
-        <span class="text-[11px] font-black text-neutral-700 uppercase tracking-tight">Modification Ledger</span>
+        <History class="size-4 text-amber-600" />
+        <h2 class="text-sm font-bold text-neutral-800 uppercase">Modification Ledger</h2>
+        <Badge v-if="userId || traceId" variant="outline" class="h-4 text-[9px] font-mono lowercase">
+          {{ userId || traceId }}
+        </Badge>
       </div>
     </div>
     
-    <div class="flex-1 overflow-y-auto">
-      <div v-for="(change, idx) in MOCK_CHANGES" :key="idx" class="border-b border-neutral-50 p-3 hover:bg-neutral-50/50 transition-colors">
-        <div class="flex justify-between items-start mb-2">
-          <div class="px-1.5 py-0.5 bg-neutral-100 text-[9px] font-black text-neutral-500 rounded-sm uppercase tracking-tighter">
-            {{ change.field }}
-          </div>
-          <div class="text-[9px] text-neutral-400 font-mono">{{ change.date }}</div>
-        </div>
-        
-        <div class="flex items-center gap-3 justify-center mb-2 bg-neutral-50 p-1.5 rounded border border-dashed border-neutral-200">
-          <div class="flex-1 text-center">
-            <div class="text-[8px] uppercase font-bold text-neutral-400 mb-0.5">Before</div>
-            <div class="text-[11px] text-red-600 line-through font-medium truncate">{{ change.before }}</div>
-          </div>
-          <ArrowRight class="size-3 text-neutral-300 shrink-0" />
-          <div class="flex-1 text-center">
-            <div class="text-[8px] uppercase font-bold text-neutral-400 mb-0.5">After</div>
-            <div class="text-[11px] text-green-700 font-bold truncate">{{ change.after }}</div>
-          </div>
-        </div>
-        
-        <div class="flex items-center gap-1">
-          <span class="text-[9px] text-neutral-400">Changed by</span>
-          <span class="text-[9px] font-bold text-neutral-600">{{ change.actor }}</span>
-        </div>
+    <!-- Table Content -->
+    <div class="flex-1 p-3 overflow-auto">
+      <div v-if="loading" class="h-full flex flex-col items-center justify-center gap-2">
+         <Clock class="size-5 text-neutral-200 animate-pulse" />
+         <span class="text-[10px] text-neutral-400">Loading ledger...</span>
+      </div>
+      
+      <Table v-else class="border">
+        <TableHeader class="bg-neutral-50">
+          <TableRow class="h-7 hover:bg-transparent">
+            <TableHead class="text-[10px] uppercase font-bold p-2 text-center w-24">Rev</TableHead>
+            <TableHead class="text-[10px] uppercase font-bold p-2">Trace ID</TableHead>
+            <TableHead class="text-[10px] uppercase font-bold p-2">Operator</TableHead>
+            <TableHead class="text-[10px] uppercase font-bold p-2 text-right">Timestamp</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow 
+            v-for="rev in revisions" 
+            :key="rev.revId" 
+            @click="openSnapshotDetail(rev)"
+            class="h-8 hover:bg-neutral-50 transition-colors cursor-pointer group"
+          >
+            <TableCell class="p-2 py-1 text-center">
+               <div class="flex items-center justify-center gap-2">
+                 <span class="font-mono text-[10px] text-neutral-400">#{{ rev.revId }}</span>
+                 <OperationBadge :type="rev.operationType" />
+               </div>
+            </TableCell>
+            <TableCell class="p-2 py-1 font-mono text-[10px] text-neutral-400">
+               <div class="flex items-center gap-1">
+                  <span>{{ rev.traceId }}</span>
+                  <ExternalLink class="size-2 hidden group-hover:block" />
+               </div>
+            </TableCell>
+            <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-600">
+               {{ rev.operatorId }}
+            </TableCell>
+            <TableCell class="p-2 py-1 text-right text-[10px] text-neutral-400 font-mono">
+              {{ formatDateTime(rev.timestamp) }}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+
+      <div v-if="!loading && revisions.length === 0" class="py-20 text-center text-neutral-300 italic text-[11px]">
+        No audit events found for current selection.
       </div>
     </div>
     
-    <div class="p-3 bg-neutral-50 text-[10px] text-neutral-400 italic">
-      Showing last {{ MOCK_CHANGES.length }} system-audited events.
+    <!-- Footer -->
+    <div class="h-6 border-t border-neutral-100 bg-neutral-50/50 flex items-center px-3 justify-between shrink-0">
+      <div class="text-[9px] text-neutral-400 italic">Source: Hibernate Envers Audit Logs</div>
+      <div class="text-[9px] font-bold text-neutral-500 uppercase">{{ revisions.length }} Revisions</div>
     </div>
   </div>
 </template>

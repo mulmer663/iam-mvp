@@ -119,7 +119,7 @@ class UserSyncServiceTest {
                                 "empNo", hrEmpId,
                                 "deptName", "Dev Team");
 
-                UserSyncEvent event = new UserSyncEvent("trace-123", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
+                UserSyncEvent event = new UserSyncEvent("trace-123", SYSTEM_ID, SyncConstants.EVENT_USER_CREATE,
                                 LocalDateTime.now(),
                                 payload);
 
@@ -158,7 +158,7 @@ class UserSyncServiceTest {
                                 "deptName", "Dev Team");
 
                 userSyncService.processSync(
-                                new UserSyncEvent("trace-1", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
+                                new UserSyncEvent("trace-1", SYSTEM_ID, SyncConstants.EVENT_USER_CREATE,
                                                 LocalDateTime.now(), firstPayload));
 
                 Map<String, Object> updatePayload = Map.of(
@@ -207,7 +207,7 @@ class UserSyncServiceTest {
                                 "empNo", hrEmpId,
                                 "deptName", "QA");
 
-                UserSyncEvent event = new UserSyncEvent("trace-error-1", SYSTEM_ID, SyncConstants.EVENT_USER_SYNC,
+                UserSyncEvent event = new UserSyncEvent("trace-error-1", SYSTEM_ID, SyncConstants.EVENT_USER_CREATE,
                                 LocalDateTime.now(), invalidPayload);
 
                 // When & Then

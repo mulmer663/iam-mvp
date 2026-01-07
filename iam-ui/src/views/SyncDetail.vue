@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/table'
 import { SYSTEM_THEMES } from '@/utils/theme'
 import { useMillerStore } from '@/stores/miller'
+import { formatDateTime } from '@/utils/date'
+import OperationBadge from '@/components/common/OperationBadge.vue'
 
 const props = defineProps<{
     event: HistoryLog
@@ -42,9 +44,9 @@ onMounted(async () => {
 
 
 const theme = computed(() => {
-  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC' || props.event.type === 'USER_CREATE') return SYSTEM_THEMES.SOURCE
-  if (props.event.type === 'USER_UPDATE') return SYSTEM_THEMES.AUDIT
-  return SYSTEM_THEMES.INTEGRATION
+  if (props.event.syncDirection === 'RECON') return SYSTEM_THEMES.SOURCE
+  if (props.event.syncDirection === 'PROV') return SYSTEM_THEMES.INTEGRATION
+  return SYSTEM_THEMES.AUDIT
 })
 
 const snapshotTitle = computed(() => theme.value.subLabel)
@@ -54,9 +56,9 @@ const mappingLabels = computed(() => {
   const first = props.event.mappings[0]
   if (first && first.fromLabel && first.toLabel) return { from: first.fromLabel, to: first.toLabel }
   
-  // Fallback based on event type
-  if (props.event.type === 'HR_SYNC' || props.event.type === 'USER_SYNC' || props.event.type === 'USER_CREATE') return { from: 'HR', to: 'IAM' }
-  if (props.event.type === 'AD_PROVISION') return { from: 'IAM', to: 'AD' }
+  // Fallback based on sync direction
+  if (props.event.syncDirection === 'RECON') return { from: 'HR', to: 'IAM' }
+  if (props.event.syncDirection === 'PROV') return { from: 'IAM', to: 'AD' }
   return { from: 'Source', to: 'Target' }
 })
 
@@ -84,8 +86,77 @@ function openRelatedEvent(log: HistoryLog) {
   }
 }
 
+async function openModificationLedger() {
+  const userId = props.event.userId || props.event.resultData?.id || props.event.requestPayload?.id || (props.event.payload as any)?.id
+  const traceId = props.event.traceId
+
+  try {
+    // Try to fetch the specific revision for this traceId
+    const response = await HistoryService.getUserRevisionHistory({ traceId, size: 1 })
+    
+    if (response.content && response.content.length > 0) {
+      const rev = response.content[0]
+      if (rev) {
+        const syntheticEvent = {
+          id: rev.revId,
+          traceId: rev.traceId,
+          type: 'USER_UPDATE',
+          status: 'SUCCESS',
+          target: rev.profile.userName,
+          time: rev.timestamp,
+          syncType: rev.operationType,
+          snapshot: { data: rev.profile },
+          payload: rev.profile,
+          operator: rev.operatorId
+        }
+
+        const detailPane = {
+          id: `rev-detail-${rev.revId}`,
+          type: 'SyncDetail',
+          title: `Event: ${rev.traceId}`,
+          data: { event: syntheticEvent }
+        }
+
+        if (props.paneIndex !== undefined) {
+          millerStore.setPane(props.paneIndex + 1, detailPane)
+        } else {
+          millerStore.pushPane(detailPane)
+        }
+        return
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch specific revision detail', e)
+  }
+
+  // Fallback to ledger list if no specific revision found or fetch failed
+  const targetPaneId = `mod-ledger-${traceId}-${userId || 'global'}`
+  const nextPaneData = {
+    id: targetPaneId,
+    type: 'UserChangeHistory',
+    title: `${SYSTEM_THEMES.AUDIT.label}: ${traceId}`,
+    data: { userId, traceId }
+  }
+
+  if (props.paneIndex !== undefined) {
+    millerStore.setPane(props.paneIndex + 1, nextPaneData)
+  } else {
+    millerStore.pushPane(nextPaneData)
+  }
+}
+
+
 // Function to check if a value is a SCIM extension key
 const isExtension = (key: string) => key.startsWith('urn:ietf:params:scim:schemas:extension:')
+
+const getExtensionLabel = (key: string) => {
+  const parts = key.split(':')
+  const extIndex = parts.indexOf('extension')
+  if (extIndex !== -1 && extIndex < parts.length - 1) {
+    return parts.slice(extIndex + 1).join(':')
+  }
+  return parts[parts.length - 1]
+}
 
 // Helper to get change for a specific field
 const getChange = (key: string) => {
@@ -93,9 +164,19 @@ const getChange = (key: string) => {
 }
 
 const allSnapshotEntries = computed(() => {
-  const data = props.event.requestPayload || props.event.snapshot?.data || props.event.payload
+  let data = props.event.requestPayload || props.event.snapshot?.data || props.event.payload
   if (!data) return []
-  return Object.entries(data).filter(([key]) => key !== 'schemas' && !isExtension(key))
+  
+  // Unwrap nesting if data contains sub-property with actual fields
+  if (data.event && typeof data.event === 'object' && data.event.payload) {
+    data = data.event.payload
+  } else if (data.command && typeof data.command === 'object' && data.command.payload) {
+    data = data.command.payload
+  } else if (data.payload && typeof data.payload === 'object' && !Array.isArray(data.payload)) {
+    data = data.payload
+  }
+
+  return Object.entries(data as Record<string, any>).filter(([key]) => key !== 'schemas' && !isExtension(key))
 })
 
 const filteredEntries = computed(() => {
@@ -141,7 +222,10 @@ const filteredEntries = computed(() => {
       </div>
       <div>
          <div class="text-lg font-bold text-neutral-900 leading-none mb-1">{{ event.target }}</div>
-         <div class="text-[11px] text-neutral-500">{{ event.time }}</div>
+         <div class="flex items-center justify-between">
+            <div class="text-[11px] text-neutral-500">{{ formatDateTime(event.time) }}</div>
+            <OperationBadge v-if="event.syncType" :type="event.syncType" />
+         </div>
       </div>
     </div>
 
@@ -253,7 +337,7 @@ const filteredEntries = computed(() => {
                   <div v-if="isExtension(key as string)" class="space-y-2 mt-4">
                      <div class="text-[9px] font-black uppercase tracking-widest flex items-center gap-2" :class="theme.text">
                         <Separator class="flex-1" />
-                        <span>Extension: {{ (key as string).split(':').pop() }}</span>
+                        <span>Extension: {{ getExtensionLabel(key as string) }}</span>
                         <Separator class="flex-1" />
                      </div>
                      <div class="grid grid-cols-2 gap-2">
@@ -359,16 +443,18 @@ const filteredEntries = computed(() => {
             </div>
             <div class="ml-8 space-y-1">
               <div 
-                v-for="h in allHistory.filter(x => x.traceId === event.traceId && (x.type === 'HR_SYNC' || x.type === 'USER_SYNC' || x.type === 'USER_CREATE'))" :key="h.id"
+            <div v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.syncDirection === 'RECON')" :key="h.id"
                 @click="openRelatedEvent(h)"
                 class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
                 :class="h.id === event.id ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : 'bg-white border-neutral-100 hover:border-blue-200'"
               >
-                <div class="flex flex-col">
+                <div class="flex flex-col flex-1">
                   <span class="font-bold text-neutral-700">{{ h.target || 'HR System' }}</span>
-                  <span class="text-[9px] text-neutral-400 font-mono">{{ h.time }}</span>
+                  <span class="text-[9px] text-neutral-400 font-mono">{{ formatDateTime(h.time) }}</span>
                 </div>
-                <Badge :variant="h.status === 'SUCCESS' ? 'default' : 'destructive'" class="h-3 text-[8px] px-1">{{ h.status }}</Badge>
+                <div class="flex items-center shrink-0">
+                  <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-red-500'"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -380,17 +466,35 @@ const filteredEntries = computed(() => {
               <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">IAM Core</span>
             </div>
             <div class="ml-8 space-y-1">
+              <!-- Case A: Explicit Identity Sync Event Found -->
               <div 
-                v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.type === 'USER_UPDATE')" :key="h.id"
+                v-for="h in allHistory.filter(x => x.traceId === event.traceId && ['USER_UPDATE', 'USER_UPDATE_SIMPLE', 'USER_UPDATE_CRITICAL'].includes(x.eventType))" :key="h.id"
                 @click="openRelatedEvent(h)"
                 class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
                 :class="h.id === event.id ? 'bg-orange-50 border-orange-200 ring-2 ring-orange-100' : 'bg-white border-neutral-100 hover:border-orange-200'"
               >
-                <div class="flex flex-col">
+                <div class="flex flex-col flex-1">
                   <span class="font-bold text-neutral-700">Identity Management</span>
-                  <span class="text-[9px] text-neutral-400 font-mono">{{ h.time }}</span>
+                  <span class="text-[9px] text-neutral-400 font-mono">{{ formatDateTime(h.time) }}</span>
                 </div>
-                <Badge :variant="h.status === 'SUCCESS' ? 'default' : 'destructive'" class="h-3 text-[8px] px-1">{{ h.status }}</Badge>
+                <div class="flex items-center shrink-0">
+                  <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-red-500'"></div>
+                </div>
+              </div>
+
+              <!-- Case B: No explicit event, but we can look at Modification Ledger (Revision History) -->
+              <div 
+                v-if="allHistory.filter(x => x.traceId === event.traceId && ['USER_UPDATE', 'USER_UPDATE_SIMPLE', 'USER_UPDATE_CRITICAL'].includes(x.eventType)).length === 0"
+                @click="openModificationLedger()"
+                class="p-2 border border-neutral-100 bg-white rounded-md text-[11px] cursor-pointer hover:border-orange-200 transition-all flex items-center justify-between group"
+              >
+                <div class="flex flex-col flex-1">
+                  <span class="font-bold text-neutral-700">Identity Management</span>
+                  <span class="text-[9px] text-neutral-400 font-mono">{{ formatDateTime(event.time) }}</span>
+                </div>
+                <div class="flex items-center shrink-0">
+                  <div class="size-1.5 rounded-full bg-emerald-500"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -400,12 +504,12 @@ const filteredEntries = computed(() => {
             <div class="flex items-center gap-2 mb-1">
               <div class="size-6 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center text-[10px] font-bold text-purple-600 shadow-sm">3</div>
               <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">Target Provisioning</span>
-              <Badge variant="outline" class="h-3 text-[8px] border-purple-200 text-purple-600">{{ allHistory.filter(x => x.traceId === event.traceId && x.type === 'AD_PROVISION').length }} Targets</Badge>
+              <Badge variant="outline" class="h-3 text-[8px] border-purple-200 text-purple-600">{{ allHistory.filter(x => x.traceId === event.traceId && x.syncDirection === 'PROV').length }} Targets</Badge>
             </div>
             <div class="ml-8">
               <div class="grid grid-cols-2 gap-2">
                 <div 
-                  v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.type === 'AD_PROVISION')" :key="h.id"
+                  v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.syncDirection === 'PROV')" :key="h.id"
                   @click="openRelatedEvent(h)"
                   class="p-2 border rounded-md text-[10px] cursor-pointer transition-all flex flex-col gap-1 group bg-white"
                   :class="h.id === event.id ? 'bg-purple-50 border-purple-200 ring-2 ring-purple-100' : 'border-neutral-100 hover:border-purple-200'"
@@ -414,9 +518,9 @@ const filteredEntries = computed(() => {
                     <span class="font-black text-neutral-500 uppercase tracking-tighter truncate max-w-[70%]">
                       {{ h.target || 'Target System' }}
                     </span>
-                    <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-green-500' : 'bg-red-500'"></div>
+                    <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-red-500'"></div>
                   </div>
-                  <div class="text-[8px] text-neutral-400 font-mono">{{ h.time?.includes(' ') ? h.time.split(' ')[1] : h.time }}</div>
+                  <div class="text-[8px] text-neutral-400 font-mono">{{ formatDateTime(h.time)?.split(' ')[1] }}</div>
                 </div>
               </div>
             </div>
@@ -436,13 +540,11 @@ const filteredEntries = computed(() => {
           </div>
           <component :is="isRawOpen ? ChevronDown : ChevronRight" class="size-3" />
         </button>
-        <div v-if="isRawOpen" class="p-3 bg-neutral-900 rounded-b-md text-neutral-300 font-mono text-[10px] border-t border-neutral-800 flex flex-col gap-4">
+        <div v-if="isRawOpen" class="p-3 bg-neutral-900 rounded-b-md text-neutral-300 font-mono text-[10px] border-t border-neutral-800 flex flex-col gap-3">
           <div v-if="event.requestPayload">
-             <div class="text-[9px] text-neutral-500 font-bold mb-1">REQUEST PAYLOAD</div>
              <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.requestPayload, null, 2) }}</pre>
           </div>
-          <div v-if="event.resultData">
-             <div class="text-[9px] text-neutral-500 font-bold mb-1">RESULT DATA</div>
+          <div v-if="event.resultData && Object.keys(event.resultData).some(k => !['status', 'syncType', 'target'].includes(k))">
              <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.resultData, null, 2) }}</pre>
           </div>
           <div v-if="!event.requestPayload && !event.resultData">

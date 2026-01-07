@@ -28,11 +28,14 @@ public class SyncHistory {
     @Column(name = "trace_id", length = 64, nullable = false)
     private String traceId;
 
-    @Column(length = 32, nullable = false)
-    private String type; // HR_SYNC, USER_UPDATE, AD_PROVISION
+    @Column(name = "event_type", length = 32, nullable = false)
+    private String eventType; // USER_CREATE, USER_UPDATE_SIMPLE,
 
     @Column(length = 20)
     private String status; // SUCCESS, FAILURE, PARTIAL_SUCCESS
+
+    @Column(name = "sync_direction", length = 20)
+    private String syncDirection; // RECON, PROV
 
     @Column(name = "source_system", length = 100)
     private String sourceSystem; // e.g., "SAP_HR", "WORKDAY"

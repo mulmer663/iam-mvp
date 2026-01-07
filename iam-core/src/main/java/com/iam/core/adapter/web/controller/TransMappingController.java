@@ -34,6 +34,20 @@ public class TransMappingController {
         return ResponseEntity.ok(toDto(saved));
     }
 
+    @PostMapping("/{ruleId}/mappings/batch")
+    public ResponseEntity<List<TransFieldMappingDto>> saveMappings(
+            @PathVariable String ruleId,
+            @Valid @RequestBody List<TransFieldMappingDto> dtos) {
+
+        List<TransFieldMapping> entities = dtos.stream()
+                .map(dto -> toEntity(ruleId, dto))
+                .toList();
+        List<TransFieldMapping> saved = mappingService.saveMappings(ruleId, entities);
+        return ResponseEntity.ok(saved.stream()
+                .map(this::toDto)
+                .toList());
+    }
+
     @GetMapping("/history")
     public ResponseEntity<List<TransFieldMappingDto>> getMappingsHistory(
             @RequestParam String systemId,

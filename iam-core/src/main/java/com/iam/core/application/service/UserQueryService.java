@@ -2,16 +2,23 @@ package com.iam.core.application.service;
 
 import com.iam.core.application.dto.ScimListResponse;
 import com.iam.core.application.dto.ScimUserResponse;
+import com.iam.core.application.dto.UserRevisionResponse;
 import com.iam.core.domain.entity.EnterpriseUserExtension;
 import com.iam.core.domain.entity.ExtensionData;
 import com.iam.core.domain.entity.IamUser;
 import com.iam.core.domain.exception.ErrorCode;
 import com.iam.core.domain.exception.IamBusinessException;
 import com.iam.core.domain.repository.IamUserRepository;
+import com.iam.core.domain.revision.CustomRevisionEntity;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
+import org.hibernate.envers.query.AuditEntity;
+import org.hibernate.envers.query.AuditQuery;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,9 +61,9 @@ public class UserQueryService {
 
                 if (auditedUser == null) {
                         throw new IamBusinessException(
-                                ErrorCode.USER_NOT_FOUND,
-                                "API",
-                                "Revision " + revId + " not found for user: " + userId);
+                                        ErrorCode.USER_NOT_FOUND,
+                                        "API",
+                                        "Revision " + revId + " not found for user: " + userId);
                 }
 
                 return toScimUser(auditedUser);
@@ -115,16 +122,17 @@ public class UserQueryService {
 
                 // 1. getSingleResult 대신 List로 조회하여 예외 방지
                 List<Number> revisionIds = entityManager.createQuery(
-                                "SELECT cre.id FROM CustomRevisionEntity cre WHERE cre.traceId = :traceId", Number.class)
-                        .setParameter("traceId", traceId)
-                        .getResultList();
+                                "SELECT cre.id FROM CustomRevisionEntity cre WHERE cre.traceId = :traceId",
+                                Number.class)
+                                .setParameter("traceId", traceId)
+                                .getResultList();
 
                 if (revisionIds.isEmpty()) {
                         // 정의하신 IAM-4103 에러 코드를 사용하여 예외를 던집니다.
                         throw new IamBusinessException(
-                                ErrorCode.RESOURCE_NOT_FOUND,
-                                traceId,
-                                "해당 트레이스 ID에 해당하는 리비전이 없습니다.");
+                                        ErrorCode.RESOURCE_NOT_FOUND,
+                                        traceId,
+                                        "해당 트레이스 ID에 해당하는 리비전이 없습니다.");
                 }
 
                 Number revisionNumber = revisionIds.get(0);
@@ -138,5 +146,60 @@ public class UserQueryService {
 
                 // 3. 기존에 잘 만들어두신 toScimUser 메서드 활용
                 return toScimUser(auditedUser);
+        }
+
+        /**
+         * 사용자의 리비전 이력 목록 조회 (페이징 및 필터링)
+         */
+        public Page<UserRevisionResponse> getUserRevisions(Long userId, String traceId, Pageable pageable) {
+                AuditReader reader = AuditReaderFactory.get(entityManager);
+
+                // 1. 카운트 조회
+                AuditQuery countQuery = reader.createQuery()
+                                .forRevisionsOfEntity(IamUser.class, false, true)
+                                .addProjection(AuditEntity.revisionNumber().count());
+
+                if (userId != null) {
+                        countQuery.add(AuditEntity.id().eq(userId));
+                }
+                if (traceId != null && !traceId.trim().isEmpty()) {
+                        countQuery.add(AuditEntity.revisionProperty("traceId").eq(traceId));
+                }
+
+                Long total = (Long) countQuery.getSingleResult();
+
+                // 2. 목록 조회
+                AuditQuery query = reader.createQuery()
+                                .forRevisionsOfEntity(IamUser.class, false, true)
+                                .addOrder(AuditEntity.revisionNumber().desc())
+                                .setFirstResult((int) pageable.getOffset())
+                                .setMaxResults(pageable.getPageSize());
+
+                if (userId != null) {
+                        query.add(AuditEntity.id().eq(userId));
+                }
+                if (traceId != null && !traceId.trim().isEmpty()) {
+                        query.add(AuditEntity.revisionProperty("traceId").eq(traceId));
+                }
+
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = query.getResultList();
+
+                List<UserRevisionResponse> content = results.stream()
+                                .map(row -> {
+                                        IamUser user = (IamUser) row[0];
+                                        CustomRevisionEntity rev = (CustomRevisionEntity) row[1];
+
+                                        return new UserRevisionResponse(
+                                                        rev.getId(),
+                                                        rev.getTraceId(),
+                                                        rev.getOperatorId(),
+                                                        rev.getOperationType(),
+                                                        rev.getCreatedAt(),
+                                                        toScimUser(user));
+                                })
+                                .toList();
+
+                return new PageImpl<>(content != null ? content : List.of(), pageable, total);
         }
 }

@@ -1,14 +1,15 @@
 import { request } from './client'
-import type { HistoryLog } from '@/types'
+import type { HistoryLog, UserRevisionHistory, PagedResponse } from '@/types'
 
 interface HistoryResponse {
     id: string
     traceId: string
-    type: string
+    eventType: string
     status: string
     target: string // targetUser
     sourceSystem?: string
     targetSystem?: string
+    syncDirection?: string
     time: string
     message?: string
     requestPayload?: Record<string, any>
@@ -26,8 +27,19 @@ export const HistoryService = {
             const query = params.toString();
             if (query) url += `?${query}`;
         }
-        const response = await request<HistoryResponse[]>(url);
-        return response.map(dto => this.toHistoryLog(dto));
+        const response = await request<PagedResponse<HistoryResponse>>(url);
+        // Page object wraps results in 'content'
+        return response.content.map(dto => this.toHistoryLog(dto));
+    },
+    async getUserRevisionHistory(filters: { userId?: string, traceId?: string, page?: number, size?: number }): Promise<PagedResponse<UserRevisionHistory>> {
+        const params = new URLSearchParams();
+        if (filters.userId) params.append('userId', filters.userId);
+        if (filters.traceId) params.append('traceId', filters.traceId);
+        if (filters.page !== undefined) params.append('page', filters.page.toString());
+        if (filters.size !== undefined) params.append('size', filters.size.toString());
+
+        const url = `/v1/history/users?${params.toString()}`;
+        return await request<PagedResponse<UserRevisionHistory>>(url);
     },
 
     toHistoryLog(dto: HistoryResponse): HistoryLog {
@@ -35,14 +47,8 @@ export const HistoryService = {
         const requestPayload = dto.requestPayload || {};
 
         // 1. Extract specific UI helpers from resultData if available
-        // For USER_UPDATE, changes and syncType are in resultData
         const changes = resultData.changes || undefined;
-        let syncType = resultData.syncType;
-
-        // Fallback syncType logic for legacy or simple joins
-        if (!syncType && ['HR_SYNC', 'USER_CREATE', 'USER_SYNC'].includes(dto.type)) {
-            syncType = 'JOIN';
-        }
+        const syncType = resultData.syncType || dto.eventType;
 
         // 2. Mappings are no longer stored in payload, so we might not have them
         // unless we fetch them or they are legacy. 
@@ -59,11 +65,12 @@ export const HistoryService = {
         return {
             id: dto.id,
             traceId: dto.traceId,
-            type: dto.type as any,
+            eventType: dto.eventType as any,
             status: dto.status as any,
             target: dto.target,
             sourceSystem: dto.sourceSystem,
             targetSystem: dto.targetSystem,
+            syncDirection: dto.syncDirection,
             time: formattedTime,
             message: dto.message,
 

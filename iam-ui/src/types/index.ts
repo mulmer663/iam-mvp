@@ -45,12 +45,14 @@ export interface AttributeMapping {
 export interface HistoryLog {
     id: string
     traceId: string
-    type: 'HR_SYNC' | 'AD_PROVISION' | 'USER_UPDATE' | 'USER_SYNC' | 'USER_CREATE'
-    status: 'SUCCESS' | 'PENDING' | 'FAILURE'
+    eventType: 'USER_CREATE' | 'USER_UPDATE' | 'USER_UPDATE_SIMPLE' | 'USER_UPDATE_CRITICAL' | 'USER_RETIRE'
+    status: 'SUCCESS' | 'FAILURE'
     target: string
     sourceSystem?: string
     targetSystem?: string
+    syncDirection?: string
     time: string
+    message?: string
     userId?: string
     userName?: string
     syncType?: 'JOIN' | 'REJOIN' | 'UPDATE_SIMPLE' | 'UPDATE_CRITICAL' | 'LEAVE'
@@ -74,4 +76,25 @@ export interface MillerPane {
     data: any
     width?: string
     maxWidth?: string
+}
+
+export interface UserRevisionHistory {
+    revId: number
+    traceId: string
+    operatorId: string
+    operationType: string
+    timestamp: string
+    profile: User
+}
+
+export interface PagedResponse<T> {
+    content: T[]
+    totalElements: number
+    totalPages: number
+    size: number
+    number: number
+    numberOfElements: number
+    first: boolean
+    last: boolean
+    empty: boolean
 }

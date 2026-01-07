@@ -6,11 +6,14 @@ import { ExternalLink } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import type { HistoryLog } from '@/types'
 import { useMillerStore } from '@/stores/miller'
+import StatusBadge from '@/components/common/StatusBadge.vue'
+import OperationBadge from '@/components/common/OperationBadge.vue'
+import { formatDateTime } from '@/utils/date'
 
 import { SYSTEM_THEMES } from '@/utils/theme'
 
 const props = defineProps<{
-  type: 'SOURCE' | 'INTEGRATION' | 'AUDIT'
+  type: 'SOURCE' | 'INTEGRATION'
   userId?: string
   userName?: string
   paneIndex?: number
@@ -34,22 +37,12 @@ onMounted(async () => {
 const filteredHistory = computed((): HistoryLog[] => {
   let baseList = history.value
   
-  if (props.type === 'AUDIT') return baseList.filter(h => h.type === 'USER_UPDATE')
-  if (props.type === 'SOURCE') return baseList.filter(h => ['HR_SYNC', 'USER_CREATE', 'USER_SYNC'].includes(h.type))
-  return baseList.filter(h => h.type === 'AD_PROVISION')
+  if (props.type === 'SOURCE') {
+    return baseList.filter(h => h.syncDirection === 'RECON')
+  }
+  return baseList.filter(h => h.syncDirection === 'PROV')
 })
 
-const getStatusVariant = (status: string) => {
-  if (status === 'SUCCESS') return 'default'
-  if (status === 'PENDING') return 'secondary'
-  return 'destructive'
-}
-
-const getSyncTypeVariant = (item: HistoryLog) => {
-  if (item.syncType === 'JOIN') return 'default'
-  if (item.syncType === 'UPDATE_CRITICAL') return 'secondary' // Toned down
-  return 'outline'
-}
 
 function onRowClick(log: HistoryLog) {
   const detailPane = {
@@ -83,9 +76,9 @@ function onRowClick(log: HistoryLog) {
           <TableHeader class="bg-neutral-50">
              <TableRow class="h-7 hover:bg-transparent">
                 <TableHead class="text-[10px] uppercase font-bold p-2">Trace ID</TableHead>
-                <TableHead class="text-[10px] uppercase font-bold p-2">User</TableHead>
-                <TableHead class="text-[10px] uppercase font-bold p-2">Sync Type</TableHead>
-                <TableHead v-if="type !== 'AUDIT'" class="text-[10px] uppercase font-bold p-2">
+                 <TableHead class="text-[10px] uppercase font-bold p-2">User</TableHead>
+                 <TableHead class="text-[10px] uppercase font-bold p-2">Sync Type</TableHead>
+                 <TableHead class="text-[10px] uppercase font-bold p-2">
                    {{ type === 'SOURCE' ? 'Source' : 'Target' }}
                 </TableHead>
                 <TableHead class="text-[10px] uppercase font-bold p-2 text-center">Status</TableHead>
@@ -105,29 +98,20 @@ function onRowClick(log: HistoryLog) {
                       <ExternalLink class="size-2 hidden group-hover:block" />
                    </div>
                 </TableCell>
-                <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-600">
-                   {{ log.target }}
-                </TableCell>
-                <TableCell class="p-2 py-1">
-                  <Badge 
-                    v-if="log.syncType" 
-                    :variant="getSyncTypeVariant(log)" 
-                    class="h-4 px-1 text-[8px] uppercase tracking-tighter"
-                    :class="{ 'text-amber-600 bg-amber-50 border-amber-200': log.syncType === 'UPDATE_CRITICAL' }"
-                  >
-                    {{ log.syncType }}
-                  </Badge>
-                  <span v-else class="text-[9px] text-neutral-300">-</span>
-                </TableCell>
-                <TableCell v-if="type !== 'AUDIT'" class="p-2 py-1 text-[11px] font-medium text-neutral-700">
+                 <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-600">
+                    {{ log.target }}
+                 </TableCell>
+                 <TableCell class="p-2 py-1">
+                   <OperationBadge v-if="log.syncType" :type="log.syncType" />
+                   <span v-else class="text-[9px] text-neutral-300">-</span>
+                 </TableCell>
+                <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-700">
                    {{ type === 'SOURCE' ? (log.sourceSystem || 'HR') : (log.targetSystem || 'Target System') }}
                 </TableCell>
                 <TableCell class="p-2 py-1 text-center">
-                   <Badge :variant="getStatusVariant(log.status)" class="px-1 py-0 h-4 text-[9px] font-bold rounded-sm">
-                      {{ log.status }}
-                   </Badge>
+                   <StatusBadge :status="log.status" />
                 </TableCell>
-                <TableCell class="p-2 py-1 text-right text-[10px] text-neutral-400">{{ log.time }}</TableCell>
+                <TableCell class="p-2 py-1 text-right text-[10px] text-neutral-400">{{ formatDateTime(log.time) }}</TableCell>
              </TableRow>
           </TableBody>
        </Table>

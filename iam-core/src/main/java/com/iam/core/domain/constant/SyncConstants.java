@@ -8,19 +8,13 @@ import lombok.NoArgsConstructor;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SyncConstants {
-    // Sync Types
-    public static final String TYPE_JOIN = "JOIN";
-    public static final String TYPE_UPDATE_SIMPLE = "UPDATE_SIMPLE";
-    public static final String TYPE_UPDATE_CRITICAL = "UPDATE_CRITICAL";
-
     // Event Types
     public static final String EVENT_USER_CREATE = "USER_CREATE";
+    public static final String EVENT_USER_UPDATE_SIMPLE = "USER_UPDATE_SIMPLE";
+    public static final String EVENT_USER_UPDATE_CRITICAL = "USER_UPDATE_CRITICAL";
     public static final String EVENT_USER_UPDATE = "USER_UPDATE";
+    public static final String EVENT_USER_RETIRE = "USER_RETIRE";
     public static final String EVENT_SYNC_ERROR = "SYNC_ERROR";
-    public static final String EVENT_HR_SYNC = "HR_SYNC";
-    public static final String EVENT_USER_SYNC = "USER_SYNC";
-    public static final String EVENT_AD_PROVISION = "AD_PROVISION";
-    public static final String EVENT_SYNC_COMPENSATION = "SYNC_COMPENSATION";
 
     // Statuses
     public static final String STATUS_SUCCESS = "SUCCESS";
@@ -29,4 +23,8 @@ public final class SyncConstants {
     // MDC
     public static final String TRACE_ID = "traceId";
     public static final String OPERATION_TYPE = "operationType";
+
+    // Directions
+    public static final String DIRECTION_RECON = "RECON";
+    public static final String DIRECTION_PROV = "PROV";
 }

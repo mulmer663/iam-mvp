@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -26,22 +25,24 @@ public class SyncHistoryService {
      * 성공 이력 기록 (최소 파라미터)
      */
     @Transactional
-    public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId,
-                           String sourceSystem, String targetSystem, Map<String, Object> resultData, String message) {
-        return logSuccess(traceId, type, targetUser, iamUserId, sourceSystem, targetSystem, resultData, message, null, null, 0L, 0L);
+    public Long logSuccess(String traceId, String syncDirection, String eventType, String targetUser, Long iamUserId,
+            String sourceSystem, String targetSystem, Map<String, Object> resultData, String message) {
+        return logSuccess(traceId, syncDirection, eventType, targetUser, iamUserId, sourceSystem, targetSystem,
+                resultData,
+                message, null, null, 0L, 0L);
     }
 
     /**
      * 성공 이력 기록 (상세 파라미터)
      */
     @Transactional
-    public Long logSuccess(String traceId, String type, String targetUser, Long iamUserId,
-                           String sourceSystem, String targetSystem, Map<String, Object> resultData,
-                           String message, Long parentId,
-                           Map<String, Object> requestPayload,
-                           long userRevId, long ruleRevId) {
+    public Long logSuccess(String traceId, String syncDirection, String eventType, String targetUser, Long iamUserId,
+            String sourceSystem, String targetSystem, Map<String, Object> resultData,
+            String message, Long parentId,
+            Map<String, Object> requestPayload,
+            long userRevId, long ruleRevId) {
 
-        return saveHistory(traceId, type, SyncConstants.STATUS_SUCCESS, targetUser, iamUserId,
+        return saveHistory(traceId, syncDirection, eventType, SyncConstants.STATUS_SUCCESS, targetUser, iamUserId,
                 sourceSystem, targetSystem, resultData, message, parentId, requestPayload, userRevId, ruleRevId);
     }
 
@@ -49,10 +50,10 @@ public class SyncHistoryService {
      * 실패 이력 기록
      */
     @Transactional
-    public Long logFailure(String traceId, String type, String targetUser, Long iamUserId,
-                           String sourceSystem, String targetSystem, Map<String, Object> requestPayload,
-                           String errorDetails, long ruleRevId) {
-        return saveHistory(traceId, type, SyncConstants.STATUS_FAILURE, targetUser, iamUserId,
+    public Long logFailure(String traceId, String syncDirection, String eventType, String targetUser, Long iamUserId,
+            String sourceSystem, String targetSystem, Map<String, Object> requestPayload,
+            String errorDetails, long ruleRevId) {
+        return saveHistory(traceId, syncDirection, eventType, SyncConstants.STATUS_FAILURE, targetUser, iamUserId,
                 sourceSystem, targetSystem, null, errorDetails, null, requestPayload, 0L, ruleRevId);
     }
 
@@ -75,13 +76,15 @@ public class SyncHistoryService {
         return syncHistoryRepository.findAll(pageable); // 최신순 정렬은 Pageable에서 처리
     }
 
-    private Long saveHistory(String traceId, String type, String status, String targetUser, Long iamUserId,
-                             String sourceSystem, String targetSystem, Map<String, Object> resultData, String message,
-                             Long parentHistoryId, Map<String, Object> requestPayload, Long userRevId, Long ruleRevId) {
+    private Long saveHistory(String traceId, String syncDirection, String eventType, String status, String targetUser,
+            Long iamUserId,
+            String sourceSystem, String targetSystem, Map<String, Object> resultData, String message,
+            Long parentHistoryId, Map<String, Object> requestPayload, Long userRevId, Long ruleRevId) {
         try {
             var history = SyncHistory.builder()
                     .traceId(traceId)
-                    .type(type)
+                    .syncDirection(syncDirection)
+                    .eventType(eventType)
                     .status(status)
                     .targetUser(targetUser)
                     .iamUserId(iamUserId)
@@ -97,7 +100,7 @@ public class SyncHistoryService {
                     .build();
 
             var saved = syncHistoryRepository.save(history);
-            log.info("Saved sync history [{}]: {} - {} (ID: {})", status, type, traceId, saved.getId());
+            log.info("Saved sync history [{}]: {} - {} (ID: {})", status, eventType, traceId, saved.getId());
             return saved.getId();
         } catch (Exception e) {
             log.error("Failed to save sync history", e);
@@ -109,11 +112,12 @@ public class SyncHistoryService {
         return new HistoryResponse(
                 String.valueOf(history.getId()),
                 history.getTraceId(),
-                history.getType(),
+                history.getEventType(),
                 history.getStatus(),
                 history.getTargetUser(),
                 history.getSourceSystem(),
                 history.getTargetSystem(),
+                history.getSyncDirection(),
                 history.getCreatedAt(),
                 history.getMessage(),
                 history.getResultData(),

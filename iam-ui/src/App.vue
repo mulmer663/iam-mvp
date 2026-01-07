@@ -13,8 +13,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   OrgUserManagement: defineAsyncComponent(() => import('./views/OrgUserManagement.vue')),
   SourceSyncHistory: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
   IntegrationSyncHistory: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
-  UserAuditLogs: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
-  UserChangeHistory: defineAsyncComponent(() => import('./views/SyncHistory.vue')),
+  UserAuditLogs: defineAsyncComponent(() => import('./views/UserChangeHistory.vue')),
+  UserChangeHistory: defineAsyncComponent(() => import('./views/UserChangeHistory.vue')),
   SyncDetail: defineAsyncComponent(() => import('./views/SyncDetail.vue')),
 }
 
@@ -61,7 +61,7 @@ function onAfterEnter(el: Element) {
 function getHistoryType(viewType: string) {
   if (viewType === 'SourceSyncHistory') return 'SOURCE'
   if (viewType === 'IntegrationSyncHistory') return 'INTEGRATION'
-  return 'AUDIT'
+  return undefined
 }
 
 function closePane(index: number) {

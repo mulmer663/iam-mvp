@@ -69,6 +69,15 @@ public class TransMappingService {
     }
 
     @Transactional
+    public List<TransFieldMapping> saveMappings(String ruleId, List<TransFieldMapping> mappings) {
+        log.info("Batch saving {} mappings for rule: {}", mappings.size(), ruleId);
+        mappings.forEach(m -> m.setRuleId(ruleId));
+        List<TransFieldMapping> saved = fieldMappingRepository.saveAll(mappings);
+        refreshRuleScript(ruleId);
+        return saved;
+    }
+
+    @Transactional
     public void deleteMapping(Long mappingId) {
         fieldMappingRepository.findById(mappingId).ifPresent(mapping -> {
             String ruleId = mapping.getRuleId();
@@ -85,7 +94,8 @@ public class TransMappingService {
     public List<TransFieldMapping> getMappingsAtRevision(String systemId, Long revId) {
         // 1. 해당 시스템에 매핑된 ruleId 조회 (TransMapping 엔티티 활용)
         TransMapping mapping = transMappingRepository.findBySystemId(systemId)
-                .orElseThrow(() -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, systemId, "시스템 설정을 찾을 수 없습니다."));
+                .orElseThrow(
+                        () -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, systemId, "시스템 설정을 찾을 수 없습니다."));
 
         String ruleId = mapping.getRuleId();
 
