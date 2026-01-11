@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { HistoryService } from '@/api/HistoryService'
-import { History, Clock, ExternalLink } from 'lucide-vue-next'
-import { onMounted, ref } from 'vue'
-import type { UserRevisionHistory } from '@/types'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useMillerStore } from '@/stores/miller'
-import { formatDateTime } from '@/utils/date'
+import {HistoryService} from '@/api/HistoryService'
+import {Clock, ExternalLink, History} from 'lucide-vue-next'
+import {onMounted, onUnmounted, ref} from 'vue'
+import type {UserRevisionHistory} from '@/types'
+import {Badge} from '@/components/ui/badge'
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table'
+import {useMillerStore} from '@/stores/miller'
+import {formatDateTime} from '@/utils/date'
 import OperationBadge from '@/components/common/OperationBadge.vue'
 
 const props = defineProps<{
@@ -19,22 +19,47 @@ const millerStore = useMillerStore()
 const revisions = ref<UserRevisionHistory[]>([])
 const loading = ref(false)
 
+const isMounted = ref(false)
+const selectedId = ref<number | undefined>(undefined)
+
 onMounted(async () => {
+    isMounted.value = true
     loading.value = true
     try {
         const response = await HistoryService.getUserRevisionHistory({ 
             userId: props.userId,
             traceId: props.traceId
         })
-        revisions.value = response.content
+        if (isMounted.value) {
+            revisions.value = response.content
+        }
     } catch (e) {
-        console.error('Failed to load revision history', e)
+        if (isMounted.value) {
+            console.error('Failed to load revision history', e)
+        }
     } finally {
-        loading.value = false
+        if (isMounted.value) {
+            loading.value = false
+        }
     }
 })
 
+onUnmounted(() => {
+    isMounted.value = false
+})
+
 function openSnapshotDetail(rev: UserRevisionHistory) {
+  selectedId.value = rev.revId
+  
+  const detailPaneId = `syncdetail-${rev.revId}`
+  const existingPane = millerStore.panes.find(p => p.id === detailPaneId)
+  
+  if (existingPane) {
+    millerStore.highlightPane(detailPaneId)
+    millerStore.activePaneId = detailPaneId
+    return
+  }
+
   // Map UserRevisionHistory to HistoryLog structure for SyncDetail compatibility
   const syntheticEvent = {
     id: rev.revId,
@@ -50,7 +75,7 @@ function openSnapshotDetail(rev: UserRevisionHistory) {
   }
 
   const detailPane = {
-    id: `rev-detail-${rev.revId}`,
+    id: detailPaneId,
     type: 'SyncDetail',
     title: `Event: ${rev.traceId}`,
     data: { event: syntheticEvent }
@@ -100,7 +125,12 @@ function openSnapshotDetail(rev: UserRevisionHistory) {
             v-for="rev in revisions" 
             :key="rev.revId" 
             @click="openSnapshotDetail(rev)"
-            class="h-8 hover:bg-neutral-50 transition-colors cursor-pointer group"
+            class="h-8 transition-colors cursor-pointer group border-l-2 border-transparent"
+            :class="[
+               rev.revId === selectedId 
+                 ? 'bg-amber-50/50 border-l-amber-500 hover:bg-amber-50' 
+                 : 'hover:bg-neutral-50'
+            ]"
           >
             <TableCell class="p-2 py-1 text-center">
                <div class="flex items-center justify-center gap-2">

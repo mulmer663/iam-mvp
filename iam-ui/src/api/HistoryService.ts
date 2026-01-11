@@ -1,5 +1,5 @@
-import { request } from './client'
-import type { HistoryLog, UserRevisionHistory, PagedResponse } from '@/types'
+import {request} from './client'
+import type {AttributeMapping, HistoryLog, PagedResponse, UserRevisionHistory} from '@/types'
 
 interface HistoryResponse {
     id: string
@@ -15,6 +15,8 @@ interface HistoryResponse {
     requestPayload?: Record<string, any>
     resultData?: Record<string, any>
     appliedRules?: number[]
+    ruleRevId?: number
+    // Computed/Derived for UI convenience
 }
 
 export const HistoryService = {
@@ -40,6 +42,20 @@ export const HistoryService = {
 
         const url = `/v1/history/users?${params.toString()}`;
         return await request<PagedResponse<UserRevisionHistory>>(url);
+    },
+
+    async getRuleMappingHistory(systemId: string, revId: string | number): Promise<AttributeMapping[]> {
+        const url = `/v1/rules/history?systemId=${systemId}&revId=${revId}`;
+        const raw = await request<any[]>(url);
+
+        // Map backend format (sourceField/targetField) to UI format (fromField/toField)
+        return raw.map(m => ({
+            fromField: m.sourceField,
+            toField: m.targetField,
+            transformType: m.transformType,
+            transformParams: m.transformScript || m.transformParams,
+            isRequired: m.isRequired
+        } as any)); // Using any temporarily as we'll expand the interface if needed
     },
 
     toHistoryLog(dto: HistoryResponse): HistoryLog {
@@ -78,6 +94,7 @@ export const HistoryService = {
             requestPayload: dto.requestPayload,
             resultData: dto.resultData,
             appliedRules: dto.appliedRules,
+            ruleRevId: dto.ruleRevId,
 
             // UI Helpers
             syncType: syncType as any,

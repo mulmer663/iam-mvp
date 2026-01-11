@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { MillerPane } from '@/types'
+import {defineStore} from 'pinia'
+import {ref} from 'vue'
+import type {MillerPane} from '@/types'
 
 export const useMillerStore = defineStore('miller', () => {
     const highlightedPaneId = ref<string | null>(null)
@@ -48,6 +48,15 @@ export const useMillerStore = defineStore('miller', () => {
         }, 10)
     }
 
+    function removePane(index: number) {
+        panes.value = panes.value.slice(0, index)
+        if (panes.value.length > 0) {
+            activePaneId.value = panes.value[panes.value.length - 1]?.id ?? null
+        } else {
+            activePaneId.value = null
+        }
+    }
+
     return {
         panes,
         highlightedPaneId,
@@ -56,6 +65,7 @@ export const useMillerStore = defineStore('miller', () => {
         popPane,
         popToPane,
         setPane,
-        highlightPane
+        highlightPane,
+        removePane
     }
 })

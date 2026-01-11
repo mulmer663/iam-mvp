@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { UserService } from '@/api/UserService'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MoreHorizontal, Mail, User as LucideUser } from 'lucide-vue-next'
-import { useMillerStore } from '@/stores/miller'
-import { computed, onMounted, ref } from 'vue'
-import type { User } from '@/types'
+import {UserService} from '@/api/UserService'
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table'
+import {Mail, MoreHorizontal, User as LucideUser} from 'lucide-vue-next'
+import {useMillerStore} from '@/stores/miller'
+import {computed, onMounted, onUnmounted, ref} from 'vue'
+import type {User} from '@/types'
 
 const props = defineProps<{
   deptId?: string
@@ -14,12 +14,23 @@ const props = defineProps<{
 const millerStore = useMillerStore()
 const users = ref<User[]>([])
 
+const isMounted = ref(false)
 onMounted(async () => {
+    isMounted.value = true
     try {
-        users.value = await UserService.getUsers()
+        const data = await UserService.getUsers()
+        if (isMounted.value) {
+            users.value = data
+        }
     } catch (e) {
-        console.error('Failed to load users', e)
+        if (isMounted.value) {
+            console.error('Failed to load users', e)
+        }
     }
+})
+
+onUnmounted(() => {
+    isMounted.value = false
 })
 
 const filteredUsers = computed((): User[] => {
@@ -34,8 +45,17 @@ const selectedUserId = computed(() => {
 })
 
 function openUserDetail(user: User) {
+  const detailPaneId = `userdetail-${user.id}`
+  const existingPane = millerStore.panes.find(p => p.id === detailPaneId)
+  
+  if (existingPane) {
+    millerStore.highlightPane(detailPaneId)
+    millerStore.activePaneId = detailPaneId
+    return
+  }
+
   const detailPane = {
-    id: `user-detail-${user.id}`,
+    id: detailPaneId,
     type: 'UserDetail',
     title: `User: ${user.name.givenName} ${user.name.familyName}`,
     data: { user }
@@ -45,7 +65,6 @@ function openUserDetail(user: User) {
   if (typeof props.paneIndex === 'number') {
      millerStore.setPane(props.paneIndex + 1, detailPane)
   } else {
-    // Fallback if used outside of strict Miller context (shouldn't happen in App.vue)
     millerStore.pushPane(detailPane)
   }
 }

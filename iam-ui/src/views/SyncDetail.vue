@@ -1,47 +1,66 @@
 <script setup lang="ts">
-import { ArrowRight, Code, ChevronDown, ChevronRight, Search } from 'lucide-vue-next'
-import { Separator } from '@/components/ui/separator'
-import type { HistoryLog } from '@/types'
-import { HistoryService } from '@/api/HistoryService'
-import { computed, onMounted, ref } from 'vue'
-
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { SYSTEM_THEMES } from '@/utils/theme'
-import { useMillerStore } from '@/stores/miller'
-import { formatDateTime } from '@/utils/date'
+import {computed, onMounted, onUnmounted, ref} from 'vue'
+import {HistoryService} from '@/api/HistoryService'
+import {SYSTEM_THEMES} from '@/utils/theme'
+import {formatDateTime} from '@/utils/date'
+import type {HistoryLog} from '@/types'
 import OperationBadge from '@/components/common/OperationBadge.vue'
+import UserProfileViewer from '@/components/common/UserProfileViewer.vue'
+import AttributeMappingTable from '@/components/sync/AttributeMappingTable.vue'
+import SyncPipeline from '@/components/sync/SyncPipeline.vue'
+import RawPayloadViewer from '@/components/sync/RawPayloadViewer.vue'
+import {Separator} from '@/components/ui/separator'
 
 const props = defineProps<{
     event: HistoryLog
     paneIndex?: number
 }>()
 
-const millerStore = useMillerStore()
-const isRawOpen = ref(false)
-const isMappingOpen = ref(false)
-const viewMode = ref<'changes' | 'all'>(props.event.changes && props.event.changes.length > 0 ? 'changes' : 'all')
-const searchQuery = ref('')
 const allHistory = ref<HistoryLog[]>([])
+// historicalMappings is kept for the AttributeMappingTable
+const historicalMappings = ref<any[]>([])
+const loadingMappings = ref(false)
 
+const isMounted = ref(false)
 onMounted(async () => {
+    isMounted.value = true
+    
+    // 1. Fetch related history for the pipeline
     try {
-        allHistory.value = await HistoryService.getHistory()
+        const data = await HistoryService.getHistory({ 
+            userId: props.event.userId || (props.event.resultData?.id as string) 
+        })
+        if (isMounted.value) {
+            allHistory.value = data
+        }
     } catch (e) {
-        console.error('Failed to load history for related events', e)
+        if (isMounted.value) {
+            console.error('Failed to load history for related events', e)
+        }
+    }
+
+    // 2. Fetch historical mappings
+    const systemId = props.event.sourceSystem || props.event.targetSystem
+    if (systemId && props.event.ruleRevId && (!props.event.mappings || props.event.mappings.length === 0)) {
+        loadingMappings.value = true
+        try {
+            const mappings = await HistoryService.getRuleMappingHistory(systemId, props.event.ruleRevId)
+            if (isMounted.value) {
+                historicalMappings.value = mappings
+            }
+        } catch (e) {
+            console.error('Failed to load historical mappings', e)
+        } finally {
+            if (isMounted.value) {
+                loadingMappings.value = false
+            }
+        }
     }
 })
 
-// relatedEvents is now handled directly in the template within the Sync Pipeline section
-
+onUnmounted(() => {
+    isMounted.value = false
+})
 
 const theme = computed(() => {
   if (props.event.syncDirection === 'RECON') return SYSTEM_THEMES.SOURCE
@@ -49,159 +68,25 @@ const theme = computed(() => {
   return SYSTEM_THEMES.AUDIT
 })
 
-const snapshotTitle = computed(() => theme.value.subLabel)
+const snapshotTitle = computed(() => theme.value.subLabel + ' Snapshot')
+
+const snapshotData = computed(() => {
+    // Pass the raw data object, UserProfileViewer will unwrap common wrappers like event.payload if needed
+    // But we should prioritize specific fields logic from previous implementation
+    return props.event.requestPayload || props.event.snapshot?.data || props.event.payload
+})
 
 const mappingLabels = computed(() => {
   if (!props.event.mappings || props.event.mappings.length === 0) return { from: 'Source', to: 'Target' }
   const first = props.event.mappings[0]
   if (first && first.fromLabel && first.toLabel) return { from: first.fromLabel, to: first.toLabel }
-  
-  // Fallback based on sync direction
   if (props.event.syncDirection === 'RECON') return { from: 'HR', to: 'IAM' }
   if (props.event.syncDirection === 'PROV') return { from: 'IAM', to: 'AD' }
   return { from: 'Source', to: 'Target' }
 })
 
-
-function openRelatedEvent(log: HistoryLog) {
-  const targetPaneId = `sync-detail-${log.id}`
-  const existingPane = millerStore.panes.find(p => p.id === targetPaneId)
-  
-  if (existingPane) {
-    millerStore.highlightPane(targetPaneId)
-    return
-  }
-
-  const nextPaneData = {
-    id: targetPaneId,
-    type: 'SyncDetail',
-    title: `Event: ${log.traceId}`,
-    data: { event: log }
-  }
-
-  if (props.paneIndex !== undefined) {
-    millerStore.setPane(props.paneIndex + 1, nextPaneData)
-  } else {
-    millerStore.pushPane(nextPaneData)
-  }
-}
-
-async function openModificationLedger() {
-  const userId = props.event.userId || props.event.resultData?.id || props.event.requestPayload?.id || (props.event.payload as any)?.id
-  const traceId = props.event.traceId
-
-  try {
-    // Try to fetch the specific revision for this traceId
-    const response = await HistoryService.getUserRevisionHistory({ traceId, size: 1 })
-    
-    if (response.content && response.content.length > 0) {
-      const rev = response.content[0]
-      if (rev) {
-        const syntheticEvent = {
-          id: rev.revId,
-          traceId: rev.traceId,
-          type: 'USER_UPDATE',
-          status: 'SUCCESS',
-          target: rev.profile.userName,
-          time: rev.timestamp,
-          syncType: rev.operationType,
-          snapshot: { data: rev.profile },
-          payload: rev.profile,
-          operator: rev.operatorId
-        }
-
-        const detailPane = {
-          id: `rev-detail-${rev.revId}`,
-          type: 'SyncDetail',
-          title: `Event: ${rev.traceId}`,
-          data: { event: syntheticEvent }
-        }
-
-        if (props.paneIndex !== undefined) {
-          millerStore.setPane(props.paneIndex + 1, detailPane)
-        } else {
-          millerStore.pushPane(detailPane)
-        }
-        return
-      }
-    }
-  } catch (e) {
-    console.error('Failed to fetch specific revision detail', e)
-  }
-
-  // Fallback to ledger list if no specific revision found or fetch failed
-  const targetPaneId = `mod-ledger-${traceId}-${userId || 'global'}`
-  const nextPaneData = {
-    id: targetPaneId,
-    type: 'UserChangeHistory',
-    title: `${SYSTEM_THEMES.AUDIT.label}: ${traceId}`,
-    data: { userId, traceId }
-  }
-
-  if (props.paneIndex !== undefined) {
-    millerStore.setPane(props.paneIndex + 1, nextPaneData)
-  } else {
-    millerStore.pushPane(nextPaneData)
-  }
-}
-
-
-// Function to check if a value is a SCIM extension key
-const isExtension = (key: string) => key.startsWith('urn:ietf:params:scim:schemas:extension:')
-
-const getExtensionLabel = (key: string) => {
-  const parts = key.split(':')
-  const extIndex = parts.indexOf('extension')
-  if (extIndex !== -1 && extIndex < parts.length - 1) {
-    return parts.slice(extIndex + 1).join(':')
-  }
-  return parts[parts.length - 1]
-}
-
-// Helper to get change for a specific field
-const getChange = (key: string) => {
-  return props.event.changes?.find(c => c.field === key)
-}
-
-const allSnapshotEntries = computed(() => {
-  let data = props.event.requestPayload || props.event.snapshot?.data || props.event.payload
-  if (!data) return []
-  
-  // Unwrap nesting if data contains sub-property with actual fields
-  if (data.event && typeof data.event === 'object' && data.event.payload) {
-    data = data.event.payload
-  } else if (data.command && typeof data.command === 'object' && data.command.payload) {
-    data = data.command.payload
-  } else if (data.payload && typeof data.payload === 'object' && !Array.isArray(data.payload)) {
-    data = data.payload
-  }
-
-  return Object.entries(data as Record<string, any>).filter(([key]) => key !== 'schemas' && !isExtension(key))
-})
-
-const filteredEntries = computed(() => {
-  let entries = allSnapshotEntries.value
-  
-  // 1. Filter by Search Query
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
-    entries = entries.filter(([key, val]) => 
-      key.toLowerCase().includes(q) || 
-      String(val).toLowerCase().includes(q)
-    )
-  }
-
-  // 2. Filter by View Mode (only if not searching)
-  if (viewMode.value === 'changes' && !searchQuery.value) {
-    entries = entries.filter(([key]) => !!getChange(key))
-  }
-
-  // 3. Sort: Changed first
-  return entries.sort(([keyA], [keyB]) => {
-    const changeA = getChange(keyA) ? 1 : 0
-    const changeB = getChange(keyB) ? 1 : 0
-    return changeB - changeA
-  })
+const mappings = computed(() => {
+    return (props.event.mappings && props.event.mappings.length > 0) ? props.event.mappings : historicalMappings.value
 })
 </script>
 
@@ -231,327 +116,35 @@ const filteredEntries = computed(() => {
 
     <div class="flex-1 overflow-y-auto p-4 space-y-6">
       
-      <!-- Layer Snapshot (SCIM Aware) -->
-      <section v-if="event.snapshot || event.payload">
-        <div class="flex flex-col gap-3 mb-4">
-           <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                 <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
-                   {{ snapshotTitle }} Snapshot
-                 </h3>
-                 <span class="px-1.5 py-0.5 bg-neutral-100 text-[8px] font-bold text-neutral-500 rounded-sm">
-                   {{ filteredEntries.length }} / {{ allSnapshotEntries.length }}
-                 </span>
-              </div>
-              
-              <!-- View Mode Toggle -->
-              <div v-if="event.changes && event.changes.length > 0" class="flex items-center gap-1 p-0.5 bg-neutral-100 rounded-sm">
-                <button 
-                  @click="viewMode = 'changes'; searchQuery = ''"
-                  class="px-2 py-0.5 text-[9px] font-bold rounded-sm transition-all"
-                  :class="viewMode === 'changes' && !searchQuery ? 'bg-white text-blue-600 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'"
-                >
-                   CHANGES
-                </button>
-                <button 
-                  @click="viewMode = 'all'; searchQuery = ''"
-                  class="px-2 py-0.5 text-[9px] font-bold rounded-sm transition-all"
-                  :class="viewMode === 'all' && !searchQuery ? 'bg-white text-neutral-700 shadow-sm' : 'text-neutral-400 hover:text-neutral-600'"
-                >
-                   ALL
-                </button>
-              </div>
-           </div>
-           
-           <!-- Snapshot Search -->
-           <div v-if="allSnapshotEntries.length > 0" class="relative group">
-              <Search class="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-neutral-300 group-focus-within:text-blue-500 transition-colors" />
-              <input 
-                v-model="searchQuery"
-                type="text" 
-                :placeholder="`Search in ${allSnapshotEntries.length} fields...`" 
-                class="w-full h-7 bg-neutral-50/50 border border-neutral-100 rounded-sm pl-7 text-[10px] focus:bg-white focus:border-blue-200 focus:ring-1 focus:ring-blue-100/50 transition-all outline-none"
-              />
-           </div>
-        </div>
+      <!-- Layer Snapshot -->
+      <UserProfileViewer 
+        v-if="snapshotData"
+        :data="snapshotData" 
+        :changes="event.changes" 
+        :title="snapshotTitle"
+      />
 
-        <div class="space-y-4">
-           <!-- No Results State -->
-           <div v-if="filteredEntries.length === 0" class="py-10 text-center border border-dashed border-neutral-200 rounded-md">
-              <div class="text-[10px] text-neutral-400 italic">No matching fields found.</div>
-              <Button v-if="searchQuery" variant="ghost" size="xs" @click="searchQuery = ''" class="mt-2 text-[9px] h-6">Clear Search</Button>
-           </div>
+      <!-- Attribution Mapping -->
+      <AttributeMappingTable 
+        :mappings="mappings"
+        :applied-rules="event.appliedRules"
+        :loading="loadingMappings"
+        :from-label="mappingLabels.from"
+        :to-label="mappingLabels.to"
+        :is-historical="historicalMappings.length > 0 && (!event.mappings || event.mappings.length === 0)"
+      />
 
-           <!-- Standard Attributes -->
-           <div v-else class="grid grid-cols-1 gap-2">
-              <div v-for="[key, val] in filteredEntries" :key="key">
-                 <div class="flex items-center justify-between border rounded p-2 transition-colors relative transition-all duration-300"
-                      :class="[
-                        getChange(key) 
-                          ? theme.container 
-                          : 'bg-neutral-50/30 border-neutral-100 group hover:bg-white'
-                      ]">
-                    <!-- Change Indicator (Vertical Accent) -->
-                    <div v-if="getChange(key)" class="absolute left-0 top-0 bottom-0 w-0.5" :class="theme.indicator"></div>
-
-                    <div class="min-w-0 flex-1">
-                       <div class="flex items-center gap-2 mb-0.5">
-                          <div class="text-[9px] uppercase font-bold tracking-tighter"
-                               :class="getChange(key) ? theme.text : 'text-neutral-400'">
-                            {{ key }}
-                          </div>
-                          <div v-if="getChange(key)" 
-                               class="text-[7px] font-black px-1 text-white rounded-[2px] tracking-widest uppercase"
-                               :class="theme.indicator">
-                            Updated
-                          </div>
-                       </div>
-                       
-                       <div class="flex flex-wrap items-baseline gap-x-2">
-                          <div class="text-[11px] font-semibold"
-                               :class="getChange(key) ? 'text-neutral-900' : 'text-neutral-800'">
-                             <template v-if="Array.isArray(val)">
-                                <div v-for="(item, i) in val" :key="i" class="bg-white px-1.5 py-0.5 rounded border border-neutral-100 mt-1 inline-block mr-1">
-                                   {{ item.value || item }}
-                                </div>
-                             </template>
-                             <template v-else-if="typeof val === 'object'">
-                                <span class="text-[9px] font-mono text-neutral-400">{{ JSON.stringify(val) }}</span>
-                             </template>
-                             <template v-else>{{ val }}</template>
-                          </div>
-                          
-                          <!-- Inline History -->
-                          <div v-if="getChange(key)" class="text-[9px] text-neutral-400 font-medium italic">
-                             (was: <span class="decoration-neutral-300">{{ getChange(key)?.old }}</span>)
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-           </div>
-
-           <!-- Extensions -->
-           <div v-if="event.snapshot?.data">
-               <div v-for="(val, key) in event.snapshot.data" :key="key">
-                  <div v-if="isExtension(key as string)" class="space-y-2 mt-4">
-                     <div class="text-[9px] font-black uppercase tracking-widest flex items-center gap-2" :class="theme.text">
-                        <Separator class="flex-1" />
-                        <span>Extension: {{ getExtensionLabel(key as string) }}</span>
-                        <Separator class="flex-1" />
-                     </div>
-                     <div class="grid grid-cols-2 gap-2">
-                        <div v-for="(extVal, extKey) in (val as any)" :key="extKey" 
-                             class="border rounded p-2" :class="[theme.bg, theme.border]">
-                           <div class="text-[9px] uppercase font-bold mb-0.5" :class="theme.text">{{ extKey }}</div>
-                           <div class="text-[11px] font-medium text-neutral-800">{{ extVal }}</div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-           </div>
-        </div>
-      </section>
-
-      <!-- Attribution Mapping (Context Aware 2-Way) or Applied Rules -->
-      <section v-if="(event.mappings && event.mappings.length > 0) || (event.appliedRules && event.appliedRules.length > 0)">
-        <button 
-          @click="isMappingOpen = !isMappingOpen"
-          class="flex items-center justify-between w-full p-2.5 rounded-md border transition-all group"
-          :class="isMappingOpen ? 'bg-neutral-900 border-neutral-800 mb-3' : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300'"
-        >
-          <div class="flex items-center gap-3">
-             <div class="size-5 rounded flex items-center justify-center shadow-sm" :class="isMappingOpen ? 'bg-neutral-800' : 'bg-white border'">
-                <ArrowRight class="size-3" :class="isMappingOpen ? 'text-white' : 'text-neutral-400'" />
-             </div>
-             <div class="flex flex-col items-start">
-                <h3 v-if="event.mappings && event.mappings.length > 0" class="text-[10px] font-black uppercase tracking-widest transition-colors"
-                    :class="isMappingOpen ? 'text-neutral-400' : 'text-neutral-600'">
-                  Attribute Mapping
-                </h3>
-                <h3 v-else class="text-[10px] font-black uppercase tracking-widest transition-colors"
-                    :class="isMappingOpen ? 'text-neutral-400' : 'text-neutral-600'">
-                  Applied Transformation Rules
-                </h3>
-                <span class="text-[8px] font-bold text-neutral-400 uppercase tracking-tighter">
-                   <span v-if="event.mappings">{{ mappingLabels.from }} → {{ mappingLabels.to }} ({{ event.mappings.length }} Fields)</span>
-                   <span v-else>{{ event.appliedRules?.length }} Rules Applied</span>
-                </span>
-             </div>
-          </div>
-          <component :is="isMappingOpen ? ChevronDown : ChevronRight" class="size-4" :class="isMappingOpen ? 'text-neutral-500' : 'text-neutral-400'" />
-        </button>
-        
-        <div v-if="isMappingOpen" class="border rounded-md overflow-hidden bg-neutral-50/50">
-           <!-- Mappings Table --> 
-           <Table v-if="event.mappings && event.mappings.length > 0">
-             <TableHeader class="bg-white">
-               <TableRow class="h-8 hover:bg-transparent shadow-sm">
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.from }} Field</TableHead>
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 text-center w-[10%]"></TableHead>
-                 <TableHead class="text-[9px] font-bold uppercase py-0 px-3 w-[45%]">{{ mappingLabels.to }} Field</TableHead>
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-                <TableRow v-for="(m, idx) in event.mappings" :key="idx" class="h-9 hover:bg-white border-b-neutral-100 last:border-0">
-                  <TableCell class="py-1 px-3 text-[10px] font-mono" 
-                             :class="[
-                                mappingLabels.from === 'HR' ? 'text-blue-600' : '',
-                                mappingLabels.from === 'IAM' ? 'text-orange-600 font-bold' : ''
-                             ]">
-                    {{ m.fromField }}
-                  </TableCell>
-                  <TableCell class="py-1 px-3 text-center"><ArrowRight class="size-2.5 text-neutral-300 mx-auto" /></TableCell>
-                  <TableCell class="py-1 px-3 text-[10px] font-mono"
-                             :class="[
-                                mappingLabels.to === 'IAM' ? 'text-orange-600 font-bold' : '',
-                                mappingLabels.to !== 'IAM' ? 'text-purple-600 font-bold' : ''
-                             ]">
-                    {{ m.toField }}
-                  </TableCell>
-                </TableRow>
-             </TableBody>
-           </Table>
-
-           <!-- Applied Rules List -->
-           <div v-else class="p-3 bg-white">
-              <div v-for="ruleId in event.appliedRules" :key="ruleId" class="flex items-center gap-2 mb-1">
-                 <div class="px-2 py-0.5 bg-neutral-100 text-[10px] font-mono rounded text-neutral-600">Rule Version: {{ ruleId }}</div>
-                 <div class="text-[10px] text-neutral-400">Successfully executed</div>
-              </div>
-           </div>
-        </div>
-      </section>
-
-      <Separator />
+      <Separator v-if="allHistory.length > 0" />
 
       <!-- Sync Pipeline Visualization -->
-      <section v-if="allHistory.length > 0">
-        <h3 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          Sync Pipeline
-        </h3>
-        
-        <div class="flex flex-col gap-6 relative">
-          <!-- Connection Lines (Visual) -->
-          <div class="absolute left-3 top-3 bottom-3 w-px bg-neutral-100 -z-0"></div>
+      <SyncPipeline 
+        :event="event" 
+        :history="allHistory" 
+        :pane-index="paneIndex" 
+      />
 
-          <!-- Step 1: Source -->
-          <div class="relative z-10 flex flex-col gap-2">
-            <div class="flex items-center gap-2 mb-1">
-              <div class="size-6 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shadow-sm">1</div>
-              <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">Source Systems</span>
-            </div>
-            <div class="ml-8 space-y-1">
-              <div 
-            <div v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.syncDirection === 'RECON')" :key="h.id"
-                @click="openRelatedEvent(h)"
-                class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
-                :class="h.id === event.id ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : 'bg-white border-neutral-100 hover:border-blue-200'"
-              >
-                <div class="flex flex-col flex-1">
-                  <span class="font-bold text-neutral-700">{{ h.target || 'HR System' }}</span>
-                  <span class="text-[9px] text-neutral-400 font-mono">{{ formatDateTime(h.time) }}</span>
-                </div>
-                <div class="flex items-center shrink-0">
-                  <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-red-500'"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Step 2: Core -->
-          <div class="relative z-10 flex flex-col gap-2">
-            <div class="flex items-center gap-2 mb-1">
-              <div class="size-6 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600 shadow-sm">2</div>
-              <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">IAM Core</span>
-            </div>
-            <div class="ml-8 space-y-1">
-              <!-- Case A: Explicit Identity Sync Event Found -->
-              <div 
-                v-for="h in allHistory.filter(x => x.traceId === event.traceId && ['USER_UPDATE', 'USER_UPDATE_SIMPLE', 'USER_UPDATE_CRITICAL'].includes(x.eventType))" :key="h.id"
-                @click="openRelatedEvent(h)"
-                class="p-2 border rounded-md text-[11px] cursor-pointer transition-all flex items-center justify-between group"
-                :class="h.id === event.id ? 'bg-orange-50 border-orange-200 ring-2 ring-orange-100' : 'bg-white border-neutral-100 hover:border-orange-200'"
-              >
-                <div class="flex flex-col flex-1">
-                  <span class="font-bold text-neutral-700">Identity Management</span>
-                  <span class="text-[9px] text-neutral-400 font-mono">{{ formatDateTime(h.time) }}</span>
-                </div>
-                <div class="flex items-center shrink-0">
-                  <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-red-500'"></div>
-                </div>
-              </div>
-
-              <!-- Case B: No explicit event, but we can look at Modification Ledger (Revision History) -->
-              <div 
-                v-if="allHistory.filter(x => x.traceId === event.traceId && ['USER_UPDATE', 'USER_UPDATE_SIMPLE', 'USER_UPDATE_CRITICAL'].includes(x.eventType)).length === 0"
-                @click="openModificationLedger()"
-                class="p-2 border border-neutral-100 bg-white rounded-md text-[11px] cursor-pointer hover:border-orange-200 transition-all flex items-center justify-between group"
-              >
-                <div class="flex flex-col flex-1">
-                  <span class="font-bold text-neutral-700">Identity Management</span>
-                  <span class="text-[9px] text-neutral-400 font-mono">{{ formatDateTime(event.time) }}</span>
-                </div>
-                <div class="flex items-center shrink-0">
-                  <div class="size-1.5 rounded-full bg-emerald-500"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Step 3: Targets -->
-          <div class="relative z-10 flex flex-col gap-2">
-            <div class="flex items-center gap-2 mb-1">
-              <div class="size-6 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center text-[10px] font-bold text-purple-600 shadow-sm">3</div>
-              <span class="text-[10px] font-black text-neutral-500 uppercase tracking-tighter">Target Provisioning</span>
-              <Badge variant="outline" class="h-3 text-[8px] border-purple-200 text-purple-600">{{ allHistory.filter(x => x.traceId === event.traceId && x.syncDirection === 'PROV').length }} Targets</Badge>
-            </div>
-            <div class="ml-8">
-              <div class="grid grid-cols-2 gap-2">
-                <div 
-                  v-for="h in allHistory.filter(x => x.traceId === event.traceId && x.syncDirection === 'PROV')" :key="h.id"
-                  @click="openRelatedEvent(h)"
-                  class="p-2 border rounded-md text-[10px] cursor-pointer transition-all flex flex-col gap-1 group bg-white"
-                  :class="h.id === event.id ? 'bg-purple-50 border-purple-200 ring-2 ring-purple-100' : 'border-neutral-100 hover:border-purple-200'"
-                >
-                  <div class="flex items-center justify-between">
-                    <span class="font-black text-neutral-500 uppercase tracking-tighter truncate max-w-[70%]">
-                      {{ h.target || 'Target System' }}
-                    </span>
-                    <div class="size-1.5 rounded-full" :class="h.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-red-500'"></div>
-                  </div>
-                  <div class="text-[8px] text-neutral-400 font-mono">{{ formatDateTime(h.time)?.split(' ')[1] }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Technical Audit Log (Raw Data) -->
-      <section class="mt-auto pt-4">
-        <button 
-          @click="isRawOpen = !isRawOpen"
-          class="flex items-center justify-between w-full p-2 bg-neutral-900 rounded-t-md text-neutral-400 font-mono text-[10px] hover:text-white transition-colors"
-          :class="{ 'rounded-md': !isRawOpen }"
-        >
-          <div class="flex items-center gap-2">
-             <Code class="size-3" /> <span>RAW PAYLOAD AUDIT</span>
-          </div>
-          <component :is="isRawOpen ? ChevronDown : ChevronRight" class="size-3" />
-        </button>
-        <div v-if="isRawOpen" class="p-3 bg-neutral-900 rounded-b-md text-neutral-300 font-mono text-[10px] border-t border-neutral-800 flex flex-col gap-3">
-          <div v-if="event.requestPayload">
-             <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.requestPayload, null, 2) }}</pre>
-          </div>
-          <div v-if="event.resultData && Object.keys(event.resultData).some(k => !['status', 'syncType', 'target'].includes(k))">
-             <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.resultData, null, 2) }}</pre>
-          </div>
-          <div v-if="!event.requestPayload && !event.resultData">
-             <pre class="overflow-x-auto whitespace-pre-wrap break-all">{{ JSON.stringify(event.payload || event, null, 2) }}</pre>
-          </div>
-        </div>
-      </section>
+      <!-- Technical Audit Log -->
+      <RawPayloadViewer :event="event" />
 
     </div>
   </div>

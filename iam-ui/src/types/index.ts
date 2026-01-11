@@ -40,6 +40,7 @@ export interface AttributeMapping {
     value?: string
     transformType?: string
     transformParams?: string
+    isRequired?: boolean
 }
 
 export interface HistoryLog {
@@ -59,6 +60,7 @@ export interface HistoryLog {
     requestPayload?: Record<string, any>
     resultData?: Record<string, any>
     appliedRules?: number[]
+    ruleRevId?: number
     // Computed/Derived for UI convenience
     payload?: Record<string, any> // Deprecated but kept for compatibility logic
     changes?: Array<{ field: string, old: string, new: string }>

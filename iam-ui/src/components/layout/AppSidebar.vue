@@ -1,25 +1,8 @@
 <script setup lang="ts">
-import { 
-  Users, 
-  Network, 
-  Clock, 
-  Database, 
-  Activity,
-  UserCircle
-} from 'lucide-vue-next'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar'
-import { useMillerStore } from '@/stores/miller'
-import type { Component } from 'vue'
+import {Activity, Clock, Database, Network, UserCircle, Users} from 'lucide-vue-next'
+import {Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail,} from '@/components/ui/sidebar'
+import {useMillerStore} from '@/stores/miller'
+import type {Component} from 'vue'
 
 // Types
 interface SidebarSubItem {
@@ -30,7 +13,7 @@ interface SidebarSubItem {
 
 interface SidebarGroupItem {
   title: string
-  items: SidebarSubItem[]
+  items: (SidebarSubItem & { data?: any })[]
 }
 
 const millerStore = useMillerStore()
@@ -46,21 +29,21 @@ const items: SidebarGroupItem[] = [
   {
     title: 'History & Logs',
     items: [
-      { title: 'Source Sync', icon: Database, view: 'SourceSyncHistory' },
-      { title: 'Integration Sync', icon: Activity, view: 'IntegrationSyncHistory' },
-      { title: 'Audit Logs', icon: Clock, view: 'UserAuditLogs' },
+      { title: 'Source Sync', icon: Database, view: 'SyncHistory', data: { type: 'SOURCE' } },
+      { title: 'Integration Sync', icon: Activity, view: 'SyncHistory', data: { type: 'INTEGRATION' } },
+      { title: 'Audit Logs', icon: Clock, view: 'UserChangeHistory' },
     ],
   },
 ]
 
-function handleItemClick(item: SidebarSubItem) {
+function handleItemClick(item: any) {
   // Reset stack with new root view
   millerStore.panes = []
     millerStore.pushPane({
-      id: `root-${item.view}`,
+      id: `root-${item.view}-${item.data?.type || 'main'}`,
       type: item.view,
       title: item.title,
-      data: {},
+      data: item.data || {},
       width: item.view === 'OrgUserManagement' ? '800px' : undefined,
       maxWidth: item.view === 'OrgUserManagement' ? '800px' : undefined
     })
@@ -106,5 +89,6 @@ function handleItemClick(item: SidebarSubItem) {
           </div>
        </div>
     </div>
+    <SidebarRail />
   </Sidebar>
 </template>

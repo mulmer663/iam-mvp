@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { HistoryService } from '@/api/HistoryService'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { ExternalLink } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
-import type { HistoryLog } from '@/types'
-import { useMillerStore } from '@/stores/miller'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import OperationBadge from '@/components/common/OperationBadge.vue'
-import { formatDateTime } from '@/utils/date'
-
-import { SYSTEM_THEMES } from '@/utils/theme'
+import {HistoryService} from '@/api/HistoryService'
+import {computed, onMounted, onUnmounted, ref} from 'vue'
+import type {HistoryLog} from '@/types'
+import {useMillerStore} from '@/stores/miller'
+import {SYSTEM_THEMES} from '@/utils/theme'
+import {Badge} from '@/components/ui/badge'
+import HistoryTable from '@/components/sync/HistoryTable.vue'
+import HistoryCard from '@/components/sync/HistoryCard.vue'
+import {useContainerWidth} from '@/composables/useContainerWidth'
 
 const props = defineProps<{
   type: 'SOURCE' | 'INTEGRATION'
@@ -22,16 +19,31 @@ const props = defineProps<{
 const millerStore = useMillerStore()
 const history = ref<HistoryLog[]>([])
 const currentTheme = computed(() => SYSTEM_THEMES[props.type])
+const containerRef = ref<HTMLElement | null>(null)
+const { containerWidth } = useContainerWidth(containerRef)
 
+const isNarrow = computed(() => containerWidth.value < 600)
+
+const isMounted = ref(false)
 onMounted(async () => {
+    isMounted.value = true
     try {
-        history.value = await HistoryService.getHistory({ 
+        const data = await HistoryService.getHistory({ 
             userId: props.userId, 
             userName: props.userName 
         })
+        if (isMounted.value) {
+            history.value = data
+        }
     } catch (e) {
-        console.error('Failed to load history', e)
+        if (isMounted.value) {
+            console.error('Failed to load history', e)
+        }
     }
+})
+
+onUnmounted(() => {
+    isMounted.value = false
 })
 
 const filteredHistory = computed((): HistoryLog[] => {
@@ -44,9 +56,22 @@ const filteredHistory = computed((): HistoryLog[] => {
 })
 
 
+const selectedId = ref<string | undefined>(undefined)
+
 function onRowClick(log: HistoryLog) {
+  selectedId.value = log.id
+
+  const detailPaneId = `syncdetail-${log.id}`
+  const existingPane = millerStore.panes.find(p => p.id === detailPaneId)
+  
+  if (existingPane) {
+    millerStore.highlightPane(detailPaneId)
+    millerStore.activePaneId = detailPaneId
+    return
+  }
+
   const detailPane = {
-    id: `sync-detail-${log.id}`,
+    id: detailPaneId,
     type: 'SyncDetail',
     title: `Event: ${log.traceId}`,
     data: { event: log }
@@ -61,7 +86,7 @@ function onRowClick(log: HistoryLog) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="h-full flex flex-col" ref="containerRef">
     <div class="h-10 border-b border-neutral-100 flex items-center px-4 bg-white shrink-0 justify-between">
        <div class="flex items-center gap-2">
          <component :is="currentTheme.icon" class="size-4" :class="currentTheme.text" />
@@ -72,49 +97,20 @@ function onRowClick(log: HistoryLog) {
        </div>
     </div>
     <div class="flex-1 p-3 overflow-auto">
-       <Table class="border">
-          <TableHeader class="bg-neutral-50">
-             <TableRow class="h-7 hover:bg-transparent">
-                <TableHead class="text-[10px] uppercase font-bold p-2">Trace ID</TableHead>
-                 <TableHead class="text-[10px] uppercase font-bold p-2">User</TableHead>
-                 <TableHead class="text-[10px] uppercase font-bold p-2">Sync Type</TableHead>
-                 <TableHead class="text-[10px] uppercase font-bold p-2">
-                   {{ type === 'SOURCE' ? 'Source' : 'Target' }}
-                </TableHead>
-                <TableHead class="text-[10px] uppercase font-bold p-2 text-center">Status</TableHead>
-                <TableHead class="text-[10px] uppercase font-bold p-2 text-right">Timestamp</TableHead>
-             </TableRow>
-          </TableHeader>
-          <TableBody>
-             <TableRow 
-               v-for="log in filteredHistory" 
-               :key="log.id" 
-               @click="onRowClick(log)"
-               class="h-8 hover:bg-neutral-50 transition-colors cursor-pointer group"
-             >
-                <TableCell class="p-2 py-1 font-mono text-[10px] text-neutral-400">
-                   <div class="flex items-center gap-1">
-                      <span>{{ log.traceId }}</span>
-                      <ExternalLink class="size-2 hidden group-hover:block" />
-                   </div>
-                </TableCell>
-                 <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-600">
-                    {{ log.target }}
-                 </TableCell>
-                 <TableCell class="p-2 py-1">
-                   <OperationBadge v-if="log.syncType" :type="log.syncType" />
-                   <span v-else class="text-[9px] text-neutral-300">-</span>
-                 </TableCell>
-                <TableCell class="p-2 py-1 text-[11px] font-medium text-neutral-700">
-                   {{ type === 'SOURCE' ? (log.sourceSystem || 'HR') : (log.targetSystem || 'Target System') }}
-                </TableCell>
-                <TableCell class="p-2 py-1 text-center">
-                   <StatusBadge :status="log.status" />
-                </TableCell>
-                <TableCell class="p-2 py-1 text-right text-[10px] text-neutral-400">{{ formatDateTime(log.time) }}</TableCell>
-             </TableRow>
-          </TableBody>
-       </Table>
+       <HistoryCard 
+         v-if="isNarrow" 
+         :history="filteredHistory" 
+         :type="type" 
+         :selectedId="selectedId"
+         @row-click="onRowClick" 
+       />
+       <HistoryTable 
+         v-else 
+         :history="filteredHistory" 
+         :type="type" 
+         :selectedId="selectedId"
+         @row-click="onRowClick" 
+       />
     </div>
   </div>
 </template>
