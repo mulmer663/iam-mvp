@@ -1,7 +1,15 @@
 export interface Department {
     id: string
-    name: string
+    externalId?: string
+    displayName: string
+    description?: string
+    active: boolean
     parentId: string | null
+    meta?: {
+        resourceType: string
+        created: string
+        lastModified: string
+    }
 }
 
 export interface User {

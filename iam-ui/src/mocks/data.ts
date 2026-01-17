@@ -1,10 +1,44 @@
-export const MOCK_DEPARTMENTS = [
-    { id: 'GLOBAL-IT', name: 'Global IT', parentId: null },
-    { id: 'AUDIT-01', name: 'Internal Audit', parentId: null },
-    { id: 'SEC-OPS', name: 'Security Operations', parentId: null },
-    { id: 'EXTERNAL-V', name: 'External Vendors', parentId: null },
-    { id: 'DEPT01', name: 'SAP HR Division', parentId: null },
-    { id: 'DEPT02', name: 'SAP HR Planning', parentId: null },
+export const MOCK_DEPARTMENTS: any[] = [
+    {
+        id: 'GLOBAL-IT', displayName: 'Global IT', parentId: null, active: true, externalId: 'ORG-001',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'IT-INFRA', displayName: 'Infrastructure', parentId: 'GLOBAL-IT', active: true, externalId: 'ORG-002',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'IT-SEC', displayName: 'Cyber Security', parentId: 'GLOBAL-IT', active: true, externalId: 'ORG-003',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'IT-APPS', displayName: 'Business Applications', parentId: 'GLOBAL-IT', active: true, externalId: 'ORG-004',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'AUDIT-01', displayName: 'Internal Audit', parentId: null, active: true, externalId: 'ORG-005',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'SEC-OPS', displayName: 'Security Operations', parentId: 'IT-SEC', active: true, externalId: 'ORG-006',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'EXTERNAL-V', displayName: 'External Vendors', parentId: null, active: true, externalId: 'ORG-007',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'DEPT01', displayName: 'SAP HR Division', parentId: null, active: true, externalId: 'ORG-008',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'DEPT02', displayName: 'SAP HR Planning', parentId: 'DEPT01', active: true, externalId: 'ORG-009',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
+    {
+        id: 'DEPT03', displayName: 'SAP HR Operations', parentId: 'DEPT01', active: true, externalId: 'ORG-010',
+        meta: { resourceType: 'Group', created: '2024-01-01T00:00:00Z', lastModified: '2024-01-01T00:00:00Z' }
+    },
 ]
 
 export const MOCK_USERS: any[] = [

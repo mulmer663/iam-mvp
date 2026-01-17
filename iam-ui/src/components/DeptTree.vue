@@ -58,7 +58,7 @@ function selectDept(dept: Department) {
         <Home v-if="!dept.parentId" class="size-3 opacity-50" />
         <Folder v-else class="size-3 opacity-50" />
         
-        <span class="text-[12px] font-medium truncate">{{ dept.name }}</span>
+        <span class="text-[12px] font-medium truncate">{{ dept.displayName }}</span>
       </div>
       
       <!-- Recursive nesting -->

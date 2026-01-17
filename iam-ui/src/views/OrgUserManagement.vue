@@ -7,9 +7,10 @@ import { Search, Filter, Plus } from 'lucide-vue-next'
 
 const props = defineProps<{
   paneIndex?: number
+  initialDeptId?: string
 }>()
 
-const selectedDeptId = ref<string>('DEPT01')
+const selectedDeptId = ref<string>(props.initialDeptId || 'GLOBAL-IT')
 
 function onDeptSelect(id: string) {
   selectedDeptId.value = id

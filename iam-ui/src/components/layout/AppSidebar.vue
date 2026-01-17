@@ -44,8 +44,8 @@ function handleItemClick(item: any) {
       type: item.view,
       title: item.title,
       data: item.data || {},
-      width: item.view === 'OrgUserManagement' ? '800px' : undefined,
-      maxWidth: item.view === 'OrgUserManagement' ? '800px' : undefined
+      width: item.view === 'OrgUserManagement' ? '800px' : (item.view === 'DeptManagement' ? '350px' : undefined),
+      maxWidth: item.view === 'OrgUserManagement' ? '800px' : (item.view === 'DeptManagement' ? '350px' : undefined)
     })
 }
 </script>
