@@ -4,6 +4,8 @@ import com.iam.core.application.dto.IamAttributeMetaDto;
 import com.iam.core.domain.entity.IamAttributeMeta;
 import com.iam.core.domain.enums.AttributeCategory;
 import com.iam.core.domain.enums.AttributeTargetDomain;
+import com.iam.core.domain.exception.ErrorCode;
+import com.iam.core.domain.exception.IamBusinessException;
 import com.iam.core.domain.repository.IamAttributeMetaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,20 +22,24 @@ public class IamAttributeMetaService {
 
     @Transactional
     public IamAttributeMetaDto createAttribute(IamAttributeMetaDto dto) {
-        if (repository.existsById(dto.code())) {
-            throw new IllegalArgumentException("Attribute code already exists: " + dto.code());
+        if (repository.existsById(dto.name())) {
+            throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
+                    "Attribute name already exists: " + dto.name());
         }
 
         IamAttributeMeta entity = IamAttributeMeta.builder()
-                .code(dto.code())
+                .name(dto.name())
                 .targetDomain(dto.targetDomain())
                 .category(dto.category())
                 .displayName(dto.displayName())
-                .dataType(dto.dataType())
+                .type(dto.type())
+                .multiValued(dto.multiValued())
                 .scimSchemaUri(dto.scimSchemaUri())
                 .description(dto.description())
                 .required(dto.required())
                 .mutability(dto.mutability())
+                .returned(dto.returned())
+                .uniqueness(dto.uniqueness())
                 .adminOnly(dto.adminOnly())
                 .viewLevel(dto.viewLevel())
                 .editLevel(dto.editLevel())
@@ -46,19 +52,23 @@ public class IamAttributeMetaService {
     }
 
     @Transactional
-    public IamAttributeMetaDto updateAttribute(String code, IamAttributeMetaDto updates) {
-        IamAttributeMeta attribute = repository.findById(code)
-                .orElseThrow(() -> new IllegalArgumentException("Attribute not found: " + code));
+    public IamAttributeMetaDto updateAttribute(String name, IamAttributeMetaDto updates) {
+        IamAttributeMeta attribute = repository.findById(name)
+                .orElseThrow(() -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "INTERNAL",
+                        "Attribute not found: " + name));
 
         // Immutable checks
         if (!attribute.getCategory().equals(updates.category())) {
-            throw new IllegalArgumentException("Cannot change Attribute Category");
+            throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
+                    "Cannot change Attribute Category");
         }
         if (!attribute.getTargetDomain().equals(updates.targetDomain())) {
-            throw new IllegalArgumentException("Cannot change Target Domain");
+            throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
+                    "Cannot change Target Domain");
         }
-        if (!attribute.getDataType().equals(updates.dataType())) {
-            throw new IllegalArgumentException("Cannot change Data Type");
+        if (!attribute.getType().equals(updates.type())) {
+            throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
+                    "Cannot change Data Type");
         }
 
         // Apply updates
@@ -66,6 +76,9 @@ public class IamAttributeMetaService {
         attribute.setDescription(updates.description());
         attribute.setRequired(updates.required());
         attribute.setMutability(updates.mutability());
+        attribute.setMultiValued(updates.multiValued());
+        attribute.setReturned(updates.returned());
+        attribute.setUniqueness(updates.uniqueness());
         attribute.setAdminOnly(updates.adminOnly());
         attribute.setViewLevel(updates.viewLevel());
         attribute.setEditLevel(updates.editLevel());
@@ -80,12 +93,14 @@ public class IamAttributeMetaService {
     }
 
     @Transactional
-    public void deleteAttribute(String code) {
-        IamAttributeMeta attribute = repository.findById(code)
-                .orElseThrow(() -> new IllegalArgumentException("Attribute not found: " + code));
+    public void deleteAttribute(String name) {
+        IamAttributeMeta attribute = repository.findById(name)
+                .orElseThrow(() -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "INTERNAL",
+                        "Attribute not found: " + name));
 
         if (attribute.getCategory() == AttributeCategory.CORE) {
-            throw new IllegalArgumentException("Cannot delete CORE attributes");
+            throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
+                    "Cannot delete CORE attributes");
         }
 
         repository.delete(attribute);
@@ -108,15 +123,18 @@ public class IamAttributeMetaService {
 
     private IamAttributeMetaDto mapToDto(IamAttributeMeta entity) {
         return new IamAttributeMetaDto(
-                entity.getCode(),
+                entity.getName(),
                 entity.getTargetDomain(),
                 entity.getCategory(),
                 entity.getDisplayName(),
-                entity.getDataType(),
+                entity.getType(),
                 entity.getScimSchemaUri(),
                 entity.getDescription(),
                 entity.isRequired(),
                 entity.getMutability(),
+                entity.isMultiValued(),
+                entity.getReturned(),
+                entity.getUniqueness(),
                 entity.isAdminOnly(),
                 entity.getViewLevel(),
                 entity.getEditLevel(),

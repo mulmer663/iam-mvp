@@ -1,23 +1,23 @@
 package com.iam.core.application.dto;
 
-import com.iam.core.domain.enums.AttributeCategory;
-import com.iam.core.domain.enums.AttributeDataType;
-import com.iam.core.domain.enums.AttributeMutability;
-import com.iam.core.domain.enums.AttributeTargetDomain;
+import com.iam.core.domain.enums.*;
 
 public record IamAttributeMetaDto(
-        String code,
-        AttributeTargetDomain targetDomain,
-        AttributeCategory category,
-        String displayName,
-        AttributeDataType dataType,
-        String scimSchemaUri,
-        String description,
-        boolean required,
-        AttributeMutability mutability,
-        boolean adminOnly,
-        int viewLevel,
-        int editLevel,
-        boolean encrypted,
-        String uiComponent) {
+                String name,
+                AttributeTargetDomain targetDomain,
+                AttributeCategory category,
+                String displayName,
+                AttributeDataType type,
+                String scimSchemaUri,
+                String description,
+                boolean required,
+                AttributeMutability mutability,
+                boolean multiValued,
+                AttributeReturned returned,
+                AttributeUniqueness uniqueness,
+                boolean adminOnly,
+                int viewLevel,
+                int editLevel,
+                boolean encrypted,
+                String uiComponent) {
 }

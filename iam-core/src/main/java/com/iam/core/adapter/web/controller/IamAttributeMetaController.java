@@ -25,13 +25,13 @@ public class IamAttributeMetaController {
         return service.createAttribute(dto);
     }
 
-    @PutMapping("/{code}")
-    public IamAttributeMetaDto updateAttribute(@PathVariable String code, @RequestBody IamAttributeMetaDto dto) {
-        return service.updateAttribute(code, dto);
+    @PutMapping("/{name}")
+    public IamAttributeMetaDto updateAttribute(@PathVariable String name, @RequestBody IamAttributeMetaDto dto) {
+        return service.updateAttribute(name, dto);
     }
 
-    @DeleteMapping("/{code}")
-    public void deleteAttribute(@PathVariable String code) {
-        service.deleteAttribute(code);
+    @DeleteMapping("/{name}")
+    public void deleteAttribute(@PathVariable String name) {
+        service.deleteAttribute(name);
     }
 }

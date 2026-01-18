@@ -1,9 +1,6 @@
 package com.iam.core.domain.entity;
 
-import com.iam.core.domain.enums.AttributeCategory;
-import com.iam.core.domain.enums.AttributeDataType;
-import com.iam.core.domain.enums.AttributeMutability;
-import com.iam.core.domain.enums.AttributeTargetDomain;
+import com.iam.core.domain.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.envers.Audited;
@@ -20,7 +17,7 @@ public class IamAttributeMeta {
 
     @Id
     @Column(name = "attribute_code", nullable = false, length = 50)
-    private String code;
+    private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "target_domain", nullable = false, length = 20)
@@ -35,7 +32,11 @@ public class IamAttributeMeta {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "data_type", nullable = false, length = 20)
-    private AttributeDataType dataType;
+    private AttributeDataType type;
+
+    @Builder.Default
+    @Column(name = "multi_valued")
+    private boolean multiValued = false;
 
     @Column(name = "scim_schema_uri")
     private String scimSchemaUri;
@@ -68,6 +69,16 @@ public class IamAttributeMeta {
     @Builder.Default
     @Column(name = "is_encrypted")
     private boolean encrypted = false;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "returned", length = 20)
+    private AttributeReturned returned = AttributeReturned.DEFAULT;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "uniqueness", length = 20)
+    private AttributeUniqueness uniqueness = AttributeUniqueness.NONE;
 
     @Column(name = "ui_component")
     private String uiComponent;
