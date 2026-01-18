@@ -66,6 +66,11 @@ graph LR
 
 * **식별자 매핑:** 외부 시스템과 IAM 간의 ID 매핑 정보를 관리합니다.
 
+* **속성 메타데이터 (IamAttributeMeta):** SCIM Schema Discovery 및 동적 변환 규칙의 기초가 되는 메타데이터.
+  * **참조 파일:** `IamAttributeMeta.java`, `IamAttributeMetaDto.java`
+  * **주요 필드:** `name` (SCIM 규격), `type` (데이터 타입), `multiValued`, `returned`, `uniqueness`, `mutability`.
+  * **역활:** `/scim/v2/Schemas` 응답 생성 및 UI 컴포넌트(`uiComponent`) 렌더링 가이드 제공.
+
 ## 4. 데이터 연동 엔진 (Rule Engine)
 
 런타임에 동적으로 데이터 변환 로직을 처리하며, 모든 이력은 추적 가능해야 합니다.
@@ -88,6 +93,7 @@ graph LR
 IAM 시스템은 데이터의 변경 전후를 완벽하게 추적하고, 장애 발생 시 특정 시점의 상태를 복원할 수 있는 다중 이력 관리 체계를 갖추고 있습니다.
 
 ### 5.1 시스템 동기화 장부 (Sync History)
+
 * **참조 파일:** `SyncHistory.java`, `SyncHistoryService.java`
 * **추적 ID (traceId):** 모든 이벤트는 생성 시점부터 고유한 `traceId`를 공유하며, 이를 통해 `HR -> Core -> AD` 전체 흐름을 관통하여 추적합니다.
 * **데이터 최적화:** * 기존의 단순 문자열 `payload`를 제거하고, **JSONB** 형식을 사용하는 `request_payload`와 `result_data`로 전환하였습니다.
@@ -99,6 +105,7 @@ IAM 시스템은 데이터의 변경 전후를 완벽하게 추적하고, 장애
 * **보관 정책:** `expires_at` 컬럼을 통해 30일(기본값) 후 자동 삭제되도록 관리합니다. (중복 데이터인 `duration_ms` 및 `completed_at`은 `created_at`으로 통합 관리하여 제거됨)
 
 ### 5.2 데이터 스냅샷 및 복원 (Audit Snapshot)
+
 * **기술 스택:** Hibernate Envers (Audit Reader)
 * **복원 메커니즘:**
   * **리비전 기반 복원:** `user_rev_id`를 사용하여 특정 시점의 `IamUser` 및 `Extension` 엔티티를 SCIM 2.0 규격으로 완벽하게 복원합니다.
@@ -106,11 +113,13 @@ IAM 시스템은 데이터의 변경 전후를 완벽하게 추적하고, 장애
 * **규칙 복원:** `rule_rev_id`와 `system_id`를 조합하여 동기화 당시에 실행되었던 Groovy 스크립트 내용과 컬럼 매핑 정보를 조회할 수 있습니다.
 
 ### 5.3 주요 API 명세 (이력 관련)
+
 * **사용자 이력 스냅샷:** `GET /api/v1/history/users/{id}/trace_id/{traceId}`
 * **컬럼 매핑 이력:** `GET /api/v1/rules/history?systemId={id}&revId={revId}`
 * **동기화 목록 조회:** `GET /api/v1/history` (Pageable 지원 및 필터링 최적화)
 
 ## 6. 개발 가이드 (AI 참조용)
+
 * **엔티티 수정 시:** `@Audited`가 선언된 엔티티 변경 시 반드시 `UserRevisionListener`를 통해 `traceId`가 리비전에 기록되도록 보장해야 합니다.
 * **API 개발 시:** 조회 시 결과가 없을 경우 `NoResultException` 대신 `IAM-4103 (RESOURCE_NOT_FOUND)` 에러 코드를 사용하여 일관된 응답을 제공합니다.
 * **Primary Key:** 모든 주요 테이블은 **TSID** (Time-Sorted Unique Identifier)를 사용합니다.
@@ -121,22 +130,29 @@ IAM 시스템은 데이터의 변경 전후를 완벽하게 추적하고, 장애
 
 ### 7.1 데이터 모델 및 영속성 (Data Model)
 
-- **엔티티 통합**: `IamUser` + `IamUserExtension` (OneToOne) 통합 관리 완료
-- **감사 추적**: Hibernate Envers 기반 핵심 엔티티 리비전 기록 완료
-- **커스텀 리비전**: `traceId`를 리비전에 직접 기록하는 `CustomRevisionEntity` 구현 완료
+* **엔티티 통합**: `IamUser` + `IamUserExtension` (OneToOne) 통합 관리 완료
+* **감사 추적**: Hibernate Envers 기반 핵심 엔티티 리비전 기록 완료
+* **커스텀 리비전**: `traceId`를 리비전에 직접 기록하는 `CustomRevisionEntity` 구현 완료
 
 ### 7.2 동기화 장부 및 이력 (Sync & History)
 
-- **이력 최적화**: 중복 필드(`duration_ms`, `completed_at`) 제거 및 `created_at` 단일화 완료
-- **페이로드 보존**: `UserSyncEvent` 전문을 JSONB(`request_payload`)로 저장 로직 완료
-- **조회 최적화**: 조건별 동적 필터링 및 페이지네이션 기반 조회 API 구현 완료
+* **이력 최적화**: 중복 필드(`duration_ms`, `completed_at`) 제거 및 `created_at` 단일화 완료
+* **페이로드 보존**: `UserSyncEvent` 전문을 JSONB(`request_payload`)로 저장 로직 완료
+* **조회 최적화**: 조건별 동적 필터링 및 페이지네이션 기반 조회 API 구현 완료
+
 ### 7.3 스냅샷 복원 및 조회 (Snapshot Recovery)
 
-- **Revision 조회**: 특정 `revId` 시점의 사용자 SCIM 프로필 복구 API 구현 완료
-- **Trace ID 조회**: 비즈니스 `traceId` 기반 시점 데이터 복구 API 구현 완료
-- **매핑 이력 조회**: 특정 시스템 및 시점의 컬럼 매핑 리스트 복원 API 구현 완료
+* **Revision 조회**: 특정 `revId` 시점의 사용자 SCIM 프로필 복구 API 구현 완료
+* **Trace ID 조회**: 비즈니스 `traceId` 기반 시점 데이터 복구 API 구현 완료
+* **매핑 이력 조회**: 특정 시스템 및 시점의 컬럼 매핑 리스트 복원 API 구현 완료
 
 ### 7.4 연동 및 프로비저닝 (Integration)
 
-- **AD 연동**: AD 전용 `ProvisioningCommand` 발행 및 이력 통합 기록 완료
-- **진행 중**: AD 커넥터로부터의 응답(Result) 수신 및 `SyncHistory` 상태 업데이트 로직 구현 중
+* **AD 연동**: AD 전용 `ProvisioningCommand` 발행 및 이력 통합 기록 완료
+* **AD 커넥터**: AD로부터의 응답(Result) 수신 및 `SyncHistory` 상태 업데이트 로직 구현 중
+
+### 7.5 SCIM 표준화 및 메타데이터 (SCIM Alignment)
+
+* **속성 정렬**: `IamAttributeMeta` 필드명을 SCIM 2.0 규격(`name`, `type`)으로 정렬 및 메타데이터 확장 완료
+* **스키마 발견**: `/scim/v2/Schemas` 및 `/scim/v2/ResourceTypes` API 구현 완료
+* **예외 표준화**: `IamAttributeMetaService` 내의 예외 처리를 `IamBusinessException` 표준으로 전환 완료

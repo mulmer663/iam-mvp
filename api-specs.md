@@ -275,3 +275,90 @@ interface ErrorResponse {
   }
 ]
 ```
+
+---
+
+## 5. SCIM Metadata API (Discovery)
+
+### 5.1 스키마 목록 조회
+
+- **Endpoint**: `GET /scim/v2/Schemas`
+- **Description**: 시스템이 지원하는 모든 SCIM 스키마 정의를 조회합니다.
+
+### 5.2 특정 스키마 상세 조회
+
+- **Endpoint**: `GET /scim/v2/Schemas/{uri}`
+- **Description**: 특정 URI에 해당하는 스키마의 상세 속성 정의를 조회합니다.
+
+### 5.3 리소스 타입 목록 조회
+
+- **Endpoint**: `GET /scim/v2/ResourceTypes`
+- **Description**: 시스템이 제공하는 리소스 타입(User, Group 등) 정보를 조회합니다.
+
+---
+
+## 7. SCIM Schema Meta API (Admin)
+
+### 7.1 스키마 목록 조회
+
+- **Endpoint**: `GET /api/schemas`
+- **Description**: 시스템에 등록된 모든 SCIM 스키마 메타데이터를 조회합니다.
+
+### 7.2 스키마 생성
+
+- **Endpoint**: `POST /api/schemas`
+- **Body**: `ScimSchemaDto`
+
+### 7.3 스키마 수정
+
+- **Endpoint**: `PUT /api/schemas/{uri}`
+
+### 7.4 스키마 삭제
+
+- **Endpoint**: `DELETE /api/schemas/{uri}`
+
+---
+
+## 8. SCIM Resource Type Meta API (Admin)
+
+### 8.1 리소스 타입 목록 조회
+
+- **Endpoint**: `GET /api/resource-types`
+
+### 8.2 리소스 타입 생성
+
+- **Endpoint**: `POST /api/resource-types`
+- **Body**: `ScimResourceTypeDto`
+
+### 8.3 리소스 타입 수정
+
+- **Endpoint**: `PUT /api/resource-types/{id}`
+
+### 8.4 리소스 타입 삭제
+
+- **Endpoint**: `DELETE /api/resource-types/{id}`
+
+---
+
+## 6. Attribute Meta API (Admin)
+
+### 6.1 배정된 속성 메타데이터 조회
+
+- **Endpoint**: `GET /api/attributes`
+- **Query Parameters**: `domain` (USER or GROUP)
+- **Description**: 특정 도메인에 정의된 모든 속성 메타데이터를 조회합니다.
+
+### 6.2 속성 메타데이터 생성
+
+- **Endpoint**: `POST /api/attributes`
+- **Body**: `IamAttributeMetaDto`
+
+### 6.3 속성 메타데이터 수정
+
+- **Endpoint**: `PUT /api/attributes/{name}`
+- **Description**: 속성명(`name`), 도메인, 카테고리는 수정이 불가능합니다.
+
+### 6.4 속성 메타데이터 삭제
+
+- **Endpoint**: `DELETE /api/attributes/{name}`
+- **Description**: `CORE` 카테고리 속성은 삭제할 수 없습니다.

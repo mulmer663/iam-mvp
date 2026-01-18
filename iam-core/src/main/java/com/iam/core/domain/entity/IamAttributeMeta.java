@@ -41,6 +41,9 @@ public class IamAttributeMeta {
     @Column(name = "scim_schema_uri")
     private String scimSchemaUri;
 
+    @Column(name = "parent_name", length = 50)
+    private String parentName;
+
     @Column(name = "description")
     private String description;
 

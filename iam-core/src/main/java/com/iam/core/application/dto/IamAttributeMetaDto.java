@@ -9,6 +9,7 @@ public record IamAttributeMetaDto(
                 String displayName,
                 AttributeDataType type,
                 String scimSchemaUri,
+                String parentName,
                 String description,
                 boolean required,
                 AttributeMutability mutability,

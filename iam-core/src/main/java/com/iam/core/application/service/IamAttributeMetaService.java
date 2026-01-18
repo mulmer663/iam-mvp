@@ -35,6 +35,7 @@ public class IamAttributeMetaService {
                 .type(dto.type())
                 .multiValued(dto.multiValued())
                 .scimSchemaUri(dto.scimSchemaUri())
+                .parentName(dto.parentName())
                 .description(dto.description())
                 .required(dto.required())
                 .mutability(dto.mutability())
@@ -129,6 +130,7 @@ public class IamAttributeMetaService {
                 entity.getDisplayName(),
                 entity.getType(),
                 entity.getScimSchemaUri(),
+                entity.getParentName(),
                 entity.getDescription(),
                 entity.isRequired(),
                 entity.getMutability(),

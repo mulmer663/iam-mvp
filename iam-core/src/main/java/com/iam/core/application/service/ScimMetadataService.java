@@ -2,6 +2,7 @@ package com.iam.core.application.service;
 
 import com.iam.core.application.dto.ScimResourceTypeResponse;
 import com.iam.core.application.dto.ScimSchemaResponse;
+import com.iam.core.domain.entity.IamAttributeMeta;
 import com.iam.core.domain.entity.ScimResourceTypeMeta;
 import com.iam.core.domain.entity.ScimSchemaMeta;
 import com.iam.core.domain.exception.ErrorCode;
@@ -49,22 +50,37 @@ public class ScimMetadataService {
     }
 
     private ScimSchemaResponse toSchemaResponse(ScimSchemaMeta meta) {
+        List<IamAttributeMeta> allAttributes = meta.getAttributes();
+        List<ScimSchemaResponse.ScimAttribute> rootAttributes = allAttributes.stream()
+                .filter(attr -> attr.getParentName() == null)
+                .map(attr -> buildScimAttribute(attr, allAttributes))
+                .toList();
+
         return ScimSchemaResponse.builder()
                 .id(meta.getId())
                 .name(meta.getName())
                 .description(meta.getDescription())
-                .attributes(meta.getAttributes().stream()
-                        .map(attr -> ScimSchemaResponse.ScimAttribute.builder()
-                                .name(attr.getName())
-                                .type(attr.getType().name().toLowerCase())
-                                .multiValued(attr.isMultiValued())
-                                .description(attr.getDescription())
-                                .required(attr.isRequired())
-                                .mutability(attr.getMutability().name().toLowerCase())
-                                .returned(attr.getReturned().name().toLowerCase())
-                                .uniqueness(attr.getUniqueness().name().toLowerCase())
-                                .build())
-                        .toList())
+                .attributes(rootAttributes)
+                .build();
+    }
+
+    private ScimSchemaResponse.ScimAttribute buildScimAttribute(IamAttributeMeta attr,
+            List<IamAttributeMeta> allAttributes) {
+        List<ScimSchemaResponse.ScimAttribute> subAttributes = allAttributes.stream()
+                .filter(sub -> attr.getName().equals(sub.getParentName()))
+                .map(sub -> buildScimAttribute(sub, allAttributes))
+                .toList();
+
+        return ScimSchemaResponse.ScimAttribute.builder()
+                .name(attr.getName())
+                .type(attr.getType().name().toLowerCase())
+                .multiValued(attr.isMultiValued())
+                .description(attr.getDescription())
+                .required(attr.isRequired())
+                .mutability(attr.getMutability().name().toLowerCase())
+                .returned(attr.getReturned().name().toLowerCase())
+                .uniqueness(attr.getUniqueness().name().toLowerCase())
+                .subAttributes(subAttributes.isEmpty() ? null : subAttributes)
                 .build();
     }
 

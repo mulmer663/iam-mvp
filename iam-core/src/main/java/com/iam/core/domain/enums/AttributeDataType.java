@@ -5,5 +5,11 @@ public enum AttributeDataType {
     NUMBER,
     BOOLEAN,
     DATE,
-    CODE
+    CODE,
+    COMPLEX,
+    REFERENCE,
+    BINARY,
+    DECIMAL,
+    INTEGER,
+    DATE_TIME
 }
