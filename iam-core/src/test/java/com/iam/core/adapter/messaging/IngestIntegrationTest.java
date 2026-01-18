@@ -62,19 +62,19 @@ class IngestIntegrationTest {
                                         .build());
 
                         // 3. Field Mappings (Triggers script generation)
-                        java.util.List<com.iam.core.domain.entity.TransFieldMapping> mappings = java.util.List.of(
-                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                        java.util.List<TransFieldMapping> mappings = java.util.List.of(
+                                        TransFieldMapping.builder().ruleId(RULE_ID)
                                                         .sourceField("empNo").targetField("userName").isRequired(true)
                                                         .build(),
-                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                        TransFieldMapping.builder().ruleId(RULE_ID)
                                                         .sourceField("lastName").targetField("familyName").build(),
-                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                        TransFieldMapping.builder().ruleId(RULE_ID)
                                                         .sourceField("firstName").targetField("givenName").build(),
-                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                        TransFieldMapping.builder().ruleId(RULE_ID)
                                                         .sourceField("position").targetField("title").build(),
-                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                        TransFieldMapping.builder().ruleId(RULE_ID)
                                                         .sourceField("active").targetField("active").build(),
-                                        com.iam.core.domain.entity.TransFieldMapping.builder().ruleId(RULE_ID)
+                                        TransFieldMapping.builder().ruleId(RULE_ID)
                                                         .sourceField("empNo").targetField("employeeNumber").build());
 
                         mappings.forEach(transMappingService::saveMapping);

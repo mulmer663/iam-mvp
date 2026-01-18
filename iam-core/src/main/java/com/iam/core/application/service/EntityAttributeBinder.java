@@ -3,6 +3,8 @@ package com.iam.core.application.service;
 import com.iam.core.domain.entity.ExtensionData;
 import com.iam.core.domain.entity.IamAttributeMeta;
 import com.iam.core.domain.entity.IamUser;
+import com.iam.core.domain.vo.ListData;
+import com.iam.core.domain.vo.MapData;
 import com.iam.core.domain.vo.NullData;
 import com.iam.core.domain.vo.UniversalData;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -74,6 +77,72 @@ public class EntityAttributeBinder {
         if (type == long.class || type == Long.class)
             return Long.parseLong(data.asString());
 
+        if (type == List.class) {
+            if (data instanceof ListData listData) {
+                return convertList(listData);
+            }
+            return null;
+        }
+
+        if (type == java.util.Set.class) {
+            if (data instanceof ListData listData) {
+                return new java.util.HashSet<>(convertList(listData));
+            }
+            return null;
+        }
+
         return data.getValue();
+    }
+
+    private List<?> convertList(ListData listData) {
+        if (listData.getValue() instanceof List<?> list && !list.isEmpty()) {
+            UniversalData first = (UniversalData) list.getFirst();
+            if (first instanceof MapData) {
+                // Determine target type based on content structure (heuristic or explicit
+                // typing needed)
+                // For now, assume common SCIM types if matching keys found
+                return list.stream()
+                        .map(item -> convertMap((MapData) item))
+                        .toList();
+            }
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    private Object convertMap(MapData mapData) {
+        Map<String, UniversalData> map = (Map<String, UniversalData>) mapData.getValue();
+
+        // Detect ScimAddress
+        if (map.containsKey("country") || map.containsKey("region") || map.containsKey("postalCode")) {
+            return com.iam.core.domain.vo.ScimAddress.builder()
+                    .country(getAsString(map, "country"))
+                    .region(getAsString(map, "region"))
+                    .locality(getAsString(map, "locality"))
+                    .postalCode(getAsString(map, "postalCode"))
+                    .streetAddress(getAsString(map, "streetAddress"))
+                    .formatted(getAsString(map, "formatted"))
+                    .type(getAsString(map, "type"))
+                    .primary(getAsBoolean(map, "primary"))
+                    .build();
+        }
+
+        // Default to ScimMultiValue
+        return com.iam.core.domain.vo.ScimMultiValue.builder()
+                .value(getAsString(map, "value"))
+                .display(getAsString(map, "display"))
+                .type(getAsString(map, "type"))
+                .primary(getAsBoolean(map, "primary"))
+                .ref(getAsString(map, "$ref"))
+                .build();
+    }
+
+    private String getAsString(Map<String, UniversalData> map, String key) {
+        UniversalData data = map.get(key);
+        return data != null ? data.asString() : null;
+    }
+
+    private boolean getAsBoolean(Map<String, UniversalData> map, String key) {
+        UniversalData data = map.get(key);
+        return data != null && data.asBoolean();
     }
 }
