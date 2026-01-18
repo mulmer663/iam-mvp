@@ -227,6 +227,7 @@ const filteredEntries = computed(() => {
                          <template v-else-if="typeof val === 'object'">
                             <span class="text-[9px] font-mono text-neutral-400">{{ JSON.stringify(val) }}</span>
                          </template>
+                         <template v-else-if="val === null || val === undefined || val === ''">-</template>
                          <template v-else>{{ val }}</template>
                       </div>
                       

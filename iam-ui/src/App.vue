@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import {ChevronRight, Home, User, X} from 'lucide-vue-next'
+import {Home, X} from 'lucide-vue-next'
 import {useMillerStore} from '@/stores/miller'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import {Separator} from '@/components/ui/separator'
 import {Button} from '@/components/ui/button'
-import {SYSTEM_THEMES} from '@/utils/theme'
+
 import {Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,} from '@/components/ui/breadcrumb'
 import {SidebarInset, SidebarProvider, SidebarTrigger,} from '@/components/ui/sidebar'
 
@@ -13,10 +13,10 @@ import OrgUserManagement from '@/views/OrgUserManagement.vue'
 import DeptManagement from '@/views/DeptManagement.vue'
 import SyncHistory from '@/views/SyncHistory.vue'
 import UserChangeHistory from '@/views/UserChangeHistory.vue'
-import UserProfileViewer from '@/components/common/UserProfileViewer.vue'
 import AttributeManagement from '@/views/AttributeManagement.vue'
 import ResourceManagement from '@/views/ResourceManagement.vue'
 import AttributeForm from '@/components/attribute/AttributeForm.vue'
+import UserDetailPane from '@/components/UserDetailPane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
 
 import {nextTick, ref, watch} from 'vue'
@@ -56,7 +56,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   AttributeManagementPane: AttributeManagement, // Alias for Miller
   ResourceManagement,
   GroupManagement,
-  AttributeFormPane: AttributeForm
+  AttributeFormPane: AttributeForm,
+  UserDetail: UserDetailPane
 }
 
 function closePane(index: number) {
@@ -67,17 +68,6 @@ function activatePane(id: string) {
   millerStore.activePaneId = id
 }
 
-function pushChildPane(parentIndex: number, type: string, title: string, data: any = {}, width?: string) {
-  const nextPane = {
-    id: `pane-${Date.now()}`,
-    type,
-    title,
-    data,
-    width: width || '500px',
-    maxWidth: width || '500px'
-  }
-  millerStore.setPane(parentIndex + 1, nextPane)
-}
 </script>
 
 <template>
@@ -170,78 +160,6 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                         v-bind="pane.data"
                         :paneIndex="index"
                       />
-                      
-                      <!-- Specialized UserDetail View wrapping UserProfileViewer -->
-                      <div v-else-if="pane.type === 'UserDetail' && pane.data.user" class="h-full flex flex-col">
-                         <!-- Header -->
-                         <div class="p-4 bg-neutral-50/50 border-b border-neutral-100 flex items-center gap-4 shrink-0">
-                            <div class="size-10 bg-white border border-neutral-200 rounded-md flex items-center justify-center text-blue-600 shadow-sm">
-                               <User class="size-5" />
-                            </div>
-                            <div class="min-w-0">
-                               <div class="text-sm font-black text-neutral-900 leading-tight uppercase tracking-tight">{{ pane.data.user.name.givenName }} {{ pane.data.user.name.familyName }}</div>
-                               <div class="text-[11px] text-neutral-400 font-mono mt-0.5 truncate">{{ pane.data.user.emails[0]?.value }}</div>
-                            </div>
-                         </div>
-                         
-                         <!-- Body -->
-                         <div class="flex-1 p-4 overflow-y-auto">
-                           <UserProfileViewer 
-                             :data="pane.data.user" 
-                             :title="'Core Attributes'"
-                           >
-                             <template #footer>
-                                <!-- Mock Entitlements (since strictly they are not in user object) -->
-                                <section class="opacity-50 pointer-events-none mb-4">
-                                  <div class="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <div class="size-1 bg-neutral-300 rounded-full"></div> Entitlements & Roles
-                                  </div>
-                                  <div class="flex flex-wrap gap-2 text-[10px] font-bold">
-                                    <div class="px-2 py-1 bg-neutral-100 text-neutral-500 rounded-sm">SYS_ADMIN</div>
-                                    <div class="px-2 py-1 bg-neutral-100 text-neutral-500 rounded-sm">DEPT_MANAGER</div>
-                                    <div class="px-2 py-1 bg-neutral-100 text-neutral-500 rounded-sm">HR_EDITOR</div>
-                                  </div>
-                                </section>
-
-                                <!-- Actions -->
-                                <section>
-                                  <div class="grid grid-cols-1 gap-2">
-                                     <Button 
-                                      @click="pushChildPane(index, 'SyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName, type: 'SOURCE' }, '800px')"
-                                      variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
-                                    >
-                                      <span class="flex items-center gap-2">
-                                        <div class="size-1 rounded-full" :class="SYSTEM_THEMES.SOURCE.indicator"></div> 
-                                        {{ SYSTEM_THEMES.SOURCE.label }}
-                                      </span>
-                                      <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                                    </Button>
-                                    <Button 
-                                      @click="pushChildPane(index, 'SyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName, type: 'INTEGRATION' }, '800px')"
-                                      variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
-                                    >
-                                      <span class="flex items-center gap-2">
-                                        <div class="size-1 rounded-full" :class="SYSTEM_THEMES.INTEGRATION.indicator"></div> 
-                                        {{ SYSTEM_THEMES.INTEGRATION.label }}
-                                      </span>
-                                      <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                                    </Button>
-                                    <Button 
-                                      @click="pushChildPane(index, 'UserChangeHistory', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName }, '800px')"
-                                      variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
-                                    >
-                                      <span class="flex items-center gap-2">
-                                        <div class="size-1 rounded-full" :class="SYSTEM_THEMES.AUDIT.indicator"></div> 
-                                        {{ SYSTEM_THEMES.AUDIT.label }}
-                                      </span>
-                                      <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                                    </Button>
-                                  </div>
-                                </section>
-                             </template>
-                           </UserProfileViewer>
-                         </div>
-                      </div>
                       
                       <div v-else class="flex items-center justify-center h-full text-neutral-300 italic text-[11px] p-10 text-center">
                          MODULE: {{ pane.type }}<br/>

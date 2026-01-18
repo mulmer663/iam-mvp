@@ -2,7 +2,7 @@ package com.iam.core.application.service;
 
 import com.iam.core.domain.entity.*;
 import com.iam.core.domain.repository.IamUserRepository;
-import com.iam.core.domain.vo.*;
+import com.iam.core.domain.vo.UniversalData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service to apply transformed attributes to IamUser and its extensions.
@@ -22,9 +22,8 @@ import java.util.Set;
 public class IamUserUpdateService {
 
     private final IamUserRepository iamUserRepository;
-
-    private static final Set<String> CORE_ATTRIBUTES = Set.of(
-            "userName", "active", "familyName", "givenName", "formattedName", "title");
+    private final com.iam.core.domain.repository.IamAttributeMetaRepository attributeMetaRepository;
+    private final EntityAttributeBinder binder;
 
     private static final String ENTERPRISE_URN = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User";
 
@@ -35,16 +34,28 @@ public class IamUserUpdateService {
     public IamUser update(IamUser user, Map<String, UniversalData> attributes) {
         log.debug("Updating IamUser: id={}, attributes={}", user.getId(), attributes.keySet());
 
-        // 1. Update Core Fields
-        applyCoreAttributes(user, attributes);
+        // Load all relevant metadata
+        Map<String, IamAttributeMeta> metaMap = attributeMetaRepository.findAllById(attributes.keySet())
+                .stream()
+                .collect(Collectors.toMap(IamAttributeMeta::getName, m -> m));
 
-        // 2. Update Extensions
-        updateExtensions(user, attributes);
+        // Process Attributes
+        attributes.forEach((key, data) -> {
+            IamAttributeMeta meta = metaMap.get(key);
+
+            if (meta == null) {
+                applyToGeneric(user, key, data);
+            } else {
+                switch (meta.getCategory()) {
+                    case CORE -> binder.bindCoreAttribute(user, meta, data);
+                    case EXTENSION -> applyToExtension(user, meta, data);
+                    case CUSTOM -> applyToGeneric(user, key, data);
+                }
+            }
+        });
 
         user.setLastModified(LocalDateTime.now());
-        IamUser save = iamUserRepository.save(user);
-        iamUserRepository.flush();
-        return save;
+        return iamUserRepository.save(user);
     }
 
     /**
@@ -68,91 +79,49 @@ public class IamUserUpdateService {
         return update(user, attributes);
     }
 
-    private void applyCoreAttributes(IamUser user, Map<String, UniversalData> attributes) {
-        attributes.forEach((key, data) -> {
-            if (CORE_ATTRIBUTES.contains(key) && !(data instanceof NullData)) {
-                switch (key) {
-                    case "userName" -> user.setUserName(data.asString());
-                    case "active" -> {
-                        if (data.getValue() instanceof Boolean b)
-                            user.setActive(b);
-                        else
-                            user.setActive(Boolean.parseBoolean(data.asString()));
-                    }
-                    case "familyName" -> user.setFamilyName(data.asString());
-                    case "givenName" -> user.setGivenName(data.asString());
-                    case "formattedName" -> user.setFormattedName(data.asString());
-                    case "title" -> user.setTitle(data.asString());
-                }
-            }
-        });
+    private void applyToExtension(IamUser user, IamAttributeMeta meta, UniversalData data) {
+        String schemaUri = meta.getScimSchemaUri();
+        if (schemaUri == null) {
+            applyToGeneric(user, meta.getName(), data);
+            return;
+        }
+
+        IamUserExtension ext = getOrInitExtension(user);
+        ExtensionData extensionData = ext.getExtensions().get(schemaUri);
+
+        if (extensionData == null) {
+            extensionData = createExtension(schemaUri);
+        }
+
+        binder.bindExtensionAttribute(extensionData, meta, data);
+        ext.getExtensions().put(schemaUri, extensionData);
+        if (!ext.getSchemas().contains(schemaUri)) {
+            ext.getSchemas().add(schemaUri);
+        }
     }
 
-    private void updateExtensions(IamUser user, Map<String, UniversalData> attributes) {
+    private void applyToGeneric(IamUser user, String key, UniversalData data) {
+        IamUserExtension ext = getOrInitExtension(user);
+        GenericExtension generic = (GenericExtension) ext.getExtensions()
+                .computeIfAbsent("GenericExtension", k -> new GenericExtension());
+        generic.add(key, data.getValue());
+    }
+
+    private IamUserExtension getOrInitExtension(IamUser user) {
         IamUserExtension ext = user.getExtension();
         if (ext == null) {
             ext = new IamUserExtension();
             ext.setUser(user);
+            ext.setSchemas(new ArrayList<>());
             user.setExtension(ext);
         }
+        return ext;
+    }
 
-        // For simplicity in Phase 2/4, we assume all non-core attributes
-        // that are not explicitly prefixed go to a GenericExtension or
-        // EnterpriseExtension
-        // In a more mature implementation, rules would return a nested map per URN.
-
-        // Let's check if we have Enterprise attributes
-        EnterpriseUserExtension enterprise = (EnterpriseUserExtension) ext.getExtensions().get(ENTERPRISE_URN);
-        if (enterprise == null) {
-            enterprise = new EnterpriseUserExtension();
+    private ExtensionData createExtension(String schemaUri) {
+        if (ENTERPRISE_URN.equals(schemaUri)) {
+            return new EnterpriseUserExtension();
         }
-
-        boolean hasEnterprise = false;
-        GenericExtension generic = (GenericExtension) ext.getExtensions().get("GenericExtension");
-        if (generic == null)
-            generic = new GenericExtension();
-
-        for (Map.Entry<String, UniversalData> entry : attributes.entrySet()) {
-            String key = entry.getKey();
-            if (CORE_ATTRIBUTES.contains(key))
-                continue;
-
-            UniversalData data = entry.getValue();
-
-            // Heuristic for Enterprise fields (should match SCIM)
-            switch (key) {
-                case "employeeNumber" -> {
-                    enterprise.setEmployeeNumber(data.asString());
-                    hasEnterprise = true;
-                }
-                case "department" -> {
-                    enterprise.setDepartment(data.asString());
-                    hasEnterprise = true;
-                }
-                case "costCenter" -> {
-                    enterprise.setCostCenter(data.asString());
-                    hasEnterprise = true;
-                }
-                case "organization" -> {
-                    enterprise.setOrganization(data.asString());
-                    hasEnterprise = true;
-                }
-                case "division" -> {
-                    enterprise.setDivision(data.asString());
-                    hasEnterprise = true;
-                }
-                default -> generic.add(key, data.getValue());
-            }
-        }
-
-        if (hasEnterprise) {
-            ext.getExtensions().put(ENTERPRISE_URN, enterprise);
-            if (!ext.getSchemas().contains(ENTERPRISE_URN))
-                ext.getSchemas().add(ENTERPRISE_URN);
-        }
-
-        if (!generic.getAttributes().isEmpty()) {
-            ext.getExtensions().put("GenericExtension", generic);
-        }
+        return new GenericExtension();
     }
 }

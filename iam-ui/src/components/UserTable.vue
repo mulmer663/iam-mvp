@@ -58,7 +58,9 @@ function openUserDetail(user: User) {
     id: detailPaneId,
     type: 'UserDetail',
     title: `User: ${user.name.givenName} ${user.name.familyName}`,
-    data: { user }
+    data: { user },
+    width: '800px',
+    maxWidth: '800px'
   }
 
   // If this component is in a Miller Pane (paneIndex defined), replace the NEXT pane
@@ -112,7 +114,7 @@ function openUserDetail(user: User) {
             <TableCell class="p-2 py-1 relative">
               <div class="flex items-center gap-1.5">
                  <Mail class="size-3 text-neutral-300" />
-                 <span class="text-[11px] text-neutral-500">{{ user.emails[0]?.value }}</span>
+                 <span class="text-[11px] text-neutral-500">{{ user.emails?.[0]?.value || '-' }}</span>
               </div>
               <!-- Connection Indicator -->
               <div v-if="selectedUserId === user.id" class="absolute right-0 top-0 bottom-0 w-0.5 bg-blue-600"></div>
