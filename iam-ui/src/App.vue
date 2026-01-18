@@ -11,10 +11,13 @@ import {SidebarInset, SidebarProvider, SidebarTrigger,} from '@/components/ui/si
 // Dynamic View Components
 import OrgUserManagement from '@/views/OrgUserManagement.vue'
 import DeptManagement from '@/views/DeptManagement.vue'
-import SyncDetail from '@/views/SyncDetail.vue'
 import SyncHistory from '@/views/SyncHistory.vue'
 import UserChangeHistory from '@/views/UserChangeHistory.vue'
 import UserProfileViewer from '@/components/common/UserProfileViewer.vue'
+import AttributeManagement from '@/views/AttributeManagement.vue'
+import ResourceManagement from '@/views/ResourceManagement.vue'
+import AttributeForm from '@/components/attribute/AttributeForm.vue'
+import GroupManagement from '@/views/GroupManagement.vue'
 
 import {nextTick, ref, watch} from 'vue'
 
@@ -47,9 +50,13 @@ watch(
 const VIEW_COMPONENTS: Record<string, any> = {
   OrgUserManagement,
   DeptManagement,
-  SyncDetail,
   SyncHistory,
-  UserChangeHistory
+  UserChangeHistory,
+  AttributeManagement,
+  AttributeManagementPane: AttributeManagement, // Alias for Miller
+  ResourceManagement,
+  GroupManagement,
+  AttributeFormPane: AttributeForm
 }
 
 function closePane(index: number) {
@@ -60,12 +67,14 @@ function activatePane(id: string) {
   millerStore.activePaneId = id
 }
 
-function pushChildPane(parentIndex: number, type: string, title: string, data: any = {}) {
+function pushChildPane(parentIndex: number, type: string, title: string, data: any = {}, width?: string) {
   const nextPane = {
     id: `pane-${Date.now()}`,
     type,
     title,
-    data
+    data,
+    width: width || '500px',
+    maxWidth: width || '500px'
   }
   millerStore.setPane(parentIndex + 1, nextPane)
 }
@@ -126,7 +135,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                :key="index"
                :id="`pane-${pane.id}`"
                class="h-full shrink-0 transition-all duration-300 ease-out pane-enter-active pane-leave-active"
-               :style="{ width: pane.width || '600px', maxWidth: pane.maxWidth || '600px' }"
+               :style="{ width: pane.width || '500px', maxWidth: pane.maxWidth || '500px' }"
                @click.capture="activatePane(pane.id)"
              >
                <Transition name="pane-content" mode="out-in">
@@ -198,7 +207,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                                 <section>
                                   <div class="grid grid-cols-1 gap-2">
                                      <Button 
-                                      @click="pushChildPane(index, 'SyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName, type: 'SOURCE' })"
+                                      @click="pushChildPane(index, 'SyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName, type: 'SOURCE' }, '800px')"
                                       variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                                     >
                                       <span class="flex items-center gap-2">
@@ -208,7 +217,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                                       <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                                     </Button>
                                     <Button 
-                                      @click="pushChildPane(index, 'SyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName, type: 'INTEGRATION' })"
+                                      @click="pushChildPane(index, 'SyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName, type: 'INTEGRATION' }, '800px')"
                                       variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                                     >
                                       <span class="flex items-center gap-2">
@@ -218,7 +227,7 @@ function pushChildPane(parentIndex: number, type: string, title: string, data: a
                                       <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                                     </Button>
                                     <Button 
-                                      @click="pushChildPane(index, 'UserChangeHistory', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName })"
+                                      @click="pushChildPane(index, 'UserChangeHistory', SYSTEM_THEMES.AUDIT.label + ': ' + pane.data.user.name.givenName, { userId: pane.data.user.id, userName: pane.data.user.userName }, '800px')"
                                       variant="outline" size="xs" class="justify-between group/btn text-neutral-600 bg-neutral-50/50"
                                     >
                                       <span class="flex items-center gap-2">

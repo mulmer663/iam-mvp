@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {Search} from 'lucide-vue-next'
 import {Separator} from '@/components/ui/separator'
 import {Button} from '@/components/ui/button'
+import {useAttributeStore} from '@/stores/attribute'
+
+const attributeStore = useAttributeStore()
+
+// Fetch attributes if empty
+onMounted(() => {
+   if (attributeStore.attributes.length === 0) {
+      attributeStore.fetchAttributes()
+   }
+})
 
 const props = defineProps<{
   data: any
@@ -79,6 +89,24 @@ const extensions = computed(() => {
   return exts
 })
 
+// --- Meta-driven Helpers ---
+const getMeta = (key: string) => {
+   // Try direct match first
+   let meta = attributeStore.getAttributeByCode(key)
+   if (!meta) {
+       // Try mapping from key parts for flattened structure (e.g. name.familyName)
+       // Or handle extension prefixes
+       const code = key.split('.').pop() || key
+       meta = attributeStore.getAttributeByCode(code)
+   }
+   return meta
+}
+
+const getLabel = (key: string) => {
+   const meta = getMeta(key)
+   return meta ? meta.displayName : key
+}
+
 const filteredEntries = computed(() => {
   let entries = allSnapshotEntries.value
   
@@ -86,7 +114,8 @@ const filteredEntries = computed(() => {
     const q = searchQuery.value.toLowerCase()
     entries = entries.filter(([key, val]) => 
       key.toLowerCase().includes(q) || 
-      String(val).toLowerCase().includes(q)
+      String(val).toLowerCase().includes(q) ||
+      getLabel(key).toLowerCase().includes(q) // Search by Display Name too
     )
   }
 
@@ -94,11 +123,16 @@ const filteredEntries = computed(() => {
     entries = entries.filter(([key]) => !!getChange(key))
   }
 
-  // Sort changed first
+  // Sort: 
+  // 1. Changes first
+  // 2. Meta defined order (if we had sortOrder field, but we can use existence of meta as priority)
   return entries.sort(([keyA], [keyB]) => {
     const changeA = getChange(keyA) ? 1 : 0
     const changeB = getChange(keyB) ? 1 : 0
-    return changeB - changeA
+    if (changeA !== changeB) return changeB - changeA
+    
+    // Sort logic from Meta could go here. For now alphabetical or predefined list.
+    return keyA.localeCompare(keyB)
   })
 })
 </script>
@@ -174,7 +208,7 @@ const filteredEntries = computed(() => {
                       <div class="text-[9px] uppercase font-bold tracking-tighter truncate"
                            :class="getChange(key) ? 'text-blue-600' : 'text-neutral-400'"
                            :title="key">
-                        {{ key }}
+                        {{ getLabel(key) }}
                       </div>
                       <div v-if="getChange(key)" 
                            class="text-[7px] font-black px-1 text-white bg-blue-500 rounded-[2px] tracking-widest uppercase">

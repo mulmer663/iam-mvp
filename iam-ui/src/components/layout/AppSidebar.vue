@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Activity, Clock, Database, Network, UserCircle, Users} from 'lucide-vue-next'
+import {Activity, Clock, Database, Network, Settings, UserCircle, Users} from 'lucide-vue-next'
 import {Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail,} from '@/components/ui/sidebar'
 import {useMillerStore} from '@/stores/miller'
 import type {Component} from 'vue'
@@ -22,8 +22,10 @@ const items: SidebarGroupItem[] = [
   {
     title: 'Management',
     items: [
-      { title: 'Users & Org', icon: Users, view: 'OrgUserManagement' },
+      { title: 'Users', icon: UserCircle, view: 'OrgUserManagement' },
+      { title: 'Groups', icon: Users, view: 'GroupManagement' },
       { title: 'Departments', icon: Network, view: 'DeptManagement' },
+      { title: 'Attribute Schema', icon: Settings, view: 'ResourceManagement' },
     ],
   },
   {
@@ -44,8 +46,8 @@ function handleItemClick(item: any) {
       type: item.view,
       title: item.title,
       data: item.data || {},
-      width: item.view === 'OrgUserManagement' ? '800px' : (item.view === 'DeptManagement' ? '350px' : undefined),
-      maxWidth: item.view === 'OrgUserManagement' ? '800px' : (item.view === 'DeptManagement' ? '350px' : undefined)
+      width: item.view === 'ResourceManagement' || item.view === 'DeptManagement' || item.view === 'GroupManagement' ? '500px' : '800px',
+      maxWidth: item.view === 'ResourceManagement' || item.view === 'DeptManagement' || item.view === 'GroupManagement' ? '500px' : '800px'
     })
 }
 </script>

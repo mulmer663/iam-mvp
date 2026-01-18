@@ -1,0 +1,73 @@
+package com.iam.core.domain.entity;
+
+import com.iam.core.domain.enums.AttributeCategory;
+import com.iam.core.domain.enums.AttributeDataType;
+import com.iam.core.domain.enums.AttributeMutability;
+import com.iam.core.domain.enums.AttributeTargetDomain;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.envers.Audited;
+
+@Entity
+@Table(name = "iam_attribute_meta")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Audited
+public class IamAttributeMeta {
+
+    @Id
+    @Column(name = "attribute_code", nullable = false, length = 50)
+    private String code;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_domain", nullable = false, length = 20)
+    private AttributeTargetDomain targetDomain;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 20)
+    private AttributeCategory category;
+
+    @Column(name = "display_name", nullable = false)
+    private String displayName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "data_type", nullable = false, length = 20)
+    private AttributeDataType dataType;
+
+    @Column(name = "scim_schema_uri")
+    private String scimSchemaUri;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "is_required")
+    private boolean required = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mutability", length = 20)
+    private AttributeMutability mutability = AttributeMutability.READ_WRITE;
+
+    @Column(name = "admin_only")
+    private boolean adminOnly = false;
+
+    // Permissions (0=Public, 9=Admin)
+    @Column(name = "view_level")
+    private int viewLevel = 0;
+
+    @Column(name = "edit_level")
+    private int editLevel = 5;
+
+    @Column(name = "is_encrypted")
+    private boolean encrypted = false;
+
+    @Column(name = "ui_component")
+    private String uiComponent;
+
+    // For Code type, we might need a reference to code group.
+    // Simplifying for now as per plan.
+}

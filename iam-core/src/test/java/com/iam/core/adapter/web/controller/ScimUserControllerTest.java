@@ -26,77 +26,81 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(ScimUserController.class)
 class ScimUserControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private UserQueryService userQueryService;
+        @MockitoBean
+        private UserQueryService userQueryService;
 
-    @Test
-    @DisplayName("GET /scim/v2/Users 성공 시 SCIM ListResponse를 반환해야 한다")
-    void getUsers_ShouldReturnListResponse() throws Exception {
-        // Given
-        var userResp = ScimUserResponse.builder()
-                .id("1")
-                .userName("test.user")
-                .name(new ScimUserResponse.Name("Test", "User", "Test User"))
-                .emails(List.of(new ScimUserResponse.Email("test.user", true)))
-                .active(true)
-                .build();
+        @Test
+        @DisplayName("GET /scim/v2/Users 성공 시 SCIM ListResponse를 반환해야 한다")
+        void getUsers_ShouldReturnListResponse() throws Exception {
+                // Given
+                var userResp = ScimUserResponse.builder()
+                                .id("1")
+                                .userName("test.user")
+                                .name(new ScimUserResponse.Name("Test", "User", "Test User"))
+                                .emails(List.of(ScimUserResponse.MultiValue.builder().value("test.user").primary(true)
+                                                .build()))
+                                .active(true)
+                                .build();
 
-        given(userQueryService.getAllUsers()).willReturn(new ScimListResponse<>(List.of(userResp)));
+                given(userQueryService.getAllUsers()).willReturn(new ScimListResponse<>(List.of(userResp)));
 
-        // When & Then
-        mockMvc.perform(get("/scim/v2/Users")
-                .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.schemas[0]").value("urn:ietf:params:scim:api:messages:2.0:ListResponse"))
-                .andExpect(jsonPath("$.totalResults").value(1))
-                .andExpect(jsonPath("$.Resources[0].id").value("1"))
-                .andExpect(jsonPath("$.Resources[0].userName").value("test.user"));
-    }
+                // When & Then
+                mockMvc.perform(get("/scim/v2/Users")
+                                .accept(MediaType.APPLICATION_JSON))
+                                .andDo(print())
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.schemas[0]")
+                                                .value("urn:ietf:params:scim:api:messages:2.0:ListResponse"))
+                                .andExpect(jsonPath("$.totalResults").value(1))
+                                .andExpect(jsonPath("$.Resources[0].id").value("1"))
+                                .andExpect(jsonPath("$.Resources[0].userName").value("test.user"));
+        }
 
-    @Test
-    @DisplayName("GET /scim/v2/Users/{id} 성공 시 SCIM UserResponse를 반환해야 한다")
-    void getUser_ShouldReturnUserResponse() throws Exception {
-        // Given
-        Long userId = 1L;
-        var userResp = ScimUserResponse.builder()
-                .id("1")
-                .userName("test.user")
-                .name(new ScimUserResponse.Name("User", "Test", "Test User"))
-                .emails(List.of(new ScimUserResponse.Email("test.user", true)))
-                .active(true)
-                .enterpriseExtension(Map.of("department", "Dev Team"))
-                .build();
+        @Test
+        @DisplayName("GET /scim/v2/Users/{id} 성공 시 SCIM UserResponse를 반환해야 한다")
+        void getUser_ShouldReturnUserResponse() throws Exception {
+                // Given
+                Long userId = 1L;
+                var userResp = ScimUserResponse.builder()
+                                .id("1")
+                                .userName("test.user")
+                                .name(new ScimUserResponse.Name("User", "Test", "Test User"))
+                                .emails(List.of(ScimUserResponse.MultiValue.builder().value("test.user").primary(true)
+                                                .build()))
+                                .active(true)
+                                .enterpriseExtension(Map.of("department", "Dev Team"))
+                                .build();
 
-        given(userQueryService.getUserById(userId)).willReturn(userResp);
+                given(userQueryService.getUserById(userId)).willReturn(userResp);
 
-        // When & Then
-        mockMvc.perform(get("/scim/v2/Users/{id}", userId)
-                .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk())
-                // .andExpect(jsonPath("$.schemas").isArray()) // 순서 보장 어려움
-                .andExpect(jsonPath("$.id").value("1"))
-                .andExpect(jsonPath("$.userName").value("test.user"))
-                .andExpect(jsonPath("$.emails[0].value").value("test.user"))
-                .andExpect(jsonPath("$['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['department']")
-                        .value("Dev Team"));
-    }
+                // When & Then
+                mockMvc.perform(get("/scim/v2/Users/{id}", userId)
+                                .accept(MediaType.APPLICATION_JSON))
+                                .andDo(print())
+                                .andExpect(status().isOk())
+                                // .andExpect(jsonPath("$.schemas").isArray()) // 순서 보장 어려움
+                                .andExpect(jsonPath("$.id").value("1"))
+                                .andExpect(jsonPath("$.userName").value("test.user"))
+                                .andExpect(jsonPath("$.emails[0].value").value("test.user"))
+                                .andExpect(jsonPath(
+                                                "$['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']['department']")
+                                                .value("Dev Team"));
+        }
 
-    @Test
-    @DisplayName("존재하지 않는 사용자 조회 시 404를 반환해야 한다")
-    void getUser_NotFound_ShouldReturn404() throws Exception {
-        // Given
-        given(userQueryService.getUserById(anyLong()))
-                .willThrow(new IamBusinessException(ErrorCode.USER_NOT_FOUND, "trace-1", "Not Found"));
+        @Test
+        @DisplayName("존재하지 않는 사용자 조회 시 404를 반환해야 한다")
+        void getUser_NotFound_ShouldReturn404() throws Exception {
+                // Given
+                given(userQueryService.getUserById(anyLong()))
+                                .willThrow(new IamBusinessException(ErrorCode.USER_NOT_FOUND, "trace-1", "Not Found"));
 
-        // When & Then
-        mockMvc.perform(get("/scim/v2/Users/{id}", 999)
-                .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isNotFound());
-    }
+                // When & Then
+                mockMvc.perform(get("/scim/v2/Users/{id}", 999)
+                                .accept(MediaType.APPLICATION_JSON))
+                                .andDo(print())
+                                .andExpect(status().isNotFound());
+        }
 }

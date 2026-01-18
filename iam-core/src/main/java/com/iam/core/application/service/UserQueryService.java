@@ -83,9 +83,37 @@ public class UserQueryService {
                         }
                 }
 
-                // Map Generic Extensions (if any custom ones exist)
-                // Note: For now, we only explicitly support Enterprise extension in the
-                // strong-typed response field.
+                // Map Multi-valued attributes
+                List<ScimUserResponse.MultiValue> emails = user.getEmails().stream()
+                                .map(e -> ScimUserResponse.MultiValue.builder()
+                                                .value(e.getValue())
+                                                .type(e.getType())
+                                                .primary(e.isPrimary())
+                                                .display(e.getDisplay())
+                                                .build())
+                                .toList();
+
+                List<ScimUserResponse.MultiValue> phoneNumbers = user.getPhoneNumbers().stream()
+                                .map(p -> ScimUserResponse.MultiValue.builder()
+                                                .value(p.getValue())
+                                                .type(p.getType())
+                                                .primary(p.isPrimary())
+                                                .display(p.getDisplay())
+                                                .build())
+                                .toList();
+
+                List<ScimUserResponse.Address> addresses = user.getAddresses().stream()
+                                .map(a -> ScimUserResponse.Address.builder()
+                                                .streetAddress(a.getStreetAddress())
+                                                .locality(a.getLocality())
+                                                .region(a.getRegion())
+                                                .postalCode(a.getPostalCode())
+                                                .country(a.getCountry())
+                                                .type(a.getType())
+                                                .primary(a.isPrimary())
+                                                .formatted(a.getFormatted())
+                                                .build())
+                                .toList();
 
                 return ScimUserResponse.builder()
                                 .schemas(List.of("urn:ietf:params:scim:schemas:core:2.0:User", ENTERPRISE_URN))
@@ -97,10 +125,9 @@ public class UserQueryService {
                                                 user.getGivenName(),
                                                 user.getFormattedName()))
                                 .title(user.getTitle())
-                                .emails(List.of(new ScimUserResponse.Email(user.getUserName(), true))) // Map userName
-                                                                                                       // to email as
-                                                                                                       // per
-                                                                                                       // plan
+                                .emails(emails.isEmpty() ? null : emails)
+                                .phoneNumbers(phoneNumbers.isEmpty() ? null : phoneNumbers)
+                                .addresses(addresses.isEmpty() ? null : addresses)
                                 .active(user.isActive())
                                 .enterpriseExtension(enterpriseData)
                                 .meta(new ScimUserResponse.Meta(
@@ -113,7 +140,8 @@ public class UserQueryService {
                                                                 ? user.getLastModified()
                                                                                 .format(DateTimeFormatter.ISO_DATE_TIME)
                                                                 : null,
-                                                "/scim/v2/Users/" + user.getId()))
+                                                "/scim/v2/Users/" + user.getId(),
+                                                user.getVersion() != null ? "W/\"" + user.getVersion() + "\"" : null))
                                 .build();
         }
 

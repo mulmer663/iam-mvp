@@ -14,7 +14,9 @@ public record ScimUserResponse(
                 String userName,
                 Name name,
                 String title,
-                List<Email> emails,
+                List<MultiValue> emails,
+                List<MultiValue> phoneNumbers,
+                List<Address> addresses,
                 boolean active,
                 Meta meta,
                 @JsonProperty("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User") Map<String, Object> enterpriseExtension,
@@ -27,9 +29,24 @@ public record ScimUserResponse(
         }
 
         @Builder
-        public record Email(
+        public record MultiValue(
                         String value,
-                        boolean primary) {
+                        String type,
+                        boolean primary,
+                        String display,
+                        @JsonProperty("$ref") String ref) {
+        }
+
+        @Builder
+        public record Address(
+                        String streetAddress,
+                        String locality,
+                        String region,
+                        String postalCode,
+                        String country,
+                        String type,
+                        boolean primary,
+                        String formatted) {
         }
 
         @Builder
@@ -37,6 +54,7 @@ public record ScimUserResponse(
                         String resourceType,
                         String created,
                         String lastModified,
-                        String location) {
+                        String location,
+                        String version) {
         }
 }
