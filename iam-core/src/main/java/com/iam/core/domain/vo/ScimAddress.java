@@ -1,5 +1,6 @@
 package com.iam.core.domain.vo;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.*;
 
@@ -16,6 +17,7 @@ public class ScimAddress {
     private String postalCode;
     private String country;
     private String type; // e.g., "work", "home"
+    @Column(name = "is_primary")
     private boolean primary;
     private String formatted;
 }

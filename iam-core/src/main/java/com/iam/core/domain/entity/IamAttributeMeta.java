@@ -5,10 +5,7 @@ import com.iam.core.domain.enums.AttributeDataType;
 import com.iam.core.domain.enums.AttributeMutability;
 import com.iam.core.domain.enums.AttributeTargetDomain;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.envers.Audited;
 
 @Entity
@@ -18,6 +15,7 @@ import org.hibernate.envers.Audited;
 @NoArgsConstructor
 @AllArgsConstructor
 @Audited
+@Builder
 public class IamAttributeMeta {
 
     @Id
@@ -45,23 +43,29 @@ public class IamAttributeMeta {
     @Column(name = "description")
     private String description;
 
+    @Builder.Default
     @Column(name = "is_required")
     private boolean required = false;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "mutability", length = 20)
     private AttributeMutability mutability = AttributeMutability.READ_WRITE;
 
+    @Builder.Default
     @Column(name = "admin_only")
     private boolean adminOnly = false;
 
     // Permissions (0=Public, 9=Admin)
+    @Builder.Default
     @Column(name = "view_level")
     private int viewLevel = 0;
 
+    @Builder.Default
     @Column(name = "edit_level")
     private int editLevel = 5;
 
+    @Builder.Default
     @Column(name = "is_encrypted")
     private boolean encrypted = false;
 

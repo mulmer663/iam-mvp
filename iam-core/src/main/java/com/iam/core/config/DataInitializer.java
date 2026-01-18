@@ -53,8 +53,8 @@ public class DataInitializer implements CommandLineRunner {
         @Override
         public void run(String... args) {
                 initRuleEngineData();
-                initAttributeMeta();
                 initScimMetadata();
+                initAttributeMeta();
 
                 String traceId = "T-" + TSID.fast().toLong();
                 MDC.put(TRACE_ID, traceId);

@@ -19,13 +19,29 @@ public class IamAttributeMetaService {
     private final IamAttributeMetaRepository repository;
 
     @Transactional
-    public IamAttributeMetaDto createAttribute(IamAttributeMeta attribute) {
-        if (repository.existsById(attribute.getCode())) {
-            throw new IllegalArgumentException("Attribute code already exists: " + attribute.getCode());
+    public IamAttributeMetaDto createAttribute(IamAttributeMetaDto dto) {
+        if (repository.existsById(dto.code())) {
+            throw new IllegalArgumentException("Attribute code already exists: " + dto.code());
         }
-        // Force valid category/domain rules if needed?
-        // For now trusting input but could add more validation.
-        IamAttributeMeta saved = repository.save(attribute);
+
+        IamAttributeMeta entity = IamAttributeMeta.builder()
+                .code(dto.code())
+                .targetDomain(dto.targetDomain())
+                .category(dto.category())
+                .displayName(dto.displayName())
+                .dataType(dto.dataType())
+                .scimSchemaUri(dto.scimSchemaUri())
+                .description(dto.description())
+                .required(dto.required())
+                .mutability(dto.mutability())
+                .adminOnly(dto.adminOnly())
+                .viewLevel(dto.viewLevel())
+                .editLevel(dto.editLevel())
+                .encrypted(dto.encrypted())
+                .uiComponent(dto.uiComponent())
+                .build();
+
+        IamAttributeMeta saved = repository.save(entity);
         return mapToDto(saved);
     }
 

@@ -2,6 +2,7 @@ package com.iam.core.adapter.web.controller;
 
 import com.iam.core.application.dto.ScimListResponse;
 import com.iam.core.application.dto.ScimUserResponse;
+import com.iam.core.application.service.ScimResourceService;
 import com.iam.core.application.service.UserQueryService;
 import com.iam.core.domain.exception.ErrorCode;
 import com.iam.core.domain.exception.IamBusinessException;
@@ -31,6 +32,9 @@ class ScimUserControllerTest {
 
         @MockitoBean
         private UserQueryService userQueryService;
+
+        @MockitoBean
+        private ScimResourceService scimResourceService;
 
         @Test
         @DisplayName("GET /scim/v2/Users 성공 시 SCIM ListResponse를 반환해야 한다")
