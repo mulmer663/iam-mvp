@@ -1,8 +1,8 @@
 package com.iam.core.config.init;
 
-import com.iam.core.application.service.TransMappingService;
-import com.iam.core.domain.constant.SystemConstants;
-import com.iam.core.domain.entity.*;
+import com.iam.core.application.sync.TransMappingService;
+import com.iam.core.domain.common.constant.SystemConstants;
+import com.iam.core.domain.sync.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;

@@ -1,12 +1,13 @@
 package com.iam.core.config.init;
 
-import com.iam.core.application.dto.UserSyncEvent;
-import com.iam.core.application.service.IamUserUpdateService;
-import com.iam.core.application.service.SyncHistoryService;
-import com.iam.core.domain.constant.AttributeConstants;
-import com.iam.core.domain.constant.SystemConstants;
-import com.iam.core.domain.entity.IamUser;
-import com.iam.core.domain.vo.*;
+import com.iam.core.application.common.UserSyncEvent;
+import com.iam.core.application.sync.SyncHistoryService;
+import com.iam.core.application.user.IamUserUpdateService;
+import com.iam.core.domain.common.constant.AttributeConstants;
+import com.iam.core.domain.common.constant.SystemConstants;
+import com.iam.core.domain.common.vo.*;
+import com.iam.core.domain.user.IamUser;
+import com.iam.core.domain.user.IamUserRepository;
 import io.hypersistence.tsid.TSID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.iam.core.domain.constant.SyncConstants.*;
+import static com.iam.core.domain.common.constant.SyncConstants.*;
 
 /**
  * 샘플 사용자 데이터 이니셜라이저.
@@ -36,7 +37,7 @@ public class SampleDataInitializer implements CommandLineRunner {
 
     private final IamUserUpdateService iamUserUpdateService;
     private final SyncHistoryService syncHistoryService;
-    private final com.iam.core.domain.repository.IamUserRepository iamUserRepository;
+    private final IamUserRepository iamUserRepository;
 
     @Override
     public void run(String... args) {

@@ -1,6 +1,6 @@
 package com.iam.core.config;
 
-import com.iam.core.domain.port.MessagePublisher;
+import com.iam.core.domain.common.port.MessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

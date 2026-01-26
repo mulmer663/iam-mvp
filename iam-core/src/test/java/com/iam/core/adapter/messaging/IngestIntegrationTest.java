@@ -1,10 +1,12 @@
 package com.iam.core.adapter.messaging;
 
-import com.iam.core.application.dto.UserSyncEvent;
-import com.iam.core.domain.entity.*;
-import com.iam.core.domain.port.MessagePublisher;
-import com.iam.core.domain.repository.IamUserRepository;
-import com.iam.core.domain.repository.IdentityLinkRepository;
+import com.iam.core.application.common.UserSyncEvent;
+import com.iam.core.application.sync.TransMappingService;
+import com.iam.core.domain.common.port.MessagePublisher;
+import com.iam.core.domain.sync.TransFieldMapping;
+import com.iam.core.domain.sync.TransMapping;
+import com.iam.core.domain.sync.TransRuleMeta;
+import com.iam.core.domain.user.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,7 @@ class IngestIntegrationTest {
         private IdentityLinkRepository identityLinkRepository;
 
         @Autowired
-        private com.iam.core.application.service.TransMappingService transMappingService;
+        private TransMappingService transMappingService;
 
         private static final String SYSTEM_ID = "TEST_HR_INGEST";
         private static final String RULE_ID = "TEST_INGEST_RULE";

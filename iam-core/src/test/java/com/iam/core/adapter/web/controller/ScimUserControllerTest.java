@@ -1,11 +1,12 @@
 package com.iam.core.adapter.web.controller;
 
-import com.iam.core.application.dto.ScimListResponse;
-import com.iam.core.application.dto.ScimUserResponse;
-import com.iam.core.application.service.ScimResourceService;
-import com.iam.core.application.service.UserQueryService;
-import com.iam.core.domain.exception.ErrorCode;
-import com.iam.core.domain.exception.IamBusinessException;
+import com.iam.core.adapter.web.controller.user.ScimUserController;
+import com.iam.core.application.common.ScimListResponse;
+import com.iam.core.application.common.ScimUserResponse;
+import com.iam.core.application.scim.ScimResourceService;
+import com.iam.core.application.user.UserQueryService;
+import com.iam.core.domain.common.exception.ErrorCode;
+import com.iam.core.domain.common.exception.IamBusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

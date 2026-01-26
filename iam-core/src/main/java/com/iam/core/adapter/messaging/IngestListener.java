@@ -1,20 +1,13 @@
 package com.iam.core.adapter.messaging;
 
-import com.iam.core.application.service.UserSyncService;
-import com.iam.core.application.dto.UserSyncEvent;
-
-import io.hypersistence.tsid.TSID;
+import com.iam.core.application.common.UserSyncEvent;
+import com.iam.core.application.sync.UserSyncService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Listener for raw HR data ingestion.

@@ -7,16 +7,21 @@
 
 ```text
 com.iam.core
-├── domain               <-- [Core] Entities, Repositories, Exceptions (No dependency on outer layers)
-│   ├── entity
-│   ├── repository
-│   └── exception
-├── application          <-- [Use Cases] Services, DTOs
-│   ├── service
-│   └── dto
+├── domain               <-- [Core] Entities, Repositories (Layer > Domain)
+│   ├── user             <-- User, IdentityLink, UserRepository
+│   ├── scim             <-- ScimSchemaMeta, ScimResourceTypeMeta, IamAttributeMeta
+│   └── common           <-- Shared VOs, Enums, Exceptions
+├── application          <-- [Use Cases] Services, DTOs (Layer > Domain)
+│   ├── user             <-- UserUpdateService, UserQueryService
+│   ├── scim             <-- ScimResourceService, ScimResourceTypeService
+│   └── common           <-- Shared DTOs, Base classes
 ├── adapter              <-- [Infra] Messaging, Web, etc.
-│   └── messaging
-└── config               <-- Spring Config
+│   └── web
+│       ├── controller
+│       │   ├── user     <-- UserController, UserHistoryController
+│       │   └── scim     <-- ScimMetadataController, GenericScimController
+│       └── handler      <-- GlobalExceptionHandler, RequestContext
+└── config               <-- Spring Config (Security, init, etc.)
 ```
 
 # Tech Stack & Constraints

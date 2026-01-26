@@ -1,16 +1,17 @@
 package com.iam.core.application.service;
 
-import com.iam.core.domain.entity.TransFieldMapping;
-import com.iam.core.domain.entity.TransCodeValue;
-import com.iam.core.domain.repository.TransCodeValueRepository;
+import com.iam.core.application.sync.RuleScriptGenerator;
+import com.iam.core.domain.sync.TransCodeValue;
+import com.iam.core.domain.sync.TransCodeValueRepository;
+import com.iam.core.domain.sync.TransFieldMapping;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class RuleScriptGeneratorTest {
 

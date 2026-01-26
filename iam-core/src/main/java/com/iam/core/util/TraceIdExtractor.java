@@ -1,10 +1,9 @@
 package com.iam.core.util;
 
+import com.iam.core.application.common.ProvisioningCommand;
+import com.iam.core.application.common.UserSyncEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import com.iam.core.application.dto.ProvisioningCommand;
-import com.iam.core.application.dto.UserSyncEvent;
 
 import java.util.Map;
 

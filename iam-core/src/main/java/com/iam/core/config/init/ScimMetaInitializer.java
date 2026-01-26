@@ -1,15 +1,10 @@
 package com.iam.core.config.init;
 
-import com.iam.core.domain.entity.IamAttributeMeta;
-import com.iam.core.domain.entity.ScimResourceTypeMeta;
-import com.iam.core.domain.entity.ScimSchemaMeta;
-import com.iam.core.domain.enums.AttributeCategory;
-import com.iam.core.domain.enums.AttributeDataType;
-import com.iam.core.domain.enums.AttributeMutability;
-import com.iam.core.domain.enums.AttributeTargetDomain;
-import com.iam.core.domain.repository.IamAttributeMetaRepository;
-import com.iam.core.domain.repository.ScimResourceTypeMetaRepository;
-import com.iam.core.domain.repository.ScimSchemaMetaRepository;
+import com.iam.core.domain.common.enums.AttributeCategory;
+import com.iam.core.domain.common.enums.AttributeDataType;
+import com.iam.core.domain.common.enums.AttributeMutability;
+import com.iam.core.domain.common.enums.AttributeTargetDomain;
+import com.iam.core.domain.scim.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;

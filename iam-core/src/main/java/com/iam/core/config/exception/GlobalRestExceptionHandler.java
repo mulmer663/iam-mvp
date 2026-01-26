@@ -1,12 +1,10 @@
 package com.iam.core.config.exception;
 
-import lombok.extern.slf4j.Slf4j;
-import com.iam.core.domain.exception.BaseIamException;
-import com.iam.core.domain.exception.ErrorCode;
-import com.iam.core.domain.exception.ErrorResponse;
-
+import com.iam.core.domain.common.exception.BaseIamException;
+import com.iam.core.domain.common.exception.ErrorCode;
+import com.iam.core.domain.common.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;

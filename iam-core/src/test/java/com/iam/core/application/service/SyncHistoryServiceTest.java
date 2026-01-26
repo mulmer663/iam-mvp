@@ -1,9 +1,10 @@
 package com.iam.core.application.service;
 
-import com.iam.core.domain.constant.SystemConstants;
-import com.iam.core.domain.entity.SyncHistory;
-import com.iam.core.domain.port.MessagePublisher;
-import com.iam.core.domain.repository.SyncHistoryRepository;
+import com.iam.core.application.sync.SyncHistoryService;
+import com.iam.core.domain.common.constant.SystemConstants;
+import com.iam.core.domain.common.port.MessagePublisher;
+import com.iam.core.domain.sync.SyncHistory;
+import com.iam.core.domain.sync.SyncHistoryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

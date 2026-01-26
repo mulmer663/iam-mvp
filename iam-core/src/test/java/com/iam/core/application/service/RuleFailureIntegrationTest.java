@@ -1,9 +1,14 @@
 package com.iam.core.application.service;
 
+import com.iam.core.application.sync.RuleScriptEngine;
+import com.iam.core.application.sync.RuleScriptGenerator;
 import com.iam.core.config.GroovySandboxConfig;
-import com.iam.core.domain.entity.TransFieldMapping;
-import com.iam.core.domain.repository.TransCodeValueRepository;
-import com.iam.core.domain.vo.StringData;
+import com.iam.core.domain.common.exception.RuleCompilationException;
+import com.iam.core.domain.common.exception.RuleExecutionException;
+import com.iam.core.domain.common.exception.RuleValidationException;
+import com.iam.core.domain.common.vo.StringData;
+import com.iam.core.domain.sync.TransCodeValueRepository;
+import com.iam.core.domain.sync.TransFieldMapping;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,10 +20,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.iam.core.domain.exception.RuleCompilationException;
-import com.iam.core.domain.exception.RuleExecutionException;
-import com.iam.core.domain.exception.RuleValidationException;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

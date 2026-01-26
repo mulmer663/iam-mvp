@@ -1,8 +1,10 @@
 package com.iam.core.application.service;
 
+import com.iam.core.application.sync.RuleScriptEngine;
 import com.iam.core.config.GroovySandboxConfig;
-import com.iam.core.domain.vo.*;
-
+import com.iam.core.domain.common.vo.IntData;
+import com.iam.core.domain.common.vo.StringData;
+import com.iam.core.domain.common.vo.UniversalData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

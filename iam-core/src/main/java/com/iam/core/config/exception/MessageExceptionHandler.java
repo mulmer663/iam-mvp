@@ -1,7 +1,7 @@
 package com.iam.core.config.exception;
 
-import com.iam.core.domain.exception.BaseIamException;
-import com.iam.core.domain.exception.ErrorCode;
+import com.iam.core.domain.common.exception.BaseIamException;
+import com.iam.core.domain.common.exception.ErrorCode;
 import com.iam.core.util.TraceIdExtractor;
 import com.rabbitmq.client.Channel;
 import jakarta.validation.ConstraintViolationException;

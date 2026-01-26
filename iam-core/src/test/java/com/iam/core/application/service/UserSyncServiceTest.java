@@ -1,16 +1,27 @@
 package com.iam.core.application.service;
 
-import com.iam.core.application.dto.UserSyncEvent;
-import com.iam.core.domain.constant.AttributeConstants;
-import com.iam.core.domain.constant.SyncConstants;
-import com.iam.core.domain.entity.*;
-import com.iam.core.domain.enums.AttributeCategory;
-import com.iam.core.domain.enums.AttributeDataType;
-import com.iam.core.domain.enums.AttributeTargetDomain;
-import com.iam.core.domain.port.MessagePublisher;
-import com.iam.core.domain.repository.IamAttributeMetaRepository;
-import com.iam.core.domain.repository.IamUserRepository;
-import com.iam.core.domain.repository.IdentityLinkRepository;
+import com.iam.core.application.common.UserSyncEvent;
+import com.iam.core.application.sync.SyncHistoryService;
+import com.iam.core.application.sync.TransMappingService;
+import com.iam.core.application.sync.UserSyncService;
+import com.iam.core.domain.common.ExtensionData;
+import com.iam.core.domain.common.GenericExtension;
+import com.iam.core.domain.common.constant.AttributeConstants;
+import com.iam.core.domain.common.constant.SyncConstants;
+import com.iam.core.domain.common.enums.AttributeCategory;
+import com.iam.core.domain.common.enums.AttributeDataType;
+import com.iam.core.domain.common.enums.AttributeTargetDomain;
+import com.iam.core.domain.common.event.SyncCompensationEvent;
+import com.iam.core.domain.common.exception.TransformationException;
+import com.iam.core.domain.common.port.MessagePublisher;
+import com.iam.core.domain.scim.IamAttributeMeta;
+import com.iam.core.domain.scim.IamAttributeMetaRepository;
+import com.iam.core.domain.sync.TransFieldMapping;
+import com.iam.core.domain.sync.TransMapping;
+import com.iam.core.domain.sync.TransRuleMeta;
+import com.iam.core.domain.user.EnterpriseUserExtension;
+import com.iam.core.domain.user.IamUserRepository;
+import com.iam.core.domain.user.IdentityLinkRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,9 +108,9 @@ class UserSyncServiceTest {
                 // Verify Generic Extension
                 var extData = user.getExtension().getExtensions().get("GenericExtension");
                 assertThat(extData).isNotNull();
-                assertThat(extData).isInstanceOf(com.iam.core.domain.entity.GenericExtension.class);
+                assertThat(extData).isInstanceOf(GenericExtension.class);
 
-                Map<String, Object> attrs = ((com.iam.core.domain.entity.ExtensionData) extData).getAttributes();
+                Map<String, Object> attrs = ((ExtensionData) extData).getAttributes();
                 assertThat(attrs).containsEntry(customAttr, "BADGE-123456");
         }
 
@@ -273,7 +284,7 @@ class UserSyncServiceTest {
 
                 // When & Then
                 org.junit.jupiter.api.Assertions.assertThrows(
-                                com.iam.core.domain.exception.TransformationException.class,
+                                TransformationException.class,
                                 () -> {
                                         userSyncService.processSync(event);
                                 });
@@ -284,6 +295,6 @@ class UserSyncServiceTest {
                                                 org.mockito.ArgumentMatchers.eq("iam.topic"),
                                                 org.mockito.ArgumentMatchers.eq("iam.event.compensation"),
                                                 org.mockito.ArgumentMatchers.any(
-                                                                com.iam.core.domain.event.SyncCompensationEvent.class));
+                                                                SyncCompensationEvent.class));
         }
 }
