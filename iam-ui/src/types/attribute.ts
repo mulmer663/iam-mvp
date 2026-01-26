@@ -1,14 +1,16 @@
 export type AttributeCategory = 'CORE' | 'EXTENSION'
-export type AttributeDataType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'CODE'
+export type AttributeDataType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'CODE' | 'COMPLEX'
 export type AttributeMutability = 'READ_ONLY' | 'READ_WRITE' | 'WRITE_ONCE' | 'IMMUTABLE'
 export type AttributeTargetDomain = 'USER' | 'DEPARTMENT' | 'GROUP'
 
 export interface IamAttributeMeta {
-    code: string
+    name: string
     targetDomain: AttributeTargetDomain
     category: AttributeCategory
     displayName: string
-    dataType: AttributeDataType
+    type: AttributeDataType
+    multiValued: boolean
+    parentName?: string
     scimSchemaUri?: string
     description?: string
     required: boolean

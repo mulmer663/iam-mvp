@@ -13,8 +13,8 @@ export const useAttributeStore = defineStore('attribute', {
     }),
 
     getters: {
-        getAttributeByCode: (state) => (code: string) => {
-            return state.attributes.find(attr => attr.code === code)
+        getAttributeByCode: (state) => (name: string) => {
+            return state.attributes.find(attr => attr.name === name)
         },
         coreAttributes: (state) => {
             return state.attributes.filter(attr => attr.category === 'CORE')
@@ -96,23 +96,23 @@ export const useAttributeStore = defineStore('attribute', {
 
         async updateAttribute(attribute: IamAttributeMeta) {
             try {
-                const response = await axios.put<IamAttributeMeta>(`/api/attributes/${attribute.code}`, attribute)
+                const response = await axios.put<IamAttributeMeta>(`/api/attributes/${attribute.name}`, attribute)
 
                 // Update in local state
-                const index = this.attributes.findIndex(a => a.code === attribute.code)
+                const index = this.attributes.findIndex(a => a.name === attribute.name)
                 if (index !== -1) {
                     this.attributes[index] = response.data
                 }
 
                 // Update specific lists
                 if (attribute.targetDomain === 'USER') {
-                    const idx = this.userAttributes.findIndex(a => a.code === attribute.code)
+                    const idx = this.userAttributes.findIndex(a => a.name === attribute.name)
                     if (idx !== -1) this.userAttributes[idx] = response.data
                 } else if (attribute.targetDomain === 'DEPARTMENT') {
-                    const idx = this.deptAttributes.findIndex(a => a.code === attribute.code)
+                    const idx = this.deptAttributes.findIndex(a => a.name === attribute.name)
                     if (idx !== -1) this.deptAttributes[idx] = response.data
                 } else if (attribute.targetDomain === 'GROUP') {
-                    const idx = this.groupAttributes.findIndex(a => a.code === attribute.code)
+                    const idx = this.groupAttributes.findIndex(a => a.name === attribute.name)
                     if (idx !== -1) this.groupAttributes[idx] = response.data
                 }
 
@@ -123,15 +123,15 @@ export const useAttributeStore = defineStore('attribute', {
             }
         },
 
-        async deleteAttribute(code: string) {
+        async deleteAttribute(name: string) {
             try {
-                await axios.delete(`/api/attributes/${code}`)
+                await axios.delete(`/api/attributes/${name}`)
 
                 // Remove from local state
-                this.attributes = this.attributes.filter(a => a.code !== code)
-                this.userAttributes = this.userAttributes.filter(a => a.code !== code)
-                this.deptAttributes = this.deptAttributes.filter(a => a.code !== code)
-                this.groupAttributes = this.groupAttributes.filter(a => a.code !== code)
+                this.attributes = this.attributes.filter(a => a.name !== name)
+                this.userAttributes = this.userAttributes.filter(a => a.name !== name)
+                this.deptAttributes = this.deptAttributes.filter(a => a.name !== name)
+                this.groupAttributes = this.groupAttributes.filter(a => a.name !== name)
             } catch (err: any) {
                 console.error('Failed to delete attribute:', err)
                 throw err

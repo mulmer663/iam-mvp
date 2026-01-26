@@ -68,7 +68,46 @@ public class ScimSchemaService {
         repository.deleteById(uri);
     }
 
-    private ScimSchemaDto mapToDto(ScimSchemaMeta entity) {
-        return new ScimSchemaDto(entity.getId(), entity.getName(), entity.getDescription());
+    public ScimSchemaDto mapToDto(com.iam.core.domain.scim.ScimSchemaMeta entity) {
+        List<com.iam.core.domain.scim.IamAttributeMeta> allAttributes = entity.getAttributes();
+        List<ScimSchemaDto.AttributeDto> rootAttributes = allAttributes.stream()
+                .filter(attr -> attr.getParentName() == null)
+                .map(attr -> buildAttributeDto(attr, allAttributes))
+                .toList();
+
+        return new ScimSchemaDto(
+                entity.getId(),
+                entity.getName(),
+                entity.getDescription(),
+                rootAttributes);
+    }
+
+    private ScimSchemaDto.AttributeDto buildAttributeDto(com.iam.core.domain.scim.IamAttributeMeta attr,
+            List<com.iam.core.domain.scim.IamAttributeMeta> allAttributes) {
+        List<ScimSchemaDto.AttributeDto> subAttributes = allAttributes.stream()
+                .filter(sub -> attr.getName().equals(sub.getParentName()))
+                .map(sub -> buildAttributeDto(sub, allAttributes))
+                .toList();
+
+        // If simple name extraction is needed (e.g. if ID is namespaced like
+        // 'emails.value')
+        // We assume the last part after a dot is the SCIM name.
+        String scimName = attr.getName();
+        if (scimName.contains(".")) {
+            scimName = scimName.substring(scimName.lastIndexOf(".") + 1);
+        }
+        // Also handle potential schema prefix if using colons? For now assume dots are
+        // structural separators.
+
+        return new ScimSchemaDto.AttributeDto(
+                scimName,
+                attr.getType().name().toLowerCase(),
+                attr.isMultiValued(),
+                attr.getDescription(),
+                attr.isRequired(),
+                attr.getMutability().name().toLowerCase(),
+                attr.getReturned().name().toLowerCase(),
+                attr.getUniqueness().name().toLowerCase(),
+                subAttributes.isEmpty() ? null : subAttributes);
     }
 }

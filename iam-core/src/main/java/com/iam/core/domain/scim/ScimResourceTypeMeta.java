@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.envers.Audited;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "scim_resource_type_meta")
@@ -35,7 +35,6 @@ public class ScimResourceTypeMeta {
 
     @ElementCollection
     @CollectionTable(name = "scim_resource_type_extensions", joinColumns = @JoinColumn(name = "resource_type_id"))
-    @Column(name = "extension_schema_uri")
     @Builder.Default
-    private List<String> schemaExtensions = new ArrayList<>();
+    private Set<ScimResourceTypeExtension> schemaExtensions = new LinkedHashSet<>();
 }

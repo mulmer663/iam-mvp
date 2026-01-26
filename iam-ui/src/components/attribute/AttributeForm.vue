@@ -5,18 +5,70 @@ import {Input} from '@/components/ui/input'
 import {Label} from '@/components/ui/label'
 import {Checkbox} from '@/components/ui/checkbox'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select'
+import {Plus, Settings} from 'lucide-vue-next'
 import type {IamAttributeMeta} from '@/types/attribute'
 import {useAttributeStore} from '@/stores/attribute'
+import {useMillerStore} from '@/stores/miller'
 
 const props = defineProps<{
   initialData?: IamAttributeMeta | null
   defaultSchemaUri?: string // Context for creation
+  parentAttributeName?: string // Context for sub-attribute creation
+  paneIndex?: number
 }>()
 
 const emit = defineEmits(['save', 'cancel'])
 const store = useAttributeStore()
+const millerStore = useMillerStore()
 const isEditMode = ref(false)
 const isCreate = computed(() => !props.initialData)
+
+// Sub-attributes Logic
+const subAttributes = computed(() => {
+    if (!formData.value.name) return []
+    return store.attributes.filter(a => a.parentName === formData.value.name)
+})
+
+function openSubAttribute(attr: IamAttributeMeta | null) {
+    const paneId = attr ? `attr-${attr.name}` : `create-sub-${formData.value.name}-${Date.now()}`
+    
+    // Check if pane exists
+    const existingPane = millerStore.panes.find(p => p.id === paneId)
+    if (existingPane) {
+        millerStore.activePaneId = paneId
+        return
+    }
+
+    const pane = {
+        id: paneId,
+        type: 'AttributeFormPane',
+        title: attr && attr.name ? `Attribute: ${attr.displayName}` : 'New Sub-Attribute',
+        data: { 
+            initialData: attr, 
+            defaultSchemaUri: props.defaultSchemaUri, 
+            parentAttributeName: formData.value.name, // Pass current attribute as parent context
+            paneIndex: (props.paneIndex ?? 0) + 1 
+        },
+        width: '500px'
+    }
+    
+    if (typeof props.paneIndex === 'number') {
+        millerStore.setPane(props.paneIndex + 1, pane)
+    } else {
+        millerStore.pushPane(pane)
+    }
+}
+
+const isStandardSchema = (uri?: string) => {
+    if (!uri) return false
+    return uri.startsWith('urn:ietf:params:scim:schemas:core:2.0:') || 
+           uri.startsWith('urn:ietf:params:scim:schemas:extension:enterprise:2.0:')
+}
+
+const isLocked = computed(() => {
+    if (isCreate.value) return false
+    return formData.value.category === 'CORE' || isStandardSchema(formData.value.scimSchemaUri)
+})
 
 // Initialize
 watch(() => props.initialData, (val) => {
@@ -25,12 +77,14 @@ watch(() => props.initialData, (val) => {
 
 // Form State
 const formData = ref<IamAttributeMeta>({
-  code: '',
+  name: '',
   targetDomain: 'USER', // TODO: Infer from Schema?
   category: 'EXTENSION', 
   scimSchemaUri: props.defaultSchemaUri || 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User',
   displayName: '',
-  dataType: 'STRING',
+  type: 'STRING',
+  multiValued: false,
+  parentName: props.parentAttributeName || '',
   description: '',
   required: false,
   mutability: 'READ_WRITE',
@@ -41,22 +95,50 @@ const formData = ref<IamAttributeMeta>({
   uiComponent: 'text-input'
 })
 
+// Validation computed property
+const isValidComplexType = computed(() => {
+    return formData.value.type === 'COMPLEX' || formData.value.type === 'STRING' // Allow applying preset even if default is STRING
+})
+const presets = [
+    { label: 'ScimMultiValue (value, type, primary)', value: 'ScimMultiValue' },
+    { label: 'ScimAddress (formatted, street, locality...)', value: 'ScimAddress' }
+]
+const selectedPreset = ref('')
+
+function applyPreset() {
+    if (selectedPreset.value === 'ScimMultiValue') {
+        alert('Preset applied: Please create sub-attributes [value, display, type, primary] manually after saving.')
+        // In a real implementation we could auto-create sub-attributes, but for now we just guide the user.
+        // Or better, we can auto-create them if the backend supports batch creation.
+        // Let's stick to the plan: Just help user configure the parent.
+        formData.value.type = 'COMPLEX'
+        formData.value.multiValued = true
+    } else if (selectedPreset.value === 'ScimAddress') {
+        formData.value.type = 'COMPLEX'
+        formData.value.multiValued = true
+    }
+}
+
 // Validation for readonly Mode
 function canEditField(field: keyof IamAttributeMeta) {
     if (isCreate.value) return true // All editable on create
     if (!isEditMode.value) return false // Nothing editable in view mode
 
     // Specific field immutability rules for Update
-    if (field === 'code') return false
+    if (field === 'name') return false
     if (field === 'category') return false
     if (field === 'targetDomain') return false
-    if (field === 'dataType') return false
+    if (field as any === 'type') return false
     if (field === 'scimSchemaUri') {
          // If a default schema was enforced (via context), it shouldn't be changed.
          // Or if it's Extension, maybe fine? BUT for consistency in "Schema View", it should be locked.
          if (props.defaultSchemaUri) return false;
          return true
     }
+
+    // Respect SCIM Mutability
+    if (formData.value.mutability === 'READ_ONLY') return false
+    if (formData.value.mutability === 'IMMUTABLE') return false
 
     return true
 }
@@ -82,12 +164,14 @@ watch(() => props.initialData, (newVal) => {
     } else {
         // Reset defaults
         formData.value = {
-            code: '',
+            name: props.parentAttributeName ? `${props.parentAttributeName}.` : '',
             targetDomain: 'USER',
             category: 'EXTENSION',
             scimSchemaUri: props.defaultSchemaUri || 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User',
             displayName: '',
-            dataType: 'STRING',
+            type: 'STRING',
+            multiValued: false,
+            parentName: props.parentAttributeName || '',
             description: '',
             required: false,
             mutability: 'READ_WRITE',
@@ -109,10 +193,15 @@ async function onSubmit() {
     try {
         if (!isCreate.value) {
             await store.updateAttribute(formData.value)
+            alert('Attribute updated successfully')
             isEditMode.value = false // Return to view mode
         } else {
             await store.createAttribute(formData.value)
+            alert('Attribute created successfully')
             emit('save')
+            if (typeof props.paneIndex === 'number') {
+                millerStore.removePane(props.paneIndex)
+            }
         }
     } catch (e: any) {
         error.value = e.response?.data?.message || e.message || 'Failed to save'
@@ -130,7 +219,10 @@ async function onSubmit() {
             {{ isCreate ? 'New Attribute' : formData.displayName }}
         </div>
         <div v-if="!isCreate && !isEditMode">
-            <Button size="xs" variant="outline" @click="enableEdit" class="h-7 text-xs">
+            <Button 
+                v-if="!isLocked"
+                size="xs" variant="outline" @click="enableEdit" class="h-7 text-xs"
+            >
                 Edit Attribute
             </Button>
         </div>
@@ -141,8 +233,8 @@ async function onSubmit() {
        <!-- Basic Info -->
        <div class="grid grid-cols-2 gap-4">
            <div class="space-y-2">
-               <Label>Code (ID)</Label>
-               <Input v-model="formData.code" :disabled="!canEditField('code')" placeholder="e.g. employeeNumber" />
+               <Label>Name (ID)</Label>
+               <Input v-model="formData.name" :disabled="!canEditField('name')" placeholder="e.g. employeeNumber" />
            </div>
            
            <div class="space-y-2">
@@ -178,12 +270,27 @@ async function onSubmit() {
                   </SelectContent>
                 </Select>
             </div>
+ 
+            <div class="space-y-2">
+                <Label>Mutability</Label>
+                <Select v-model="formData.mutability" :disabled="!isCreate">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select mutability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="READ_WRITE">Read-Write</SelectItem>
+                    <SelectItem value="READ_ONLY">Read-Only</SelectItem>
+                    <SelectItem value="WRITE_ONCE">Write-Once</SelectItem>
+                    <SelectItem value="IMMUTABLE">Immutable</SelectItem>
+                  </SelectContent>
+                </Select>
+            </div>
         </div>
 
        <div class="grid grid-cols-2 gap-4">
            <div class="space-y-2">
                <Label>Data Type</Label>
-               <Select v-model="formData.dataType" :disabled="!canEditField('dataType')">
+               <Select v-model="formData.type" :disabled="!canEditField('type' as any)">
                   <SelectTrigger>
                     <SelectValue placeholder="Select data type" />
                   </SelectTrigger>
@@ -193,6 +300,7 @@ async function onSubmit() {
                     <SelectItem value="BOOLEAN">Boolean</SelectItem>
                     <SelectItem value="DATE">Date</SelectItem>
                     <SelectItem value="CODE">Code</SelectItem>
+                    <SelectItem value="COMPLEX">Complex</SelectItem>
                   </SelectContent>
                </Select>
            </div>
@@ -217,6 +325,57 @@ async function onSubmit() {
        <div class="space-y-2">
            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Description</label>
            <Input v-model="formData.description" :disabled="!canEditField('description')" placeholder="Short description of this attribute" />
+       </div>
+
+       <!-- Sub Attributes (For Complex Types) -->
+       <div v-if="formData.type === 'COMPLEX' && !isCreate" class="space-y-3 pt-4 border-t border-neutral-100">
+            <div class="flex items-center justify-between">
+                <Label class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Sub-Attributes</Label>
+                <Button size="xs" variant="outline" class="h-6 text-xs flex gap-1" @click="openSubAttribute(null)">
+                    <Plus class="size-3" /> Add Sub-Attribute
+                </Button>
+            </div>
+            
+            <div class="border border-neutral-200 rounded-lg overflow-hidden bg-neutral-50/50">
+                <div v-if="subAttributes.length === 0" class="p-4 text-center text-xs text-neutral-400 italic">
+                    No sub-attributes configured.
+                </div>
+                <div v-else class="divide-y divide-neutral-100">
+                    <div v-for="sub in subAttributes" :key="sub.name" 
+                         class="p-2.5 flex items-center justify-between hover:bg-white cursor-pointer group transition-colors"
+                         @click="openSubAttribute(sub)"
+                    >
+                        <div class="flex items-center gap-2">
+                            <div class="size-1.5 rounded-full bg-blue-400"></div>
+                            <span class="text-xs font-mono font-medium text-neutral-700">{{ sub.name.split('.').pop() }}</span>
+                            <span class="text-[10px] text-neutral-400">({{ sub.type }})</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <span v-if="sub.required" class="text-[8px] text-red-500 font-bold border border-red-200 px-1 rounded">REQ</span>
+                             <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <Settings class="size-3 text-neutral-400" />
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+       </div>
+
+       <!-- Presets for Complex -->
+       <div v-if="isValidComplexType && isCreate" class="p-3 bg-blue-50 rounded-lg space-y-2 border border-blue-100">
+            <Label class="text-xs font-bold text-blue-700 uppercase">Apply Preset</Label>
+            <div class="flex gap-2">
+                <Select v-model="selectedPreset">
+                    <SelectTrigger class="h-8 text-xs bg-white">
+                        <SelectValue placeholder="Select a preset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="p in presets" :key="p.value" :value="p.value">{{ p.label }}</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Button size="xs" variant="outline" class="h-8 bg-white" @click="applyPreset" :disabled="!selectedPreset">Apply</Button>
+            </div>
+            <p class="text-[10px] text-blue-600">Selecting a preset will configure this attribute as Complex & Multi-valued.</p>
        </div>
 
        <!-- SCIM Schema URI (Only for Extensions) -->
@@ -246,7 +405,7 @@ async function onSubmit() {
 
     <div v-if="isEditMode" class="flex justify-end gap-2 p-4 border-t border-neutral-100 bg-neutral-50">
         <Button variant="outline" @click="cancelEdit" :disabled="isSaving">Cancel</Button>
-        <Button @click="onSubmit" :disabled="isSaving" class="bg-blue-600 hover:bg-blue-700 text-white">
+        <Button @click="onSubmit" :disabled="isSaving || (isLocked && !isCreate)" class="bg-blue-600 hover:bg-blue-700 text-white">
             {{ isSaving ? 'Saving...' : (isCreate ? 'Create Attribute' : 'Save Changes') }}
         </Button>
     </div>

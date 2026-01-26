@@ -135,3 +135,22 @@ Cross-pane navigation within the pipeline uses `highlightPane` if the target is 
 - **Search**: `Ctrl+K` global search placeholder (Header).
 - **Breadcrumbs**: Flat level-based navigation in the header (`Dashboard > Users & Org`).
 - **Quick Close**: Keyboard ESC label on panes to trigger `popPane` (Contextual).
+
+### 4.9 Attribute Management System [NEW]
+
+A specialized UI for managing SCIM 2.0 Schemas and Attributes with high density and precision.
+
+1. **Schema-Driven Architecture**:
+   - **Root View**: Groups attributes by Schema URI (Core vs Extensions).
+   - **Visual Distinction**:
+     - **Core Schemas**: Blue Theme (`Database` icon). Fixed/System attributes.
+     - **Extensions**: Purple Theme (`Settings` icon). Custom/Enterprise attributes.
+2. **Detail View (`AttributeFormPane`)**:
+   - **Mode-Aware**: Handles Create vs Edit vs View (Read-Only).
+   - **Type Handling**: Dynamic form fields based on `type` (String, Boolean, Reference, etc.).
+   - **Complex Types**:
+     - **Inline Management**: Sub-attributes (e.g., `emails.value`, `emails.type`) are managed directly within the parent attribute's form.
+     - **Embedded List**: A "Sub-Attributes" section appears for `COMPLEX` types, allowing rapid addition/editing without deep navigation stacks.
+   - **Validation**: Enforces SCIM mutability rules (`readOnly`, `immutable`) and locks system fields.
+3. **Component Mapping**:
+   - `AttributeManagement` (List) -> `AttributeFormPane` (Detail/Edit).

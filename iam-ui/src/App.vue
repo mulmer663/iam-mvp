@@ -16,6 +16,7 @@ import UserChangeHistory from '@/views/UserChangeHistory.vue'
 import AttributeManagement from '@/views/AttributeManagement.vue'
 import ResourceManagement from '@/views/ResourceManagement.vue'
 import AttributeForm from '@/components/attribute/AttributeForm.vue'
+import ResourceTypeForm from '@/components/ResourceTypeForm.vue'
 import UserDetailPane from '@/components/UserDetailPane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
 
@@ -54,9 +55,11 @@ const VIEW_COMPONENTS: Record<string, any> = {
   UserChangeHistory,
   AttributeManagement,
   AttributeManagementPane: AttributeManagement, // Alias for Miller
+  AttributeListPane: AttributeManagement, // NEW: Alias for recursive sub-attribute list
   ResourceManagement,
   GroupManagement,
   AttributeFormPane: AttributeForm,
+  ResourceTypeFormPane: ResourceTypeForm,
   UserDetail: UserDetailPane
 }
 
