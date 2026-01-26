@@ -1,6 +1,8 @@
 package com.iam.core.application.scim;
 
+import com.iam.core.adapter.web.ScimEndpointManager;
 import com.iam.core.application.common.ScimResourceTypeDto;
+import com.iam.core.domain.common.constant.ScimEndpointConstants;
 import com.iam.core.domain.common.exception.ErrorCode;
 import com.iam.core.domain.common.exception.IamBusinessException;
 import com.iam.core.domain.scim.ScimResourceTypeMeta;
@@ -10,12 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class ScimResourceTypeService {
 
     private final ScimResourceTypeMetaRepository repository;
+    private final ScimEndpointManager endpointManager;
 
     @Transactional(readOnly = true)
     public List<ScimResourceTypeDto> getAllResourceTypes() {
@@ -34,10 +38,6 @@ public class ScimResourceTypeService {
 
     @Transactional
     public ScimResourceTypeDto createResourceType(ScimResourceTypeDto dto) {
-        if (repository.existsById(dto.id())) {
-            throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "SCIM",
-                    "ResourceType ID already exists: " + dto.id());
-        }
         ScimResourceTypeMeta entity = ScimResourceTypeMeta.builder()
                 .id(dto.id())
                 .name(dto.name())
@@ -47,6 +47,13 @@ public class ScimResourceTypeService {
                 .schemaExtensions(dto.schemaExtensions())
                 .build();
         ScimResourceTypeMeta saved = repository.save(entity);
+        Objects.requireNonNull(saved, "Saved ResourceTypeMeta must not be null");
+
+        // Register endpoint if not core type
+        if (!ScimEndpointConstants.isCoreType(saved.getId())) {
+            endpointManager.register(saved.getId(), saved.getEndpoint());
+        }
+
         return mapToDto(saved);
     }
 
@@ -56,6 +63,7 @@ public class ScimResourceTypeService {
                 .orElseThrow(() -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "SCIM",
                         "ResourceType not found: " + id));
 
+        String oldEndpoint = entity.getEndpoint();
         entity.setName(dto.name());
         entity.setDescription(dto.description());
         entity.setEndpoint(dto.endpoint());
@@ -63,15 +71,30 @@ public class ScimResourceTypeService {
         entity.setSchemaExtensions(dto.schemaExtensions());
 
         ScimResourceTypeMeta saved = repository.save(entity);
+
+        // Update registration if endpoint changed and not core type
+        if (!ScimEndpointConstants.isCoreType(id)) {
+            if (!dto.endpoint().equals(oldEndpoint)) {
+                endpointManager.unregister(oldEndpoint);
+                endpointManager.register(id, dto.endpoint());
+            }
+        }
+
         return mapToDto(saved);
     }
 
     @Transactional
     public void deleteResourceType(String id) {
-        if (!repository.existsById(id)) {
-            throw new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "SCIM", "ResourceType not found: " + id);
+        ScimResourceTypeMeta entity = repository.findById(id)
+                .orElseThrow(() -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "SCIM",
+                        "ResourceType not found: " + id));
+
+        repository.delete(entity);
+
+        // Unregister endpoint if not core type
+        if (!ScimEndpointConstants.isCoreType(id)) {
+            endpointManager.unregister(entity.getEndpoint());
         }
-        repository.deleteById(id);
     }
 
     private ScimResourceTypeDto mapToDto(ScimResourceTypeMeta entity) {
@@ -81,6 +104,6 @@ public class ScimResourceTypeService {
                 entity.getDescription(),
                 entity.getEndpoint(),
                 entity.getSchema(),
-                List.copyOf(entity.getSchemaExtensions()));
+                entity.getSchemaExtensions());
     }
 }

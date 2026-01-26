@@ -278,7 +278,38 @@ interface ErrorResponse {
 
 ---
 
-## 5. SCIM Metadata API (Discovery)
+## 5. Dynamic SCIM API (Experimental)
+
+런타임에 등록된 동적 리소스 타입에 대한 CRUD를 지원합니다.
+
+### 5.1 리소스 조회 (목록)
+
+- **Endpoint**: `GET /scim/v2/{ResourceType}`
+- **Description**: 특정 타입의 모든 리소스를 조회합니다. (현재는 빈 목록과 totalResults: 0 반환)
+
+### 5.2 리소스 상세 조회
+
+- **Endpoint**: `GET /scim/v2/{ResourceType}/{id}`
+- **Description**: 논리적 ID(`scimId`)를 기반으로 리소스 상세 정보를 조회합니다.
+
+### 5.3 리소스 생성
+
+- **Endpoint**: `POST /scim/v2/{ResourceType}`
+- **Description**: 새로운 동적 리소스를 생성합니다. `id` 필드를 생략하면 시스템이 UUID를 생성합니다.
+
+### 5.4 리소스 수정
+
+- **Endpoint**: `PUT /scim/v2/{ResourceType}/{id}`
+- **Description**: 기존 리소스의 전체 속성을 덮어씁니다.
+
+### 5.5 리소스 삭제
+
+- **Endpoint**: `DELETE /scim/v2/{ResourceType}/{id}`
+- **Description**: 리소스를 물리적으로 삭제합니다.
+
+---
+
+## 6. SCIM Metadata API (Discovery)
 
 ### 5.1 스키마 목록 조회
 

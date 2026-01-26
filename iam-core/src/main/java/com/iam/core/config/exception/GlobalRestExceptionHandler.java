@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -84,6 +85,23 @@ public class GlobalRestExceptionHandler {
 
         log.error("Database error - traceId: {}", traceId, ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException ex) {
+        String traceId = generateTraceId();
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
+                .detail(ex.getMessage())
+                .traceId(traceId)
+                .path(getCurrentPath())
+                .status(HttpStatus.NOT_FOUND.value())
+                .build();
+
+        log.warn("Resource not found - traceId: {}, path: {}", traceId, getCurrentPath());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)

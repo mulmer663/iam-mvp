@@ -71,6 +71,14 @@ graph LR
   * **주요 필드:** `name` (SCIM 규격), `type` (데이터 타입), `multiValued`, `returned`, `uniqueness`, `mutability`.
   * **역활:** `/scim/v2/Schemas` 응답 생성 및 UI 컴포넌트(`uiComponent`) 렌더링 가이드 제공.
 
+* **동적 리소스 저장소 (ScimDynamicResource):** 런타임에 정의된 새로운 리소스 타입을 위한 범용 저장소.
+  * **참조 파일:** `ScimDynamicResource.java`, `ScimDynamicResourceService.java`
+  * **ID 전략:**
+    * **물리 키 (`id`)**: **TSID (Long)** 사용 (성능 및 정렬).
+    * **논리 키 (`scimId`)**: URL 경로용 고유 식별자 (예: `laptop-001`, UUID).
+  * **저장 방식:** PostgreSQL **JSONB**를 사용하여 임의의 속성 구조를 유연하게 수용.
+  * **라우팅:** `ScimEndpointManager`를 통해 동적 리소스 타입 등록 시 `/scim/v2/{ResourceType}/**` 엔드포인트 자동 활성화.
+
 ## 4. 데이터 연동 엔진 (Rule Engine)
 
 런타임에 동적으로 데이터 변환 로직을 처리하며, 모든 이력은 추적 가능해야 합니다.
@@ -153,6 +161,11 @@ IAM 시스템은 데이터의 변경 전후를 완벽하게 추적하고, 장애
 
 ### 7.5 SCIM 표준화 및 메타데이터 (SCIM Alignment)
 
-* **속성 정렬**: `IamAttributeMeta` 필드명을 SCIM 2.0 규격(`name`, `type`)으로 정렬 및 메타데이터 확장 완료
 * **스키마 발견**: `/scim/v2/Schemas` 및 `/scim/v2/ResourceTypes` API 구현 완료
 * **예외 표준화**: `IamAttributeMetaService` 내의 예외 처리를 `IamBusinessException` 표준으로 전환 완료
+
+### 7.6 동적 리소스 지원 (Dynamic Resources)
+
+* **범용 엔티티**: TSID와 JSONB를 결합한 `ScimDynamicResource` 모델링 완료
+* **동적 라우팅**: `ScimEndpointManager`를 이용한 런타임 엔드포인트 등록 및 `{id}` 하위 경로 지원 완료
+* **자동 CRUD**: `GenericScimController`를 통한 범용 리소스 생명주기 처리 구현 완료

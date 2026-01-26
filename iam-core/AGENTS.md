@@ -9,11 +9,11 @@
 com.iam.core
 ├── domain               <-- [Core] Entities, Repositories (Layer > Domain)
 │   ├── user             <-- User, IdentityLink, UserRepository
-│   ├── scim             <-- ScimSchemaMeta, ScimResourceTypeMeta, IamAttributeMeta
+│   ├── scim             <-- ScimSchemaMeta, ScimResourceTypeMeta, IamAttributeMeta, ScimDynamicResource
 │   └── common           <-- Shared VOs, Enums, Exceptions
 ├── application          <-- [Use Cases] Services, DTOs (Layer > Domain)
 │   ├── user             <-- UserUpdateService, UserQueryService
-│   ├── scim             <-- ScimResourceService, ScimResourceTypeService
+│   ├── scim             <-- ScimResourceService, ScimResourceTypeService, ScimDynamicResourceService
 │   └── common           <-- Shared DTOs, Base classes
 ├── adapter              <-- [Infra] Messaging, Web, etc.
 │   └── web
@@ -38,6 +38,7 @@ com.iam.core
   - **ID Strategy:** Use **TSID (Long)** for numeric primary keys or **UUID (String)** for SCIM standard compatibility as per `spec.md`.
   - `IamUser`: `userName` (unique), `familyName`, `givenName`, `active`, `resourceType`, `created`, `lastModified` (Flattened Columns).
   - `IamUserExtension`: `userId` (PK/FK), `extensions` (jsonb mapping to structured `ExtensionData`).
+  - `ScimDynamicResource`: `id` (TSID), `scimId` (Logical ID), `resourceType`, `attributes` (jsonb).
   - `IdentityLink`: systemType, externalId (Index), iamUserId.
 - **Repository:** `JpaRepository` interface based.
 - **Service Layer:** Business logic here. `@Transactional` usually applies at this layer.
