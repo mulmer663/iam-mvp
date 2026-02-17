@@ -6,6 +6,7 @@ import {Database, Lock, Plus, Settings, Trash2} from 'lucide-vue-next'
 import {useMillerStore} from '@/stores/miller'
 import {useAttributeStore} from '@/stores/attribute'
 import {useResourceTypeStore} from '@/stores/resourceType'
+import {toast} from '@/utils/toast'
 
 const millerStore = useMillerStore()
 const attributeStore = useAttributeStore()
@@ -119,24 +120,8 @@ function onCreate() {
     }
 }
 
-function openResourceTypeDetail(schemaUri: string) {
-    const rt = resourceTypeStore.resourceTypes.find(r => r.schema === schemaUri)
-    if (!rt) return
-
-    const paneId = `rt-edit-${rt.id}`
-    const pane = {
-        id: paneId,
-        type: 'ResourceTypeFormPane',
-        title: `Edit Resource: ${rt.name}`,
-        data: { initialData: rt, paneIndex: (props.paneIndex ?? 0) + 1 },
-        width: '500px'
-    }
-    
-    if (typeof props.paneIndex === 'number') {
-        millerStore.setPane(props.paneIndex + 1, pane)
-    } else {
-        millerStore.pushPane(pane)
-    }
+function openResourceTypeDetail(schemaUri: string, displayName: string) {
+    openAttributePane(schemaUri, displayName)
 }
 
 async function onDelete(schemaUri: string) {
@@ -146,8 +131,9 @@ async function onDelete(schemaUri: string) {
     
     try {
         await resourceTypeStore.deleteResourceType(rt.id)
+        toast.success('Resource Type deleted')
     } catch (e) {
-        alert('Failed to delete')
+        toast.error('Failed to delete resource type')
     }
 }
 </script>
@@ -186,7 +172,7 @@ async function onDelete(schemaUri: string) {
                     <div class="flex items-center gap-2 shrink-0">
                          <span class="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-medium">{{ schema.count }} Attrs</span>
                          <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Button variant="ghost" size="icon" class="size-6 hover:bg-neutral-100" @click.stop="openResourceTypeDetail(schema.uri)">
+                            <Button variant="ghost" size="icon" class="size-6 hover:bg-neutral-100" @click.stop="openResourceTypeDetail(schema.uri, schema.displayName)">
                                 <Settings class="size-3 text-neutral-400" />
                             </Button>
                          </div>
@@ -217,7 +203,10 @@ async function onDelete(schemaUri: string) {
                     <div class="flex items-center gap-2 shrink-0">
                          <span class="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-medium">{{ schema.count }} Attrs</span>
                          <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Button 
+                            <Button variant="ghost" size="icon" class="size-6 hover:bg-neutral-100" @click.stop="openResourceTypeDetail(schema.uri, schema.displayName)">
+                                <Settings class="size-3 text-neutral-400" />
+                            </Button>
+                             <Button 
                                  v-if="!schema.fixed"
                                  variant="ghost" size="icon" class="size-6 hover:bg-red-50 hover:text-red-500"
                                  @click.stop="onDelete(schema.uri)"

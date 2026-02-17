@@ -59,15 +59,10 @@ function openSubAttribute(attr: IamAttributeMeta | null) {
     }
 }
 
-const isStandardSchema = (uri?: string) => {
-    if (!uri) return false
-    return uri.startsWith('urn:ietf:params:scim:schemas:core:2.0:') || 
-           uri.startsWith('urn:ietf:params:scim:schemas:extension:enterprise:2.0:')
-}
-
 const isLocked = computed(() => {
-    if (isCreate.value) return false
-    return formData.value.category === 'CORE' || isStandardSchema(formData.value.scimSchemaUri)
+    // We allow "Edit" for everyone to at least change display names/descriptions.
+    // Structural changes will be blocked at the field level in canEditField.
+    return false
 })
 
 // Initialize
@@ -121,24 +116,26 @@ function applyPreset() {
 
 // Validation for readonly Mode
 function canEditField(field: keyof IamAttributeMeta) {
-    if (isCreate.value) return true // All editable on create
-    if (!isEditMode.value) return false // Nothing editable in view mode
+    if (isCreate.value) return true 
+    if (!isEditMode.value) return false 
 
-    // Specific field immutability rules for Update
+    // Always immutable fields during update
     if (field === 'name') return false
-    if (field === 'category') return false
+    if (field === 'scimSchemaUri') return false 
     if (field === 'targetDomain') return false
+    if (field === 'category') return false
     if (field as any === 'type') return false
-    if (field === 'scimSchemaUri') {
-         // If a default schema was enforced (via context), it shouldn't be changed.
-         // Or if it's Extension, maybe fine? BUT for consistency in "Schema View", it should be locked.
-         if (props.defaultSchemaUri) return false;
-         return true
+
+    // If it's a CORE attribute, we strictly limit what can be edited
+    if (formData.value.category === 'CORE') {
+        const allowedCoreFields: (keyof IamAttributeMeta)[] = ['displayName', 'description', 'uiComponent', 'viewLevel', 'editLevel', 'adminOnly', 'encrypted']
+        return allowedCoreFields.includes(field)
     }
 
-    // Respect SCIM Mutability
-    if (formData.value.mutability === 'READ_ONLY') return false
-    if (formData.value.mutability === 'IMMUTABLE') return false
+    // For non-CORE (EXTENSION, CUSTOM), we allow more flexibility
+    // But we still respect SCIM Mutability if set to READ_ONLY/IMMUTABLE
+    if (formData.value.mutability === 'READ_ONLY' && field !== 'displayName' && field !== 'description') return false
+    if (formData.value.mutability === 'IMMUTABLE' && field !== 'displayName' && field !== 'description') return false
 
     return true
 }
@@ -214,14 +211,14 @@ async function onSubmit() {
 <template>
   <div class="h-full flex flex-col bg-white">
     <!-- Header -->
-    <div class="h-10 border-b border-neutral-100 flex items-center justify-between px-3 shrink-0 bg-neutral-50/50">
-        <div class="font-bold text-sm text-neutral-700">
+    <div class="h-14 border-b border-neutral-100 flex items-center justify-between px-4 shrink-0 bg-neutral-50/50">
+        <div class="font-bold text-base text-neutral-700">
             {{ isCreate ? 'New Attribute' : formData.displayName }}
         </div>
         <div v-if="!isCreate && !isEditMode">
             <Button 
                 v-if="!isLocked"
-                size="xs" variant="outline" @click="enableEdit" class="h-7 text-xs"
+                size="xs" variant="outline" @click="enableEdit" class="h-8 text-xs px-3"
             >
                 Edit Attribute
             </Button>
@@ -273,7 +270,7 @@ async function onSubmit() {
  
             <div class="space-y-2">
                 <Label>Mutability</Label>
-                <Select v-model="formData.mutability" :disabled="!isCreate">
+                <Select v-model="formData.mutability" :disabled="!isCreate && formData.category === 'CORE'">
                   <SelectTrigger>
                     <SelectValue placeholder="Select mutability" />
                   </SelectTrigger>
@@ -348,12 +345,12 @@ async function onSubmit() {
                         <div class="flex items-center gap-2">
                             <div class="size-1.5 rounded-full bg-blue-400"></div>
                             <span class="text-xs font-mono font-medium text-neutral-700">{{ sub.name.split('.').pop() }}</span>
-                            <span class="text-[10px] text-neutral-400">({{ sub.type }})</span>
+                            <span class="text-xs text-neutral-400">({{ sub.type }})</span>
                         </div>
                         <div class="flex items-center gap-2">
-                             <span v-if="sub.required" class="text-[8px] text-red-500 font-bold border border-red-200 px-1 rounded">REQ</span>
+                             <span v-if="sub.required" class="text-[10px] text-red-500 font-bold border border-red-200 px-1 rounded">REQ</span>
                              <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <Settings class="size-3 text-neutral-400" />
+                                 <Settings class="size-4 text-neutral-400" />
                              </div>
                         </div>
                     </div>
@@ -366,23 +363,23 @@ async function onSubmit() {
             <Label class="text-xs font-bold text-blue-700 uppercase">Apply Preset</Label>
             <div class="flex gap-2">
                 <Select v-model="selectedPreset">
-                    <SelectTrigger class="h-8 text-xs bg-white">
+                    <SelectTrigger class="h-9 text-xs bg-white">
                         <SelectValue placeholder="Select a preset..." />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem v-for="p in presets" :key="p.value" :value="p.value">{{ p.label }}</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button size="xs" variant="outline" class="h-8 bg-white" @click="applyPreset" :disabled="!selectedPreset">Apply</Button>
+                <Button size="xs" variant="outline" class="h-9 bg-white" @click="applyPreset" :disabled="!selectedPreset">Apply</Button>
             </div>
-            <p class="text-[10px] text-blue-600">Selecting a preset will configure this attribute as Complex & Multi-valued.</p>
+            <p class="text-xs text-blue-600">Selecting a preset will configure this attribute as Complex & Multi-valued.</p>
        </div>
 
        <!-- SCIM Schema URI (Only for Extensions) -->
        <div v-if="formData.category === 'EXTENSION'" class="space-y-2">
            <Label>SCIM Schema URI</Label>
            <Input v-model="formData.scimSchemaUri" :disabled="!canEditField('scimSchemaUri')" placeholder="e.g. urn:ietf:params:scim:schemas:extension:custom:2.0:User" />
-           <p class="text-[10px] text-neutral-400">URI defining the namespace for this extension attribute.</p>
+           <p class="text-xs text-neutral-400">URI defining the namespace for this extension attribute.</p>
        </div>
        <!-- Flags -->
        <div class="grid grid-cols-2 gap-4 bg-neutral-50 p-2 rounded">
