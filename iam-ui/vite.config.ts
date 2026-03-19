@@ -19,11 +19,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:18081',
         changeOrigin: true,
       },
       '/scim': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:18081',
         changeOrigin: true,
       }
     }

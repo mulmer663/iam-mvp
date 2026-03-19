@@ -1,0 +1,10 @@
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: true
+
+logging:
+  level:
+    org.springframework.amqp: DEBUG
+    org.springframework.rabbit: DEBUG

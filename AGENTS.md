@@ -49,17 +49,29 @@
 
 - **Code Style:** Standard Java/Spring Boot conventions.
 - **Git:** Semantic Commit Messages (`feat:`, `fix:`, `chore:`).
-- **API Specification:** [api-specs.md](./api-specs.md) — RESTful API Documentation for core services.
+- **API Specification:** [spec.md](./spec.md) — API specs have been consolidated into the master spec document.
 - **Maintenance Policy:** Suggest updates to this file if patterns change.
 
 # Context Map
 
-- **[Core Logic (BE)](./iam-core/AGENTS.md)** — Core Identity entities, services, and business logic.
-- **[AD Connector (BE)](./iam-connector-ad/AGENTS.md)** — Active Directory integration, provisioning, and synchronization.
-- **[HR Connector (BE)](./iam-connector-hr/AGENTS.md)** — HR System source integration and events.
-- **[UI Dashboard (FE)](./iam-ui/AGENTS.md)** — High-density Vue 3 dashboard and Miller Columns.
-- **[Infrastructure (Ops)](./docker-compose.yml)** — Docker services for Postgres, RabbitMQ, and Apps.
-- **[Build Settings (Root)](./build.gradle)** — Root project configuration and dependencies.
+- **[Master Specification](./spec.md)** — Source of truth for all domain logic, architecture, and API endpoints.
+
+**Backend Microservices (MSA)**
+
+- **[Registry Service](./iam-registry/AGENTS.md)** — Core Identity Storage & SCIM API Provider.
+- **[Transformation Engine](./iam-engine/AGENTS.md)** — Groovy Rule Engine & Core logic orchestration.
+- **[Database Adapter](./iam-adapter-db/AGENTS.md)** — Connectivity Adapter for Dynamic DB Fetch/Update.
+- **[Service Discovery](./iam-eureka/AGENTS.md)** — Eureka Server configurations.
+
+**Legacy Connectors** (To be refactored)
+
+- **[Core Logic (Legacy)](./iam-core/AGENTS.md)** — Legacy core entities.
+
+**Frontend & Infra**
+
+- **[UI Dashboard](./iam-ui/AGENTS.md)** — High-density Vue 3 dashboard and Miller Columns.
+- **[Infrastructure](./docker-compose.yml)** — Docker services for Postgres, RabbitMQ, and Apps.
+- **[Build Settings](./build.gradle)** — Root project configuration and dependencies.
 
 ## Living Documentation & Feedback Loop
 

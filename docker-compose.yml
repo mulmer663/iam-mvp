@@ -73,7 +73,72 @@ services:
     networks:
       - iam-network
     environment:
-      - VITE_API_URL=http://iam-core:8081
+      - VITE_API_URL=http://iam-registry:18081
+
+  iam-eureka:
+    build:
+      context: .
+      dockerfile: iam-eureka/Dockerfile
+    image: iam-eureka:latest
+    container_name: iam-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - iam-network
+
+  iam-registry:
+    build:
+      context: .
+      dockerfile: iam-registry/Dockerfile
+    image: iam-registry:latest
+    container_name: iam-registry
+    ports:
+      - "18084:18081"
+    depends_on:
+      - postgres
+      - iam-eureka
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
+      - SPRING_DATASOURCE_USERNAME=iam_user
+      - SPRING_DATASOURCE_PASSWORD=iam_password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://iam-eureka:8761/eureka/
+    networks:
+      - iam-network
+
+  iam-engine:
+    build:
+      context: .
+      dockerfile: iam-engine/Dockerfile
+    image: iam-engine:latest
+    container_name: iam-engine
+    ports:
+      - "18085:8080"
+    depends_on:
+      - rabbitmq
+      - iam-eureka
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://iam-eureka:8761/eureka/
+    networks:
+      - iam-network
+
+  iam-adapter-db:
+    build:
+      context: .
+      dockerfile: iam-adapter-db/Dockerfile
+    image: iam-adapter-db:latest
+    container_name: iam-adapter-db
+    ports:
+      - "18086:8080"
+    depends_on:
+      - rabbitmq
+      - iam-eureka
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://iam-eureka:8761/eureka/
+    networks:
+      - iam-network
 
   postgres:
     image: postgres:17-trixie

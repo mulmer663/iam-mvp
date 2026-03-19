@@ -77,7 +77,12 @@ const isSaving = ref(false)
 
 function startEdit() {
     if (metadata.value?.rawRt) {
-        formData.value = JSON.parse(JSON.stringify(metadata.value.rawRt))
+        const data = JSON.parse(JSON.stringify(metadata.value.rawRt))
+        // Mark existing extensions so we can lock their PK info
+        data.schemaExtensions.forEach((e: any) => {
+            e.isExisting = true
+        })
+        formData.value = data
         isEditMode.value = true
     }
 }
@@ -91,7 +96,14 @@ async function saveResourceType() {
     if (!formData.value) return
     isSaving.value = true
     try {
-        await resourceTypeStore.updateResourceType(formData.value)
+        // Clean up internal flags before sending to API
+        const payload = JSON.parse(JSON.stringify(formData.value))
+        payload.schemaExtensions = payload.schemaExtensions.map((e: any) => ({
+            schema: e.schema,
+            required: e.required
+        }))
+        
+        await resourceTypeStore.updateResourceType(payload)
         isEditMode.value = false
         formData.value = null
         toast.success('Resource Type updated')
@@ -379,8 +391,8 @@ async function onDelete(name: String) {
                         <div class="flex items-start gap-2">
                             <Textarea v-model="ext.schema" class="min-h-[60px] text-sm font-mono flex-1 leading-normal" 
                                       placeholder="urn:ietf:params:scim:schemas:extension:..."
-                                      :disabled="metadata?.rawRt?.schemaExtensions.some(e => e.schema === ext.schema)" />
-                            <Button v-if="!metadata?.rawRt?.schemaExtensions.some(e => e.schema === ext.schema && isStandardSchema(e.schema))" 
+                                      :disabled="(ext as any).isExisting" />
+                            <Button v-if="!(ext as any).isExisting || !isStandardSchema(ext.schema)" 
                                     variant="ghost" size="icon" class="size-6 hover:text-red-500 shrink-0" @click="removeExtension(idx)">
                                 <Trash2 class="size-4" />
                             </Button>
