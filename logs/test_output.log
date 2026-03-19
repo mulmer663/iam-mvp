@@ -1,0 +1,1392 @@
+﻿Initialized native services in: C:\Dev\scoop\apps\gradle\current\.gradle\native
+Initialized jansi services in: C:\Dev\scoop\apps\gradle\current\.gradle\native
+Found daemon DaemonInfo{pid=8096, address=[fd83d8ba-1d94-42f2-97a1-2c492aadde0c port:3817, addresses:[/127.0.0.1]], state=Idle, lastBusy=1772947803453, context=DefaultDaemonContext[uid=c77b2f38-ae98-4b1d-8030-a5735880b8af,javaHome=C:\Users\DHSON_DESKTOP\.antigravity\extensions\redhat.java-1.52.0-win32-x64\jre\21.0.9-win32-x86_64,javaVersion=21,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Dev\scoop\apps\gradle\current\.gradle\daemon,pid=8096,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=384m,-XX:+HeapDumpOnOutOfMemoryError,-Xms256m,-Xmx512m,-Dfile.encoding=UTF-8,-Duser.country=KR,-Duser.language=ko,-Duser.variant]} however its context does not match the desired criteria.
+JVM is incompatible.
+Wanted: DaemonRequestContext{jvmCriteria=C:\Dev\scoop\apps\temurin21-jdk\current (no JDK specified, using current Java home), daemonOpts=[-XX:MaxMetaspaceSize=384m, -XX:+HeapDumpOnOutOfMemoryError, -Xms256m, -Xmx512m, -Dfile.encoding=UTF-8, -Duser.country=KR, -Duser.language=ko, -Duser.variant], applyInstrumentationAgent=true, nativeServicesMode=ENABLED, priority=NORMAL}
+Actual: DefaultDaemonContext[uid=c77b2f38-ae98-4b1d-8030-a5735880b8af,javaHome=C:\Users\DHSON_DESKTOP\.antigravity\extensions\redhat.java-1.52.0-win32-x64\jre\21.0.9-win32-x86_64,javaVersion=21,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Dev\scoop\apps\gradle\current\.gradle\daemon,pid=8096,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=384m,-XX:+HeapDumpOnOutOfMemoryError,-Xms256m,-Xmx512m,-Dfile.encoding=UTF-8,-Duser.country=KR,-Duser.language=ko,-Duser.variant]
+
+  Looking for a different daemon...
+The client will now receive all logging from the daemon (pid: 18820). The daemon log file: C:\Dev\scoop\apps\gradle\current\.gradle\daemon\9.0.0\daemon-18820.out.log
+Starting 24th build in daemon [uptime: 1 hrs 9 mins 48.528 secs, performance: 100%, GC rate: 0.00/s, heap usage: 1% of 512 MiB, non-heap usage: 30% of 384 MiB]
+Using 16 worker leases.
+Now considering [C:\Dev\project\iam] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Dev\project\iam\settings.gradle'.
+Projects loaded. Root project using build file 'C:\Dev\project\iam\build.gradle'.
+Included projects: [root project 'iam-mvp', project ':iam-adapter-db', project ':iam-core', project ':iam-engine', project ':iam-eureka', project ':iam-registry']
+
+> Configure project :
+Evaluating root project 'iam-mvp' using build file 'C:\Dev\project\iam\build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'org.springframework.boot', version: '3.4.3']
+Resolved plugin [id: 'io.spring.dependency-management', version: '1.1.7']
+Applying dependency management to configuration 'annotationProcessor' in project 'iam-mvp'
+Applying dependency management to configuration 'apiElements' in project 'iam-mvp'
+Applying dependency management to configuration 'archives' in project 'iam-mvp'
+Applying dependency management to configuration 'bootArchives' in project 'iam-mvp'
+Applying dependency management to configuration 'compileClasspath' in project 'iam-mvp'
+Applying dependency management to configuration 'compileOnly' in project 'iam-mvp'
+Applying dependency management to configuration 'default' in project 'iam-mvp'
+Applying dependency management to configuration 'developmentOnly' in project 'iam-mvp'
+Applying dependency management to configuration 'implementation' in project 'iam-mvp'
+Applying dependency management to configuration 'mainSourceElements' in project 'iam-mvp'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'iam-mvp'
+Applying dependency management to configuration 'runtimeClasspath' in project 'iam-mvp'
+Applying dependency management to configuration 'runtimeElements' in project 'iam-mvp'
+Applying dependency management to configuration 'runtimeOnly' in project 'iam-mvp'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'iam-mvp'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'iam-mvp'
+Applying dependency management to configuration 'testCompileClasspath' in project 'iam-mvp'
+Applying dependency management to configuration 'testCompileOnly' in project 'iam-mvp'
+Applying dependency management to configuration 'testImplementation' in project 'iam-mvp'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'iam-mvp'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'iam-mvp'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'iam-mvp'
+Applying dependency management to configuration 'annotationProcessor' in project 'iam-adapter-db'
+Applying dependency management to configuration 'apiElements' in project 'iam-adapter-db'
+Applying dependency management to configuration 'archives' in project 'iam-adapter-db'
+Applying dependency management to configuration 'bootArchives' in project 'iam-adapter-db'
+Applying dependency management to configuration 'compileClasspath' in project 'iam-adapter-db'
+Applying dependency management to configuration 'compileOnly' in project 'iam-adapter-db'
+Applying dependency management to configuration 'default' in project 'iam-adapter-db'
+Applying dependency management to configuration 'developmentOnly' in project 'iam-adapter-db'
+Applying dependency management to configuration 'implementation' in project 'iam-adapter-db'
+Applying dependency management to configuration 'mainSourceElements' in project 'iam-adapter-db'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'iam-adapter-db'
+Applying dependency management to configuration 'runtimeClasspath' in project 'iam-adapter-db'
+Applying dependency management to configuration 'runtimeElements' in project 'iam-adapter-db'
+Applying dependency management to configuration 'runtimeOnly' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testCompileClasspath' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testCompileOnly' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testImplementation' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'iam-adapter-db'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'iam-adapter-db'
+Applying dependency management to configuration 'annotationProcessor' in project 'iam-core'
+Applying dependency management to configuration 'apiElements' in project 'iam-core'
+Applying dependency management to configuration 'archives' in project 'iam-core'
+Applying dependency management to configuration 'bootArchives' in project 'iam-core'
+Applying dependency management to configuration 'compileClasspath' in project 'iam-core'
+Applying dependency management to configuration 'compileOnly' in project 'iam-core'
+Applying dependency management to configuration 'default' in project 'iam-core'
+Applying dependency management to configuration 'developmentOnly' in project 'iam-core'
+Applying dependency management to configuration 'implementation' in project 'iam-core'
+Applying dependency management to configuration 'mainSourceElements' in project 'iam-core'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'iam-core'
+Applying dependency management to configuration 'runtimeClasspath' in project 'iam-core'
+Applying dependency management to configuration 'runtimeElements' in project 'iam-core'
+Applying dependency management to configuration 'runtimeOnly' in project 'iam-core'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'iam-core'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'iam-core'
+Applying dependency management to configuration 'testCompileClasspath' in project 'iam-core'
+Applying dependency management to configuration 'testCompileOnly' in project 'iam-core'
+Applying dependency management to configuration 'testImplementation' in project 'iam-core'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'iam-core'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'iam-core'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'iam-core'
+Applying dependency management to configuration 'annotationProcessor' in project 'iam-engine'
+Applying dependency management to configuration 'apiElements' in project 'iam-engine'
+Applying dependency management to configuration 'archives' in project 'iam-engine'
+Applying dependency management to configuration 'bootArchives' in project 'iam-engine'
+Applying dependency management to configuration 'compileClasspath' in project 'iam-engine'
+Applying dependency management to configuration 'compileOnly' in project 'iam-engine'
+Applying dependency management to configuration 'default' in project 'iam-engine'
+Applying dependency management to configuration 'developmentOnly' in project 'iam-engine'
+Applying dependency management to configuration 'implementation' in project 'iam-engine'
+Applying dependency management to configuration 'mainSourceElements' in project 'iam-engine'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'iam-engine'
+Applying dependency management to configuration 'runtimeClasspath' in project 'iam-engine'
+Applying dependency management to configuration 'runtimeElements' in project 'iam-engine'
+Applying dependency management to configuration 'runtimeOnly' in project 'iam-engine'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'iam-engine'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'iam-engine'
+Applying dependency management to configuration 'testCompileClasspath' in project 'iam-engine'
+Applying dependency management to configuration 'testCompileOnly' in project 'iam-engine'
+Applying dependency management to configuration 'testImplementation' in project 'iam-engine'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'iam-engine'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'iam-engine'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'iam-engine'
+Applying dependency management to configuration 'annotationProcessor' in project 'iam-eureka'
+Applying dependency management to configuration 'apiElements' in project 'iam-eureka'
+Applying dependency management to configuration 'archives' in project 'iam-eureka'
+Applying dependency management to configuration 'bootArchives' in project 'iam-eureka'
+Applying dependency management to configuration 'compileClasspath' in project 'iam-eureka'
+Applying dependency management to configuration 'compileOnly' in project 'iam-eureka'
+Applying dependency management to configuration 'default' in project 'iam-eureka'
+Applying dependency management to configuration 'developmentOnly' in project 'iam-eureka'
+Applying dependency management to configuration 'implementation' in project 'iam-eureka'
+Applying dependency management to configuration 'mainSourceElements' in project 'iam-eureka'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'iam-eureka'
+Applying dependency management to configuration 'runtimeClasspath' in project 'iam-eureka'
+Applying dependency management to configuration 'runtimeElements' in project 'iam-eureka'
+Applying dependency management to configuration 'runtimeOnly' in project 'iam-eureka'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'iam-eureka'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'iam-eureka'
+Applying dependency management to configuration 'testCompileClasspath' in project 'iam-eureka'
+Applying dependency management to configuration 'testCompileOnly' in project 'iam-eureka'
+Applying dependency management to configuration 'testImplementation' in project 'iam-eureka'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'iam-eureka'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'iam-eureka'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'iam-eureka'
+Applying dependency management to configuration 'annotationProcessor' in project 'iam-registry'
+Applying dependency management to configuration 'apiElements' in project 'iam-registry'
+Applying dependency management to configuration 'archives' in project 'iam-registry'
+Applying dependency management to configuration 'bootArchives' in project 'iam-registry'
+Applying dependency management to configuration 'compileClasspath' in project 'iam-registry'
+Applying dependency management to configuration 'compileOnly' in project 'iam-registry'
+Applying dependency management to configuration 'default' in project 'iam-registry'
+Applying dependency management to configuration 'developmentOnly' in project 'iam-registry'
+Applying dependency management to configuration 'implementation' in project 'iam-registry'
+Applying dependency management to configuration 'mainSourceElements' in project 'iam-registry'
+Applying dependency management to configuration 'productionRuntimeClasspath' in project 'iam-registry'
+Applying dependency management to configuration 'runtimeClasspath' in project 'iam-registry'
+Applying dependency management to configuration 'runtimeElements' in project 'iam-registry'
+Applying dependency management to configuration 'runtimeOnly' in project 'iam-registry'
+Applying dependency management to configuration 'testAndDevelopmentOnly' in project 'iam-registry'
+Applying dependency management to configuration 'testAnnotationProcessor' in project 'iam-registry'
+Applying dependency management to configuration 'testCompileClasspath' in project 'iam-registry'
+Applying dependency management to configuration 'testCompileOnly' in project 'iam-registry'
+Applying dependency management to configuration 'testImplementation' in project 'iam-registry'
+Applying dependency management to configuration 'testResultsElementsForTest' in project 'iam-registry'
+Applying dependency management to configuration 'testRuntimeClasspath' in project 'iam-registry'
+Applying dependency management to configuration 'testRuntimeOnly' in project 'iam-registry'
+
+> Configure project :iam-adapter-db
+Evaluating project ':iam-adapter-db' using build file 'C:\Dev\project\iam\iam-adapter-db\build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'org.springframework.boot']
+Resolved plugin [id: 'io.spring.dependency-management']
+
+> Configure project :iam-core
+Evaluating project ':iam-core' using build file 'C:\Dev\project\iam\iam-core\build.gradle'.
+
+> Configure project :iam-engine
+Evaluating project ':iam-engine' using build file 'C:\Dev\project\iam\iam-engine\build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'org.springframework.boot']
+Resolved plugin [id: 'io.spring.dependency-management']
+
+> Configure project :iam-eureka
+Evaluating project ':iam-eureka' using build file 'C:\Dev\project\iam\iam-eureka\build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'org.springframework.boot']
+Resolved plugin [id: 'io.spring.dependency-management']
+
+> Configure project :iam-registry
+Evaluating project ':iam-registry' using build file 'C:\Dev\project\iam\iam-registry\build.gradle'.
+Resolved plugin [id: 'java']
+Resolved plugin [id: 'org.springframework.boot']
+Resolved plugin [id: 'io.spring.dependency-management']
+All projects evaluated.
+Task path ':iam-registry:test' matched project ':iam-registry'
+Task name matched 'test'
+Resolving global dependency management for project 'iam-registry'
+Excluding [com.google.code.findbugs:annotations, com.netflix.archaius:archaius-core, commons-logging:commons-logging, javax.servlet:servlet-api, com.google.code.findbugs:jsr305, com.github.vlsi.compactmap:compactmap, com.github.andrewoma.dexx:dexx-collections]
+Excluding []
+Selected primary task 'test' from project :iam-registry
+Excluding []
+Excluding [com.google.code.findbugs:annotations, com.netflix.archaius:archaius-core, commons-logging:commons-logging, javax.servlet:servlet-api, com.google.code.findbugs:jsr305, com.github.vlsi.compactmap:compactmap, com.github.andrewoma.dexx:dexx-collections]
+Excluding []
+Excluding [com.google.code.findbugs:annotations, com.netflix.archaius:archaius-core, commons-logging:commons-logging, javax.servlet:servlet-api, com.google.code.findbugs:jsr305, com.github.vlsi.compactmap:compactmap, com.github.andrewoma.dexx:dexx-collections]
+Tasks to be executed: [task ':iam-registry:compileJava', task ':iam-registry:processResources', task ':iam-registry:classes', task ':iam-registry:compileTestJava', task ':iam-registry:processTestResources', task ':iam-registry:testClasses', task ':iam-registry:test']
+Tasks that were excluded: []
+Resolve mutations for :iam-registry:compileJava (Thread[#4363,Execution worker,5,main]) started.
+:iam-registry:compileJava (Thread[#4363,Execution worker,5,main]) started.
+
+> Task :iam-registry:compileJava
+Custom actions are attached to task ':iam-registry:compileJava'.
+Caching disabled for task ':iam-registry:compileJava' because:
+  Build cache is disabled
+Task ':iam-registry:compileJava' is not up-to-date because:
+  Input property 'stableSources' file C:\Dev\project\iam\iam-registry\src\main\java\com\iam\registry\interfaces\messaging\CdmDataListener.java has changed.
+  Input property 'stableSources' file C:\Dev\project\iam\iam-registry\src\main\java\com\iam\registry\infrastructure\config\RabbitMQConfig.java has been added.
+Compilation mode: in-process compilation
+Created classpath snapshot for incremental compilation in 0.021 secs.
+Compiling with toolchain 'C:\Dev\scoop\apps\temurin21-jdk\current'.
+Compiling with JDK Java compiler API.
+Incremental compilation of 2 classes completed in 0.827 secs.
+Class dependency analysis for incremental compilation took 0.021 secs.
+Resolve mutations for :iam-registry:processResources (Thread[#4363,Execution worker,5,main]) started.
+:iam-registry:processResources (Thread[#4363,Execution worker,5,main]) started.
+
+> Task :iam-registry:processResources UP-TO-DATE
+Caching disabled for task ':iam-registry:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':iam-registry:processResources' as it is up-to-date.
+Resolve mutations for :iam-registry:classes (Thread[#4363,Execution worker,5,main]) started.
+:iam-registry:classes (Thread[#4373,Execution worker Thread 11,5,main]) started.
+
+> Task :iam-registry:classes
+Skipping task ':iam-registry:classes' as it has no actions.
+Resolve mutations for :iam-registry:compileTestJava (Thread[#4373,Execution worker Thread 11,5,main]) started.
+:iam-registry:compileTestJava (Thread[#4373,Execution worker Thread 11,5,main]) started.
+
+> Task :iam-registry:compileTestJava UP-TO-DATE
+Custom actions are attached to task ':iam-registry:compileTestJava'.
+Caching disabled for task ':iam-registry:compileTestJava' because:
+  Build cache is disabled
+Task ':iam-registry:compileTestJava' is not up-to-date because:
+  Input property 'classpath' file C:\Dev\project\iam\iam-registry\build\classes\java\main\com\iam\registry\interfaces\messaging\CdmDataListener.class has been removed.
+  Input property 'classpath' file C:\Dev\project\iam\iam-registry\build\classes\java\main\com\iam\registry\infrastructure\config\RabbitMQConfig.class has been added.
+  Input property 'classpath' file C:\Dev\project\iam\iam-registry\build\classes\java\main\com\iam\registry\interfaces\rest\UserRegistryController.class has been removed.
+  and more...
+Compilation mode: in-process compilation
+Created classpath snapshot for incremental compilation in 0.028 secs.
+None of the classes needs to be compiled! Analysis took 0.046 secs. 
+Resolve mutations for :iam-registry:processTestResources (Thread[#4373,Execution worker Thread 11,5,main]) started.
+:iam-registry:processTestResources (Thread[#4373,Execution worker Thread 11,5,main]) started.
+
+> Task :iam-registry:processTestResources UP-TO-DATE
+Caching disabled for task ':iam-registry:processTestResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':iam-registry:processTestResources' as it is up-to-date.
+Resolve mutations for :iam-registry:testClasses (Thread[#4373,Execution worker Thread 11,5,main]) started.
+:iam-registry:testClasses (Thread[#4371,Execution worker Thread 9,5,main]) started.
+
+> Task :iam-registry:testClasses UP-TO-DATE
+Skipping task ':iam-registry:testClasses' as it has no actions.
+Resolve mutations for :iam-registry:test (Thread[#4371,Execution worker Thread 9,5,main]) started.
+:iam-registry:test (Thread[#4371,Execution worker Thread 9,5,main]) started.
+Gradle Test Executor 10 started executing tests.
+
+> Task :iam-registry:test
+Caching disabled for task ':iam-registry:test' because:
+  Build cache is disabled
+Task ':iam-registry:test' is not up-to-date because:
+  Task has failed previously.
+Starting process 'Gradle Test Executor 10'. Working directory: C:\Dev\project\iam\iam-registry Command: C:\Dev\scoop\apps\temurin21-jdk\current\bin\java.exe -Dorg.gradle.internal.worker.tmpdir=C:\Dev\project\iam\iam-registry\build\tmp\test\work -javaagent:C:\Dev\scoop\apps\gradle\current\.gradle\caches\modules-2\files-2.1\org.mockito\mockito-core\5.14.2\f7bf936008d7664e2002c3faf0c02071c8d10e7c\mockito-core-5.14.2.jar -Xshare:off -XX:+EnableDynamicAgentLoading @C:\Dev\scoop\apps\gradle\current\.gradle\.tmp\gradle-worker-classpath3270929998931036045txt -Xmx512m -Dfile.encoding=UTF-8 -Duser.country=KR -Duser.language=ko -Duser.variant -ea worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 10'
+Successfully started process 'Gradle Test Executor 10'
+
+DataPipelineIntegrationTest STANDARD_OUT
+    15:44:06.649 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.iam.registry.integration.DataPipelineIntegrationTest]: DataPipelineIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+    15:44:06.754 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.iam.registry.RegistryApplication for test class com.iam.registry.integration.DataPipelineIntegrationTest
+    15:44:06.840 [Test worker] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+    15:44:06.843 [Test worker] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+    15:44:06.852 [Test worker] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.2
+    15:44:07.228 [Test worker] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with Testcontainers Host with tc.host=tcp://127.0.0.1:8376
+    15:44:07.229 [Test worker] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is 127.0.0.1
+    15:44:07.245 [Test worker] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+      Server Version: 29.1.3 (via Testcontainers Desktop 1.23.0)
+      API Version: 1.52
+      Operating System: Docker Desktop
+      Total Memory: 23858 MB
+      Labels: 
+        com.docker.desktop.address=npipe://\\.\pipe\docker_cli
+    15:44:07.249 [Test worker] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+    15:44:07.249 [Test worker] INFO org.testcontainers.DockerClientFactory -- ?뷂툗 Docker server version should be at least 1.6.0
+    15:44:07.325 [Test worker] INFO tc.rabbitmq:3-management -- Creating container for image: rabbitmq:3-management
+    15:44:07.379 [Test worker] INFO tc.testcontainers/ryuk:0.13.0 -- Creating container for image: testcontainers/ryuk:0.13.0
+    15:44:07.475 [Test worker] INFO tc.testcontainers/ryuk:0.13.0 -- Container testcontainers/ryuk:0.13.0 is starting: 708e04c1b87903edba45f946c90a8858f0517bc7cf3a05140dc3b8134fcaca21
+    15:44:07.962 [Test worker] INFO tc.testcontainers/ryuk:0.13.0 -- Container testcontainers/ryuk:0.13.0 started in PT0.5831177S
+    15:44:08.019 [Test worker] INFO tc.rabbitmq:3-management -- Container rabbitmq:3-management is starting: cb8a73ba03abd8ba85620e242d9f8413e329c3d171d9472e24e673e0789f3f28
+    15:44:17.418 [Test worker] INFO tc.rabbitmq:3-management -- Container rabbitmq:3-management started in PT10.0929905S
+    15:44:17.419 [Test worker] INFO tc.postgres:17-trixie -- Creating container for image: postgres:17-trixie
+    15:44:17.482 [Test worker] INFO tc.postgres:17-trixie -- Container postgres:17-trixie is starting: 86aaca5afa7582c7dd842d9f6bf11a172687c59d8f7b611a3f74564ef3a640de
+    15:44:18.761 [Test worker] INFO tc.postgres:17-trixie -- Container postgres:17-trixie started in PT1.3421989S
+    15:44:18.761 [Test worker] INFO tc.postgres:17-trixie -- Container is started (JDBC URL: jdbc:postgresql://127.0.0.1:57824/iam_db?loggerLevel=OFF)
+
+      .   ____          _            __ _ _
+     /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+    ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+     \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+      '  |____| .__|_| |_|_| |_\__, | / / / /
+     =========|_|==============|___/=/_/_/_/
+
+     :: Spring Boot ::                (v3.4.3)
+
+    2026-03-08T15:44:19.088+09:00  INFO 5720 --- [iam-registry] [    Test worker] c.i.r.i.DataPipelineIntegrationTest      : Starting DataPipelineIntegrationTest using Java 21.0.7 with PID 5720 (started by DHSON_DESKTOP in C:\Dev\project\iam\iam-registry)
+    2026-03-08T15:44:19.088+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] c.i.r.i.DataPipelineIntegrationTest      : Running with Spring Boot v3.4.3, Spring v6.2.3
+    2026-03-08T15:44:19.088+09:00  INFO 5720 --- [iam-registry] [    Test worker] c.i.r.i.DataPipelineIntegrationTest      : The following 1 profile is active: "test"
+    2026-03-08T15:44:19.703+09:00  INFO 5720 --- [iam-registry] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+    2026-03-08T15:44:19.847+09:00  INFO 5720 --- [iam-registry] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 133 ms. Found 14 JPA repository interfaces.
+    2026-03-08T15:44:20.061+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.s.cloud.context.scope.GenericScope     : BeanFactory id=8c910fb0-4b63-3282-961e-8217b7ca26f3
+    2026-03-08T15:44:20.399+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+    2026-03-08T15:44:20.444+09:00  INFO 5720 --- [iam-registry] [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.8.Final
+    2026-03-08T15:44:20.468+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+    2026-03-08T15:44:20.544+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+    2026-03-08T15:44:20.625+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@1164990a
+    2026-03-08T15:44:20.627+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+    2026-03-08T15:44:20.646+09:00  WARN 5720 --- [iam-registry] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+    2026-03-08T15:44:20.657+09:00  INFO 5720 --- [iam-registry] [    Test worker] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+    	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+    	Database driver: undefined/unknown
+    	Database version: 17.7
+    	Autocommit mode: undefined/unknown
+    	Isolation level: undefined/unknown
+    	Minimum pool size: undefined/unknown
+    	Maximum pool size: undefined/unknown
+    2026-03-08T15:44:20.675+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.boot.internal.EnversServiceImpl    : Envers integration enabled? : true
+    2026-03-08T15:44:20.837+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+    2026-03-08T15:44:21.095+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.iam.registry.domain.scim.ScimSchemaMeta
+    2026-03-08T15:44:21.099+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.iam.registry.domain.sync.TransRuleMeta
+    2026-03-08T15:44:21.099+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.iam.registry.domain.user.IamUserExtension
+    2026-03-08T15:44:21.099+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.iam.registry.domain.user.IamUser
+    2026-03-08T15:44:21.100+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.iam.registry.domain.scim.IamAttributeMeta
+    2026-03-08T15:44:21.100+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.iam.registry.domain.sync.TransFieldMapping
+    2026-03-08T15:44:21.100+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.iam.registry.domain.scim.ScimResourceTypeMeta
+    2026-03-08T15:44:21.874+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+    Hibernate: 
+        create table iam_attribute_meta (
+            attribute_code varchar(50) not null,
+            admin_only boolean,
+            category varchar(20) not null check (category in ('CORE','EXTENSION','CUSTOM')),
+            description varchar(255),
+            display_name varchar(255) not null,
+            edit_level integer,
+            is_encrypted boolean,
+            multi_valued boolean,
+            mutability varchar(20) check (mutability in ('READ_ONLY','READ_WRITE','WRITE_ONCE','IMMUTABLE')),
+            parent_name varchar(50),
+            is_required boolean,
+            returned varchar(20) check (returned in ('ALWAYS','NEVER','DEFAULT','REQUEST')),
+            scim_schema_uri varchar(255),
+            target_domain varchar(20) not null check (target_domain in ('USER','DEPARTMENT','GROUP')),
+            data_type varchar(20) not null check (data_type in ('STRING','NUMBER','BOOLEAN','DATE','CODE','COMPLEX','REFERENCE','BINARY','DECIMAL','INTEGER','DATE_TIME')),
+            ui_component varchar(255),
+            uniqueness varchar(20) check (uniqueness in ('NONE','SERVER','GLOBAL')),
+            view_level integer,
+            primary key (attribute_code)
+        )
+    Hibernate: 
+        create table iam_attribute_meta_aud (
+            attribute_code varchar(50) not null,
+            rev integer not null,
+            revtype smallint,
+            admin_only boolean,
+            category varchar(20) check (category in ('CORE','EXTENSION','CUSTOM')),
+            description varchar(255),
+            display_name varchar(255),
+            edit_level integer,
+            is_encrypted boolean,
+            multi_valued boolean,
+            mutability varchar(20) check (mutability in ('READ_ONLY','READ_WRITE','WRITE_ONCE','IMMUTABLE')),
+            parent_name varchar(50),
+            is_required boolean,
+            returned varchar(20) check (returned in ('ALWAYS','NEVER','DEFAULT','REQUEST')),
+            scim_schema_uri varchar(255),
+            target_domain varchar(20) check (target_domain in ('USER','DEPARTMENT','GROUP')),
+            data_type varchar(20) check (data_type in ('STRING','NUMBER','BOOLEAN','DATE','CODE','COMPLEX','REFERENCE','BINARY','DECIMAL','INTEGER','DATE_TIME')),
+            ui_component varchar(255),
+            uniqueness varchar(20) check (uniqueness in ('NONE','SERVER','GLOBAL')),
+            view_level integer,
+            primary key (rev, attribute_code)
+        )
+    Hibernate: 
+        create table iam_identity_link (
+            id bigint not null,
+            is_active boolean,
+            external_id varchar(255) not null,
+            iam_user_id bigint not null,
+            system_type varchar(255) not null,
+            primary key (id)
+        )
+    Hibernate: 
+        create table iam_rev_info (
+            id integer not null,
+            timestamp bigint not null,
+            created_at timestamp(6),
+            operation_type varchar(255),
+            operator_id varchar(255),
+            trace_id varchar(255),
+            primary key (id)
+        )
+    Hibernate: 
+        create table iam_source_system (
+            system_id varchar(50) not null,
+            conn_info jsonb not null,
+            created_at timestamp(6),
+            created_by varchar(50),
+            is_active boolean,
+            system_name varchar(100) not null,
+            system_type varchar(20) not null,
+            updated_at timestamp(6),
+            primary key (system_id)
+        )
+    Hibernate: 
+        create table iam_sync_history (
+            history_id bigint not null,
+            created_at timestamp(6),
+            event_type varchar(32) not null,
+            expires_at timestamp(6),
+            iam_user_id bigint,
+            message TEXT,
+            parent_history_id bigint,
+            request_payload jsonb,
+            result_data jsonb,
+            retry_count integer,
+            rule_rev_id bigint not null,
+            source_system varchar(100),
+            status varchar(20),
+            sync_direction varchar(20),
+            target_system varchar(100),
+            target_user varchar(255),
+            trace_id varchar(64) not null,
+            user_rev_id bigint not null,
+            primary key (history_id)
+        )
+    Hibernate: 
+        create table iam_sync_transform_failure (
+            failure_id bigint not null,
+            created_at timestamp(6),
+            error_message TEXT,
+            error_type varchar(50),
+            field_name varchar(100),
+            history_id bigint not null,
+            invalid_value TEXT,
+            rule_name varchar(100),
+            suggested_fix TEXT,
+            primary key (failure_id)
+        )
+    Hibernate: 
+        create table iam_trans_code_meta (
+            code_group_id varchar(50) not null,
+            created_at timestamp(6),
+            description varchar(255),
+            primary key (code_group_id)
+        )
+    Hibernate: 
+        create table iam_trans_code_value (
+            val_id bigint generated by default as identity,
+            code_group_id varchar(50) not null,
+            label varchar(100),
+            source_value varchar(100) not null,
+            target_value varchar(100) not null,
+            primary key (val_id)
+        )
+    Hibernate: 
+        create table iam_trans_field_mapping (
+            mapping_id bigint generated by default as identity,
+            code_group_id varchar(50),
+            created_at timestamp(6),
+            default_value varchar(255),
+            is_required boolean,
+            max_length integer,
+            min_length integer,
+            rule_id varchar(50) not null,
+            source_field varchar(100) not null,
+            target_field varchar(100) not null,
+            transform_params TEXT,
+            transform_script TEXT,
+            transform_type varchar(20) not null,
+            updated_at timestamp(6),
+            primary key (mapping_id)
+        )
+    Hibernate: 
+        create table iam_trans_field_mapping_aud (
+            mapping_id bigint not null,
+            rev integer not null,
+            revtype smallint,
+            code_group_id varchar(50),
+            created_at timestamp(6),
+            default_value varchar(255),
+            is_required boolean,
+            max_length integer,
+            min_length integer,
+            rule_id varchar(50),
+            source_field varchar(100),
+            target_field varchar(100),
+            transform_params TEXT,
+            transform_script TEXT,
+            transform_type varchar(20),
+            updated_at timestamp(6),
+            primary key (rev, mapping_id)
+        )
+    Hibernate: 
+        create table iam_trans_mapping (
+            map_id bigint generated by default as identity,
+            created_at timestamp(6),
+            exec_order integer,
+            is_mandatory boolean,
+            rule_id varchar(50) not null,
+            system_id varchar(50) not null,
+            primary key (map_id)
+        )
+    Hibernate: 
+        create table iam_trans_rule_meta (
+            rule_id varchar(50) not null,
+            created_at timestamp(6),
+            description TEXT,
+            rule_name varchar(100) not null,
+            script_content TEXT,
+            script_hash varchar(64),
+            status varchar(20),
+            target_attr varchar(50) not null,
+            updated_at timestamp(6),
+            primary key (rule_id)
+        )
+    Hibernate: 
+        create table iam_trans_rule_meta_aud (
+            rule_id varchar(50) not null,
+            rev integer not null,
+            revtype smallint,
+            created_at timestamp(6),
+            description TEXT,
+            rule_name varchar(100),
+            script_content TEXT,
+            script_hash varchar(64),
+            status varchar(20),
+            target_attr varchar(50),
+            updated_at timestamp(6),
+            primary key (rev, rule_id)
+        )
+    Hibernate: 
+        create table iam_user (
+            user_id bigint not null,
+            active boolean not null,
+            created timestamp(6),
+            display_name varchar(255),
+            external_id varchar(255),
+            family_name varchar(255),
+            formatted_name varchar(255),
+            given_name varchar(255),
+            last_modified timestamp(6),
+            locale varchar(255),
+            nick_name varchar(255),
+            preferred_language varchar(255),
+            profile_url varchar(255),
+            resource_type varchar(255),
+            timezone varchar(255),
+            title varchar(255),
+            user_name varchar(255) not null,
+            user_type varchar(255),
+            version bigint,
+            primary key (user_id)
+        )
+    Hibernate: 
+        create table iam_user_addresses (
+            user_id bigint not null,
+            country varchar(255),
+            formatted varchar(255),
+            locality varchar(255),
+            postal_code varchar(255),
+            is_primary boolean,
+            region varchar(255),
+            street_address varchar(255),
+            attr_type varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_addresses_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            country varchar(255),
+            street_address varchar(255),
+            formatted varchar(255),
+            postal_code varchar(255),
+            locality varchar(255),
+            region varchar(255),
+            attr_type varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_aud (
+            user_id bigint not null,
+            rev integer not null,
+            revtype smallint,
+            active boolean,
+            created timestamp(6),
+            display_name varchar(255),
+            external_id varchar(255),
+            family_name varchar(255),
+            formatted_name varchar(255),
+            given_name varchar(255),
+            last_modified timestamp(6),
+            locale varchar(255),
+            nick_name varchar(255),
+            preferred_language varchar(255),
+            profile_url varchar(255),
+            resource_type varchar(255),
+            timezone varchar(255),
+            title varchar(255),
+            user_name varchar(255),
+            user_type varchar(255),
+            primary key (rev, user_id)
+        )
+    Hibernate: 
+        create table iam_user_emails (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_emails_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_entitlements (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_entitlements_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_extension (
+            user_id bigint not null,
+            extensions jsonb,
+            primary key (user_id)
+        )
+    Hibernate: 
+        create table iam_user_extension_aud (
+            user_id bigint not null,
+            rev integer not null,
+            revtype smallint,
+            extensions jsonb,
+            primary key (rev, user_id)
+        )
+    Hibernate: 
+        create table iam_user_groups (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_groups_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_ims (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_ims_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_phone_numbers (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_phone_numbers_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_photos (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_photos_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_roles (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_roles_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table iam_user_schema (
+            user_id bigint not null,
+            schema_uri varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_schema_aud (
+            rev integer not null,
+            user_id bigint not null,
+            schema_uri varchar(255) not null,
+            revtype smallint,
+            primary key (user_id, rev, schema_uri)
+        )
+    Hibernate: 
+        create table iam_user_x509_certificates (
+            user_id bigint not null,
+            attr_display varchar(255),
+            is_primary boolean,
+            attr_ref varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255)
+        )
+    Hibernate: 
+        create table iam_user_x509_certificates_aud (
+            rev integer not null,
+            revtype smallint not null,
+            user_id bigint not null,
+            setordinal integer not null,
+            attr_ref varchar(255),
+            attr_display varchar(255),
+            attr_type varchar(255),
+            attr_value varchar(255),
+            is_primary boolean,
+            primary key (user_id, rev, revtype, setordinal)
+        )
+    Hibernate: 
+        create table scim_dynamic_resource (
+            id bigint not null,
+            attributes jsonb,
+            created_at timestamp(6),
+            external_id varchar(100),
+            last_modified timestamp(6),
+            resource_type varchar(50) not null,
+            scim_id varchar(64) not null,
+            version bigint,
+            primary key (id)
+        )
+    Hibernate: 
+        create table scim_resource_type_extensions (
+            resource_type_id varchar(50) not null,
+            required boolean not null,
+            extension_schema_uri varchar(255) not null,
+            primary key (resource_type_id, required, extension_schema_uri)
+        )
+    Hibernate: 
+        create table scim_resource_type_extensions_aud (
+            rev integer not null,
+            revtype smallint not null,
+            resource_type_id varchar(50) not null,
+            setordinal integer not null,
+            extension_schema_uri varchar(255),
+            required boolean,
+            primary key (rev, revtype, setordinal, resource_type_id)
+        )
+    Hibernate: 
+        create table scim_resource_type_meta (
+            resource_type_id varchar(50) not null,
+            description varchar(255),
+            endpoint varchar(255) not null,
+            name varchar(255) not null,
+            schema_uri varchar(255) not null,
+            primary key (resource_type_id)
+        )
+    Hibernate: 
+        create table scim_resource_type_meta_aud (
+            resource_type_id varchar(50) not null,
+            rev integer not null,
+            revtype smallint,
+            description varchar(255),
+            endpoint varchar(255),
+            name varchar(255),
+            schema_uri varchar(255),
+            primary key (rev, resource_type_id)
+        )
+    Hibernate: 
+        create table scim_schema_meta (
+            schema_uri varchar(100) not null,
+            description varchar(255),
+            name varchar(255) not null,
+            primary key (schema_uri)
+        )
+    Hibernate: 
+        create table scim_schema_meta_aud (
+            schema_uri varchar(100) not null,
+            rev integer not null,
+            revtype smallint,
+            description varchar(255),
+            name varchar(255),
+            primary key (rev, schema_uri)
+        )
+    Hibernate: 
+        create table scim_schema_meta_iam_attribute_meta_aud (
+            rev integer not null,
+            scim_schema_uri varchar(100) not null,
+            attribute_code varchar(50) not null,
+            revtype smallint,
+            primary key (rev, scim_schema_uri, attribute_code)
+        )
+    Hibernate: 
+        create index idx_link_external 
+           on iam_identity_link (system_type, external_id)
+    Hibernate: 
+        create index idx_sync_trace 
+           on iam_sync_history (trace_id)
+    Hibernate: 
+        create index idx_sync_target 
+           on iam_sync_history (target_user)
+    Hibernate: 
+        create index idx_transform_history 
+           on iam_sync_transform_failure (history_id)
+    Hibernate: 
+        create index idx_transform_field 
+           on iam_sync_transform_failure (field_name)
+    Hibernate: 
+        alter table if exists iam_user 
+           drop constraint if exists UKkuxe1esy3820fieatedv8kt1n
+    2026-03-08T15:44:21.951+09:00  WARN 5720 --- [iam-registry] [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Warning Code: 0, SQLState: 00000
+    2026-03-08T15:44:21.952+09:00  WARN 5720 --- [iam-registry] [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : constraint "ukkuxe1esy3820fieatedv8kt1n" of relation "iam_user" does not exist, skipping
+    Hibernate: 
+        alter table if exists iam_user 
+           add constraint UKkuxe1esy3820fieatedv8kt1n unique (user_name)
+    Hibernate: 
+        create index idx_scim_res_type 
+           on scim_dynamic_resource (resource_type)
+    Hibernate: 
+        create index idx_scim_res_ext_id 
+           on scim_dynamic_resource (external_id)
+    Hibernate: 
+        alter table if exists scim_dynamic_resource 
+           drop constraint if exists idx_scim_res_scim_id
+    2026-03-08T15:44:21.954+09:00  WARN 5720 --- [iam-registry] [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Warning Code: 0, SQLState: 00000
+    2026-03-08T15:44:21.955+09:00  WARN 5720 --- [iam-registry] [    Test worker] o.h.engine.jdbc.spi.SqlExceptionHelper   : constraint "idx_scim_res_scim_id" of relation "scim_dynamic_resource" does not exist, skipping
+    Hibernate: 
+        alter table if exists scim_dynamic_resource 
+           add constraint idx_scim_res_scim_id unique (scim_id)
+    Hibernate: 
+        create sequence iam_rev_info_seq start with 1 increment by 50
+    Hibernate: 
+        alter table if exists iam_attribute_meta 
+           add constraint FKr0v2bcybuijpvjrf2bhcy5k48 
+           foreign key (scim_schema_uri) 
+           references scim_schema_meta
+    Hibernate: 
+        alter table if exists iam_attribute_meta_aud 
+           add constraint FKsl8o0m14wxaeblc98r880du5m 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_trans_field_mapping_aud 
+           add constraint FK1hs5rhv9dqrrlh9cv0w4ixh2u 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_trans_rule_meta_aud 
+           add constraint FK6rtf9es4r2twgbi6aup577wbn 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_addresses 
+           add constraint FKbmortjkd95fm3bgqp2o07vfgj 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_addresses_aud 
+           add constraint FKlhb8nl8jl1w6wyi7nviw7o7qs 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_aud 
+           add constraint FK28l5tj8l9wkgu13n7eatbfcv2 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_emails 
+           add constraint FKniqd0h2e2byqq08me56yq5w2y 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_emails_aud 
+           add constraint FKga1aod4919wvy40c2t8xsaqp8 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_entitlements 
+           add constraint FKgkgex20e6exhq7wo1vuoln0px 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_entitlements_aud 
+           add constraint FKspgmrowjgwc7oq28n588s5hm1 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_extension 
+           add constraint FKtl2g2k0iy6fq4x4wkubk61qse 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_extension_aud 
+           add constraint FKf97q04xavmwma9et5dnayqln 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_groups 
+           add constraint FKq1td8erhql4ebve8sdops8e8n 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_groups_aud 
+           add constraint FKjgqncp5ucrdu2hhxoymjed7rq 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_ims 
+           add constraint FKkawne4wnm8vk983jep0ophisj 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_ims_aud 
+           add constraint FKog579xlju4gg3y94q0ieihsax 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_phone_numbers 
+           add constraint FKcpf0q0i77eq7otoevnswwbau1 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_phone_numbers_aud 
+           add constraint FKlr0vcde0hdg8swrnqi8o0fp00 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_photos 
+           add constraint FKqou7v3rx79n8e8u35psixq269 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_photos_aud 
+           add constraint FK6qx0hrw4quouok4adoiboc393 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_roles 
+           add constraint FKjhbancshnvgwb269d6kex2d84 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_roles_aud 
+           add constraint FKh3x739clni0jl2mbxyq818nd8 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_schema 
+           add constraint FKti7a7wdijn9xlkk4jl9vmfons 
+           foreign key (user_id) 
+           references iam_user_extension
+    Hibernate: 
+        alter table if exists iam_user_schema_aud 
+           add constraint FKnekykwmphosn8fqmgdy9xe0ew 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists iam_user_x509_certificates 
+           add constraint FK4pwup0u8mfvcrr08v4r2csetw 
+           foreign key (user_id) 
+           references iam_user
+    Hibernate: 
+        alter table if exists iam_user_x509_certificates_aud 
+           add constraint FKmbrrqeus6ad7usrxw261yye4u 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists scim_resource_type_extensions 
+           add constraint FKmabsw0j5jbtwpa57o2s5r1wpi 
+           foreign key (resource_type_id) 
+           references scim_resource_type_meta
+    Hibernate: 
+        alter table if exists scim_resource_type_extensions_aud 
+           add constraint FKjyro4tquw7v17flwntmr81poy 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists scim_resource_type_meta_aud 
+           add constraint FK2n66p0ou8ix5dbk36mjyac0v3 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists scim_schema_meta_aud 
+           add constraint FK8hd20qdsbbyoxi7uh8eordki5 
+           foreign key (rev) 
+           references iam_rev_info
+    Hibernate: 
+        alter table if exists scim_schema_meta_iam_attribute_meta_aud 
+           add constraint FKpeo2exw0dgc2gy0rswffdee6c 
+           foreign key (rev) 
+           references iam_rev_info
+    2026-03-08T15:44:21.982+09:00  INFO 5720 --- [iam-registry] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+    2026-03-08T15:44:22.459+09:00  WARN 5720 --- [iam-registry] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+    2026-03-08T15:44:22.958+09:00  INFO 5720 --- [iam-registry] [    Test worker] DiscoveryClientOptionalArgsConfiguration : Eureka HTTP Client uses RestTemplate.
+    2026-03-08T15:44:22.982+09:00  WARN 5720 --- [iam-registry] [    Test worker] iguration$LoadBalancerCaffeineWarnLogger : Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+    2026-03-08T15:44:22.996+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] .a.r.l.a.MessagingMessageListenerAdapter : Inferred argument type for public void com.iam.registry.interfaces.messaging.CdmDataListener.onCdmDataReceived(java.util.Map) is java.util.Map<java.lang.String, java.lang.Object>
+    2026-03-08T15:44:23.003+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.a.r.l.SimpleMessageListenerContainer : No global properties bean
+    2026-03-08T15:44:23.013+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.s.c.n.eureka.InstanceInfoFactory       : Setting initial instance status as: STARTING
+    2026-03-08T15:44:23.030+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Initializing Eureka in region us-east-1
+    2026-03-08T15:44:23.033+09:00  INFO 5720 --- [iam-registry] [    Test worker] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+    2026-03-08T15:44:23.040+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Disable delta property : false
+    2026-03-08T15:44:23.040+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Single vip registry refresh property : null
+    2026-03-08T15:44:23.040+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Force full registry fetch : false
+    2026-03-08T15:44:23.040+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Application is null : false
+    2026-03-08T15:44:23.040+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Registered Applications size is zero : true
+    2026-03-08T15:44:23.040+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Application version is -1: true
+    2026-03-08T15:44:23.040+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Getting all instance registry info from the eureka server
+    2026-03-08T15:44:23.226+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : The response status is 200
+    2026-03-08T15:44:23.228+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Starting heartbeat executor: renew interval is: 30
+    2026-03-08T15:44:23.229+09:00  INFO 5720 --- [iam-registry] [    Test worker] c.n.discovery.InstanceInfoReplicator     : InstanceInfoReplicator onDemand update allowed rate per min is 4
+    2026-03-08T15:44:23.230+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Discovery Client initialized at timestamp 1772952263230 with initial instances count: 3
+    2026-03-08T15:44:23.232+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.s.c.n.e.s.EurekaServiceRegistry        : Registering application IAM-REGISTRY with eureka with status UP
+    2026-03-08T15:44:23.232+09:00  INFO 5720 --- [iam-registry] [    Test worker] com.netflix.discovery.DiscoveryClient    : Saw local status change event StatusChangeEvent [timestamp=1772952263232, current=UP, previous=STARTING]
+    2026-03-08T15:44:23.234+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.a.r.l.SimpleMessageListenerContainer : Starting Rabbit listener container.
+    2026-03-08T15:44:23.234+09:00  INFO 5720 --- [iam-registry] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_IAM-REGISTRY/DESKTOP-M9M4KQ8:iam-registry:18081: registering service...
+    2026-03-08T15:44:23.234+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [127.0.0.1:58080]
+    2026-03-08T15:44:23.260+09:00  INFO 5720 --- [iam-registry] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_IAM-REGISTRY/DESKTOP-M9M4KQ8:iam-registry:18081 - registration status: 204
+    2026-03-08T15:44:23.268+09:00  INFO 5720 --- [iam-registry] [    Test worker] o.s.a.r.c.CachingConnectionFactory       : Created new connection: rabbitConnectionFactory#2f6601f4:0/SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783]
+    2026-03-08T15:44:23.270+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitAdmin         : Initializing declarations
+    2026-03-08T15:44:23.276+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.a.r.c.CachingConnectionFactory       : Creating cached Rabbit Channel from AMQChannel(amqp://guest@127.0.0.1:58080/,1)
+    2026-03-08T15:44:23.282+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitTemplate      : Executing callback RabbitAdmin$$Lambda/0x0000000100e80bf8 on RabbitMQ Channel: Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783]
+    2026-03-08T15:44:23.282+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitAdmin         : declaring Exchange 'iam.exchange'
+    2026-03-08T15:44:23.286+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitAdmin         : declaring Queue 'CDM_DATA_QUEUE'
+    2026-03-08T15:44:23.293+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitAdmin         : Binding destination [CDM_DATA_QUEUE (QUEUE)] to exchange [iam.exchange] with routing key [iam.routing.cdm]
+    2026-03-08T15:44:23.297+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitAdmin         : Declarations finished
+    2026-03-08T15:44:23.300+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] o.s.amqp.rabbit.core.RabbitTemplate      : Executing callback RabbitAdmin$$Lambda/0x0000000100e86cc8 on RabbitMQ Channel: Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783]
+    2026-03-08T15:44:23.303+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] o.s.a.r.listener.BlockingQueueConsumer   : Starting consumer Consumer@28704c3: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+    2026-03-08T15:44:23.309+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] o.s.a.r.listener.BlockingQueueConsumer   : Started on queue 'CDM_DATA_QUEUE' with tag amq.ctag-L-DesDpCdMvrKKZt4RJPYg: Consumer@28704c3: tags=[[]], channel=Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783], acknowledgeMode=AUTO local queue size=0
+    2026-03-08T15:44:23.309+09:00 DEBUG 5720 --- [iam-registry] [pool-2-thread-3] o.s.a.r.listener.BlockingQueueConsumer   : ConsumeOK: Consumer@28704c3: tags=[[amq.ctag-L-DesDpCdMvrKKZt4RJPYg]], channel=Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783], acknowledgeMode=AUTO local queue size=0
+    2026-03-08T15:44:23.315+09:00  INFO 5720 --- [iam-registry] [    Test worker] c.i.r.i.DataPipelineIntegrationTest      : Started DataPipelineIntegrationTest in 4.46 seconds (process running for 17.336)
+
+DataPipelineIntegrationTest > ?쒕굹由ъ삤: ?ㅼ젣 RabbitMQ ?먯뿉 CDM ?곗씠?곕? ?ｌ쑝硫?Registry媛 ?대? ?섏떊?섏뿬 DB???곸냽?뷀븳?? STANDARD_OUT
+    2026-03-08T15:44:23.466+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.a.r.c.CachingConnectionFactory       : Creating cached Rabbit Channel from AMQChannel(amqp://guest@127.0.0.1:58080/,2)
+    2026-03-08T15:44:23.466+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitTemplate      : Executing callback RabbitTemplate$$Lambda/0x0000000100eedbc8 on RabbitMQ Channel: Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,2), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783]
+    2026-03-08T15:44:23.473+09:00 DEBUG 5720 --- [iam-registry] [    Test worker] o.s.amqp.rabbit.core.RabbitTemplate      : Publishing message [(Body:'[B@12898e77(byte[204])' MessageProperties [headers={__ContentTypeId__=java.lang.Object, __KeyTypeId__=java.lang.Object, __TypeId__=java.util.ImmutableCollections$MapN}, contentType=application/json, contentEncoding=UTF-8, contentLength=204, deliveryMode=PERSISTENT, priority=0, deliveryTag=0])] on exchange [iam.exchange], routingKey = [iam.routing.cdm]
+    2026-03-08T15:44:23.482+09:00 DEBUG 5720 --- [iam-registry] [pool-2-thread-4] o.s.a.r.listener.BlockingQueueConsumer   : Storing delivery for consumerTag: 'amq.ctag-L-DesDpCdMvrKKZt4RJPYg' with deliveryTag: '1' in Consumer@28704c3: tags=[[amq.ctag-L-DesDpCdMvrKKZt4RJPYg]], channel=Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783], acknowledgeMode=AUTO local queue size=0
+    2026-03-08T15:44:23.483+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] o.s.a.r.listener.BlockingQueueConsumer   : Received message: (Body:'[B@b90b560(byte[204])' MessageProperties [headers={__ContentTypeId__=java.lang.Object, __KeyTypeId__=java.lang.Object, __TypeId__=java.util.ImmutableCollections$MapN}, contentType=application/json, contentEncoding=UTF-8, contentLength=0, receivedDeliveryMode=PERSISTENT, priority=0, redelivered=false, receivedExchange=iam.exchange, receivedRoutingKey=iam.routing.cdm, deliveryTag=1, consumerTag=amq.ctag-L-DesDpCdMvrKKZt4RJPYg, consumerQueue=CDM_DATA_QUEUE])
+    2026-03-08T15:44:23.490+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] .a.r.l.a.MessagingMessageListenerAdapter : Processing [GenericMessage [payload={payload={userName=integration.user, firstName=Integration, externalId=HR-0099, lastName=User, active=true}, eventType=USER_CREATE, systemId=SAP_HR, traceId=T-INTEGRATION-MSA-001}, headers={amqp_receivedDeliveryMode=PERSISTENT, amqp_receivedExchange=iam.exchange, amqp_deliveryTag=1, amqp_consumerQueue=CDM_DATA_QUEUE, amqp_redelivered=false, __ContentTypeId__=java.lang.Object, amqp_receivedRoutingKey=iam.routing.cdm, amqp_contentEncoding=UTF-8, __KeyTypeId__=java.lang.Object, amqp_retryCount=0, id=2f5b52e2-3dde-c620-3e1f-74932eaf9588, amqp_consumerTag=amq.ctag-L-DesDpCdMvrKKZt4RJPYg, amqp_lastInBatch=false, contentType=application/json, __TypeId__=java.util.ImmutableCollections$MapN, timestamp=1772952263490}]]
+    2026-03-08T15:44:23.490+09:00  INFO 5720 --- [iam-registry] [ntContainer#0-1] c.i.r.i.messaging.CdmDataListener        : Received CDM Data to persist in registry: {payload={userName=integration.user, firstName=Integration, externalId=HR-0099, lastName=User, active=true}, eventType=USER_CREATE, systemId=SAP_HR, traceId=T-INTEGRATION-MSA-001}
+    Hibernate: 
+        insert 
+        into
+            iam_user
+            (active, created, display_name, external_id, family_name, formatted_name, given_name, last_modified, locale, nick_name, preferred_language, profile_url, resource_type, timezone, title, user_name, user_type, version, user_id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    Hibernate: 
+        select
+            nextval('iam_rev_info_seq')
+    Hibernate: 
+        insert 
+        into
+            iam_rev_info
+            (created_at, operation_type, operator_id, timestamp, trace_id, id) 
+        values
+            (?, ?, ?, ?, ?, ?)
+    Hibernate: 
+        insert 
+        into
+            iam_user_aud
+            (revtype, active, created, display_name, external_id, family_name, formatted_name, given_name, last_modified, locale, nick_name, preferred_language, profile_url, resource_type, timezone, title, user_name, user_type, rev, user_id) 
+        values
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    2026-03-08T15:44:23.547+09:00  INFO 5720 --- [iam-registry] [ntContainer#0-1] c.i.r.i.messaging.CdmDataListener        : Successfully persisted user: integration.user
+    Hibernate: 
+        select
+            iu1_0.user_id,
+            iu1_0.active,
+            iu1_0.created,
+            iu1_0.display_name,
+            iu1_0.external_id,
+            iu1_0.family_name,
+            iu1_0.formatted_name,
+            iu1_0.given_name,
+            iu1_0.last_modified,
+            iu1_0.locale,
+            iu1_0.nick_name,
+            iu1_0.preferred_language,
+            iu1_0.profile_url,
+            iu1_0.resource_type,
+            iu1_0.timezone,
+            iu1_0.title,
+            iu1_0.user_name,
+            iu1_0.user_type,
+            iu1_0.version 
+        from
+            iam_user iu1_0 
+        where
+            iu1_0.external_id=?
+    Hibernate: 
+        select
+            iue1_0.user_id,
+            iue1_0.extensions,
+            u1_0.user_id,
+            u1_0.active,
+            u1_0.created,
+            u1_0.display_name,
+            u1_0.external_id,
+            u1_0.family_name,
+            u1_0.formatted_name,
+            u1_0.given_name,
+            u1_0.last_modified,
+            u1_0.locale,
+            u1_0.nick_name,
+            u1_0.preferred_language,
+            u1_0.profile_url,
+            u1_0.resource_type,
+            u1_0.timezone,
+            u1_0.title,
+            u1_0.user_name,
+            u1_0.user_type,
+            u1_0.version 
+        from
+            iam_user_extension iue1_0 
+        join
+            iam_user u1_0 
+                on u1_0.user_id=iue1_0.user_id 
+        where
+            iue1_0.user_id=?
+    Hibernate: 
+        select
+            iu1_0.user_id,
+            iu1_0.active,
+            iu1_0.created,
+            iu1_0.display_name,
+            iu1_0.external_id,
+            iu1_0.family_name,
+            iu1_0.formatted_name,
+            iu1_0.given_name,
+            iu1_0.last_modified,
+            iu1_0.locale,
+            iu1_0.nick_name,
+            iu1_0.preferred_language,
+            iu1_0.profile_url,
+            iu1_0.resource_type,
+            iu1_0.timezone,
+            iu1_0.title,
+            iu1_0.user_name,
+            iu1_0.user_type,
+            iu1_0.version 
+        from
+            iam_user iu1_0 
+        where
+            iu1_0.external_id=?
+    Hibernate: 
+        select
+            iue1_0.user_id,
+            iue1_0.extensions,
+            u1_0.user_id,
+            u1_0.active,
+            u1_0.created,
+            u1_0.display_name,
+            u1_0.external_id,
+            u1_0.family_name,
+            u1_0.formatted_name,
+            u1_0.given_name,
+            u1_0.last_modified,
+            u1_0.locale,
+            u1_0.nick_name,
+            u1_0.preferred_language,
+            u1_0.profile_url,
+            u1_0.resource_type,
+            u1_0.timezone,
+            u1_0.title,
+            u1_0.user_name,
+            u1_0.user_type,
+            u1_0.version 
+        from
+            iam_user_extension iue1_0 
+        join
+            iam_user u1_0 
+                on u1_0.user_id=iue1_0.user_id 
+        where
+            iue1_0.user_id=?
+
+DataPipelineIntegrationTest STANDARD_OUT
+    2026-03-08T15:44:24.254+09:00 DEBUG 5720 --- [iam-registry] [pool-2-thread-6] o.s.a.r.listener.BlockingQueueConsumer   : Received shutdown signal for consumer tag=amq.ctag-L-DesDpCdMvrKKZt4RJPYg
+
+    com.rabbitmq.client.ShutdownSignalException: connection error
+    	at com.rabbitmq.client.impl.AMQConnection.startShutdown(AMQConnection.java:1007) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.shutdown(AMQConnection.java:997) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.handleFailure(AMQConnection.java:797) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.access$500(AMQConnection.java:48) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:696) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+    Caused by: java.io.EOFException: null
+    	at java.base/java.io.DataInputStream.readUnsignedByte(DataInputStream.java:297) ~[na:na]
+    	at com.rabbitmq.client.impl.Frame.readFrom(Frame.java:91) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.SocketFrameHandler.readFrame(SocketFrameHandler.java:199) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:687) ~[amqp-client-5.22.0.jar:5.22.0]
+    	... 1 common frames omitted
+
+    2026-03-08T15:44:24.549+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it
+
+    com.rabbitmq.client.ShutdownSignalException: connection error
+    	at com.rabbitmq.client.impl.AMQConnection.startShutdown(AMQConnection.java:1007) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.shutdown(AMQConnection.java:997) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.handleFailure(AMQConnection.java:797) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.access$500(AMQConnection.java:48) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:696) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+    Caused by: java.io.EOFException: null
+    	at java.base/java.io.DataInputStream.readUnsignedByte(DataInputStream.java:297) ~[na:na]
+    	at com.rabbitmq.client.impl.Frame.readFrom(Frame.java:91) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.SocketFrameHandler.readFrame(SocketFrameHandler.java:199) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:687) ~[amqp-client-5.22.0.jar:5.22.0]
+    	... 1 common frames omitted
+
+    2026-03-08T15:44:24.550+09:00  INFO 5720 --- [iam-registry] [ntContainer#0-1] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@28704c3: tags=[[amq.ctag-L-DesDpCdMvrKKZt4RJPYg]], channel=Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783], acknowledgeMode=AUTO local queue size=0
+    2026-03-08T15:44:24.550+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] o.s.a.r.listener.BlockingQueueConsumer   : Closing Rabbit Channel: Cached Rabbit Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1), conn: Proxy@4116167e Shared Rabbit Connection: SimpleConnection@6cf4ac81 [delegate=amqp://guest@127.0.0.1:58080/, localPort=7783]
+    2026-03-08T15:44:24.550+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-1] o.s.a.r.c.CachingConnectionFactory       : Closing cached Channel: AMQChannel(amqp://guest@127.0.0.1:58080/,1)
+    2026-03-08T15:44:24.551+09:00  INFO 5720 --- [iam-registry] [ntContainer#0-2] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [127.0.0.1:58080]
+    2026-03-08T15:44:24.552+09:00  WARN 5720 --- [iam-registry] [127.0.0.1:58080] c.r.c.impl.ForgivingExceptionHandler     : An unexpected connection driver error occurred (Exception message: Connection reset)
+    2026-03-08T15:44:24.553+09:00 ERROR 5720 --- [iam-registry] [ntContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+
+    org.springframework.amqp.AmqpIOException: java.io.IOException
+    	at org.springframework.amqp.rabbit.support.RabbitExceptionTranslator.convertRabbitAccessException(RabbitExceptionTranslator.java:70) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:632) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.createConnection(CachingConnectionFactory.java:726) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.createBareChannel(CachingConnectionFactory.java:671) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.getCachedChannelProxy(CachingConnectionFactory.java:644) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.getChannel(CachingConnectionFactory.java:533) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory$ChannelCachingConnectionProxy.createChannel(CachingConnectionFactory.java:1484) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.core.RabbitTemplate.doExecute(RabbitTemplate.java:2268) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.core.RabbitTemplate.execute(RabbitTemplate.java:2235) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.core.RabbitTemplate.execute(RabbitTemplate.java:2215) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.core.RabbitAdmin.getQueueInfo(RabbitAdmin.java:467) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.core.RabbitAdmin.getQueueProperties(RabbitAdmin.java:451) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.attemptDeclarations(AbstractMessageListenerContainer.java:1972) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.redeclareElementsIfNecessary(AbstractMessageListenerContainer.java:1936) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.initialize(SimpleMessageListenerContainer.java:1483) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.run(SimpleMessageListenerContainer.java:1324) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+    Caused by: java.io.IOException: null
+    	at com.rabbitmq.client.impl.AMQChannel.wrap(AMQChannel.java:140) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQChannel.wrap(AMQChannel.java:136) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.start(AMQConnection.java:406) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1251) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1198) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connectAddresses(AbstractConnectionFactory.java:678) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connect(AbstractConnectionFactory.java:647) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:593) ~[spring-rabbit-3.2.3.jar:3.2.3]
+    	... 15 common frames omitted
+    Caused by: com.rabbitmq.client.ShutdownSignalException: connection error
+    	at com.rabbitmq.utility.ValueOrException.getValue(ValueOrException.java:66) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.utility.BlockingValueOrException.uninterruptibleGetValue(BlockingValueOrException.java:36) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQChannel$BlockingRpcContinuation.getReply(AMQChannel.java:552) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection.start(AMQConnection.java:336) ~[amqp-client-5.22.0.jar:5.22.0]
+    	... 20 common frames omitted
+    Caused by: java.net.SocketException: Connection reset
+    	at java.base/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:318) ~[na:na]
+    	at java.base/sun.nio.ch.NioSocketImpl.read(NioSocketImpl.java:346) ~[na:na]
+    	at java.base/sun.nio.ch.NioSocketImpl$1.read(NioSocketImpl.java:796) ~[na:na]
+    	at java.base/java.net.Socket$SocketInputStream.read(Socket.java:1099) ~[na:na]
+    	at java.base/java.io.BufferedInputStream.fill(BufferedInputStream.java:291) ~[na:na]
+    	at java.base/java.io.BufferedInputStream.implRead(BufferedInputStream.java:325) ~[na:na]
+    	at java.base/java.io.BufferedInputStream.read(BufferedInputStream.java:312) ~[na:na]
+    	at java.base/java.io.DataInputStream.readUnsignedByte(DataInputStream.java:295) ~[na:na]
+    	at com.rabbitmq.client.impl.Frame.readFrom(Frame.java:91) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.SocketFrameHandler.readFrame(SocketFrameHandler.java:199) ~[amqp-client-5.22.0.jar:5.22.0]
+    	at com.rabbitmq.client.impl.AMQConnection$MainLoop.run(AMQConnection.java:687) ~[amqp-client-5.22.0.jar:5.22.0]
+    	... 1 common frames omitted
+
+    2026-03-08T15:44:24.554+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-2] o.s.a.r.listener.BlockingQueueConsumer   : Starting consumer Consumer@2418d4a3: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+    2026-03-08T15:44:24.554+09:00  INFO 5720 --- [iam-registry] [ntContainer#0-2] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [127.0.0.1:58080]
+    2026-03-08T15:44:24.555+09:00  WARN 5720 --- [iam-registry] [127.0.0.1:58080] c.r.c.impl.ForgivingExceptionHandler     : An unexpected connection driver error occurred (Exception message: Connection reset)
+    2026-03-08T15:44:24.556+09:00 DEBUG 5720 --- [iam-registry] [ntContainer#0-2] o.s.a.r.l.SimpleMessageListenerContainer : Recovering consumer in 5000 ms.
+
+Gradle Test Executor 10 finished executing tests.
+2026-03-08T15:44:25.393+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] o.s.c.n.e.s.EurekaServiceRegistry        : Unregistering application IAM-REGISTRY with eureka with status DOWN
+2026-03-08T15:44:25.394+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] com.netflix.discovery.DiscoveryClient    : Saw local status change event StatusChangeEvent [timestamp=1772952265394, current=DOWN, previous=UP]
+2026-03-08T15:44:25.394+09:00  INFO 5720 --- [iam-registry] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_IAM-REGISTRY/DESKTOP-M9M4KQ8:iam-registry:18081: registering service...
+2026-03-08T15:44:25.395+09:00 DEBUG 5720 --- [iam-registry] [ionShutdownHook] o.s.a.r.l.SimpleMessageListenerContainer : Shutting down Rabbit listener container
+2026-03-08T15:44:25.396+09:00  INFO 5720 --- [iam-registry] [ntContainer#0-3] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+2026-03-08T15:44:25.396+09:00  INFO 5720 --- [iam-registry] [ntContainer#0-3] o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+2026-03-08T15:44:25.398+09:00 DEBUG 5720 --- [iam-registry] [ionShutdownHook] o.s.a.r.l.SimpleMessageListenerContainer : Shutdown ignored - container is not active already
+2026-03-08T15:44:25.399+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-03-08T15:44:25.400+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-03-08T15:44:25.403+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-03-08T15:44:25.404+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] com.netflix.discovery.DiscoveryClient    : Shutting down DiscoveryClient ...
+2026-03-08T15:44:25.408+09:00  INFO 5720 --- [iam-registry] [foReplicator-%d] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_IAM-REGISTRY/DESKTOP-M9M4KQ8:iam-registry:18081 - registration status: 204
+2026-03-08T15:44:25.409+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] com.netflix.discovery.DiscoveryClient    : Unregistering ...
+2026-03-08T15:44:25.412+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] com.netflix.discovery.DiscoveryClient    : DiscoveryClient_IAM-REGISTRY/DESKTOP-M9M4KQ8:iam-registry:18081 - deregister  status: 200
+2026-03-08T15:44:25.412+09:00  INFO 5720 --- [iam-registry] [ionShutdownHook] com.netflix.discovery.DiscoveryClient    : Completed shut down of DiscoveryClient
+
+> Task :iam-registry:test
+Finished generating test XML results (0.002 secs) into: C:\Dev\project\iam\iam-registry\build\test-results\test
+Generating HTML test report...
+Finished generating test html results (0.003 secs) into: C:\Dev\project\iam\iam-registry\build\reports\tests\test
+
+[Incubating] Problems report is available at: file:///C:/Dev/project/iam/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 21s
+5 actionable tasks: 2 executed, 3 up-to-date
+Watched directory hierarchies: [C:\Dev\project\iam]
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.0.0/userguide/configuration_cache_enabling.html

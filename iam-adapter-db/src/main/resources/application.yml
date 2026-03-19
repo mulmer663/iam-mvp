@@ -1,0 +1,20 @@
+server:
+  port: 18085
+
+spring:
+  application:
+    name: iam-adapter-db
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: user
+    password: password
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+logging:
+  level:
+    com.iam.adapter.db: DEBUG
