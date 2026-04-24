@@ -5,16 +5,17 @@
 # Project Context & Operations
 
 - **Domain:** Identity & Access Management (IAM) - SCIM 2.0 Compliant
-- **Tech Stack:** Java 21, Spring Boot 3.5.8, Gradle, PostgreSQL, RabbitMQ, Docker
-- **Structure:** Multi-module Gradle project (Core, Connectors)
+- **Tech Stack:** Java 21, Spring Boot 3.4.3, Spring Cloud 2024.0.0, Gradle, PostgreSQL 17, RabbitMQ, Docker
+- **Structure:** Multi-module Gradle project. Active modules (per `settings.gradle`): `iam-eureka`, `iam-registry`, `iam-engine`, `iam-adapter-db`. `iam-core` is **legacy** (pre-MSA) and kept only for reference.
 - **Operational Commands:**
   - **Hybrid Development (Highly Recommended):**
     - Start Infra: `docker-compose -f docker-compose.infra.yml up -d`
     - Run Apps: Use IDE (IntelliJ/VSCode) for debugging and rapid development.
   - **Full Stack (Containerized):**
-    - Run All: `docker-compose up -d` (Apps mapped to ports `18081-18084`, `15173`)
+    - `docker-compose up -d` — **currently broken**: the file still references legacy `iam-connector-ad`/`iam-connector-hr` services whose Dockerfiles no longer exist. Prune before use.
+    - Port map when fixed: Eureka 8761, iam-registry 18084, iam-engine 18085, iam-adapter-db 18086, iam-ui 15173.
   - Build: `./gradlew build`
-  - Run (Core): `./gradlew :iam-core:bootRun`
+  - Run (Registry): `./gradlew :iam-registry:bootRun`
   - Test: `./gradlew test`
 
 # Golden Rules
@@ -22,7 +23,6 @@
 - **Immutable:**
   - Strictly follow Java 21 syntax (Records, Pattern Matching for Switch on `ExtensionData`).
   - Ensure 12-Factor App principles for containerization.
-  - Never modify `AGENTS_md_Master_Prompt_ghs8S.md`.
 
 - **Do's:**
   - Use `Lombok` for boilerplate reduction (`@RequiredArgsConstructor`, `@Getter`).
@@ -63,15 +63,20 @@
 - **[Database Adapter](./iam-adapter-db/AGENTS.md)** — Connectivity Adapter for Dynamic DB Fetch/Update.
 - **[Service Discovery](./iam-eureka/AGENTS.md)** — Eureka Server configurations.
 
-**Legacy Connectors** (To be refactored)
+**Legacy (To be removed)**
 
-- **[Core Logic (Legacy)](./iam-core/AGENTS.md)** — Legacy core entities.
+- **[Core Logic (Legacy)](./iam-core/AGENTS.md)** — Pre-MSA monolith precursor. Domain entities (`IamUser`, `SyncHistory`, `TransMapping` …) are duplicated in `iam-registry`. Do **not** add new features here.
 
 **Frontend & Infra**
 
 - **[UI Dashboard](./iam-ui/AGENTS.md)** — High-density Vue 3 dashboard and Miller Columns.
-- **[Infrastructure](./docker-compose.yml)** — Docker services for Postgres, RabbitMQ, and Apps.
-- **[Build Settings](./build.gradle)** — Root project configuration and dependencies.
+- **[Infrastructure (infra-only)](./docker-compose.infra.yml)** — Postgres + RabbitMQ for hybrid development.
+- **[Infrastructure (full stack)](./docker-compose.yml)** — Broken until legacy `iam-connector-*` services are pruned.
+- **[Build Settings](./build.gradle)** — Root config. Active modules declared in [`settings.gradle`](./settings.gradle).
+
+**Claude Code Native Entry Point**
+
+- **[CLAUDE.md](./CLAUDE.md)** — Root context auto-loaded by Claude Code. Per-module `CLAUDE.md` files are pointer-shims to the detailed `AGENTS.md` in each directory.
 
 ## Living Documentation & Feedback Loop
 

@@ -14,6 +14,8 @@ This workflow starts the database and message broker in Docker, allowing you to 
 2. Verify Services:
 `docker ps`
 
-3. (Note) You can now start `iam-core`, `iam-connector-ad`, or `iam-connector-hr` in your IDE. They are pre-configured to connect to `localhost:5432` and `localhost:5672`.
+3. (Note) You can now start the active MSA modules in your IDE: `iam-eureka`, `iam-registry`, `iam-engine`, `iam-adapter-db`. They are pre-configured to connect to `localhost:5432` (Postgres), `localhost:5672` (RabbitMQ), and `localhost:8761` (Eureka).
 
-4. (Note) If you still want to run apps in Docker, use `docker-compose up -d`. They are mapped to `18081`, `18082`, etc., to avoid port conflicts with your IDE.
+4. (Note) `docker-compose up -d` currently references obsolete `iam-connector-ad`/`iam-connector-hr` services and will fail to build. Prefer hybrid mode until the compose file is pruned. When fixed, apps map to `18081`+ to avoid IDE port conflicts.
+
+5. (Note) `iam-core` is the legacy pre-MSA monolith and does not need to be run in current workflows.

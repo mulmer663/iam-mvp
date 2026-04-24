@@ -1,6 +1,8 @@
 # Module Context
 
-**Core Identity Engine:** Central hub for identity lifecycle management, policy enforcement, and persistence.
+> ⚠️ **LEGACY MODULE — pre-MSA monolith precursor.** New domain work belongs in `iam-registry` (see `../iam-registry/AGENTS.md`). Entities (`IamUser`, `SyncHistory`, `TransMapping`, …) are duplicated here and in `iam-registry`. This file is retained for reference on the original architecture; do not treat it as the current engine specification.
+
+**Core Identity Engine (legacy):** Central hub for identity lifecycle management, policy enforcement, and persistence — as originally conceived before the MSA split.
 **Dependencies:** `spring-boot-starter-data-jpa`, `postgresql`, `spring-boot-starter-amqp`, `groovy-all`
 
 ## Repository Layout (Clean Architecture)
@@ -49,7 +51,7 @@ com.iam.core
   - Scripts must be hashed (SHA-256) and versioned in `IAM_TRANS_RULE_VERSION`.
 - **Error Handling & Validation:**
   - **Custom Exception:** Use `IamBusinessException` combined with `ErrorCode` (e.g., `ErrorCode.USER_NOT_FOUND`) for domain-level errors.
-  - **Global Handler:** All exceptions are caught by `GlobalExceptionHandler` (`@RestControllerAdvice`) which converts them to a standard JSON error response as defined in [../api-specs.md](../api-specs.md).
+  - **Global Handler:** All exceptions are caught by `GlobalExceptionHandler` (`@RestControllerAdvice`) which converts them to a standard JSON error response as defined in [../spec.md](../spec.md).
   - **Validation:** Use `jakarta.validation` annotations (`@NotNull`, `@Email`, etc.) on Input DTOs. Validation errors are automatically transformed into `400 Bad Request` responses.
 
 # Testing Strategy
