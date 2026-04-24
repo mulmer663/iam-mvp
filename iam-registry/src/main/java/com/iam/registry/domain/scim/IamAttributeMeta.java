@@ -3,7 +3,12 @@ package com.iam.registry.domain.scim;
 import com.iam.registry.domain.common.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.envers.Audited;
+import org.hibernate.type.SqlTypes;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "iam_attribute_meta")
@@ -82,6 +87,23 @@ public class IamAttributeMeta {
     @Enumerated(EnumType.STRING)
     @Column(name = "uniqueness", length = 20)
     private AttributeUniqueness uniqueness = AttributeUniqueness.NONE;
+
+    // RFC 7643 §2.2: STRING 타입에서 대소문자 구분 여부
+    @Builder.Default
+    @Column(name = "case_exact")
+    private boolean caseExact = false;
+
+    // RFC 7643 §2.2: 권장 canonical 값 목록 (예: email/phone/im 의 type = work|home|other)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "canonical_values", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<String> canonicalValues = new ArrayList<>();
+
+    // RFC 7643 §2.2: REFERENCE 타입에서 허용되는 참조 대상 (예: "User", "Group", "external", "uri")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "reference_types", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<String> referenceTypes = new ArrayList<>();
 
     @Column(name = "ui_component")
     private String uiComponent;
