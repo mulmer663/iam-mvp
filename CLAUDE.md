@@ -12,16 +12,41 @@
 
 ## 🎯 현재 집중 영역 (Now)
 
-**SCIM 2.0 표준 스펙 충실 구현**. MSA 아키텍처, Groovy 룰 엔진, Envers 이력, UI 는 이미 뼈대가 잡혔으므로 **먼저 SCIM 2.0 프로토콜 적합성을 채우는 것이 우선 순위**입니다.
+**SCIM 2.0 스키마 확장(Extension) 및 속성 메타 상세 스펙화**.
 
-- 작업 시 `iam-registry` 의 SCIM 엔드포인트 / 스키마 / ResourceType / Filter / PATCH 처리 등 **RFC 7643, 7644 준수 여부**를 우선 검증
-- 레퍼런스 스펙: 프로젝트 루트의 [`SCIM.txt`](./SCIM.txt) (RFC 원문 사본)
-- 도메인/API 내부 계약: [`spec.md`](./spec.md) — 단, spec.md 가 표준과 어긋나는 부분이 있다면 **SCIM 표준을 우선** 하고 spec.md 를 업데이트
+표준 `User` / `Group` 리소스의 고정 속성만으로는 고객사별 다양한 속성 요구(사번, 직급 체계, 커스텀 역할, 국가별 필드, 내부 분류 코드 등)를 커버할 수 없기 때문에, **스키마를 런타임 확장 가능하게 만드는 것**이 우선 과제입니다.
+
+### 이미 구축된 확장 인프라 (`iam-registry/domain/scim/`)
+
+| 엔티티 | 역할 |
+|---|---|
+| `ScimSchemaMeta` | 스키마 URN 레지스트리 (`urn:ietf:params:scim:schemas:core:2.0:User` 등). 속성 리스트 보유 |
+| `IamAttributeMeta` | 속성 단위 메타 — RFC 7643 특성(`mutability`/`returned`/`uniqueness`/`multiValued`/`required`) + 프로젝트 확장(`targetDomain`, `category`, `adminOnly`, `view/editLevel`, `encrypted`, `uiComponent`) |
+| `ScimResourceTypeMeta` | ResourceType 정의 (id/endpoint/main schema + 확장 스키마 목록) |
+| `ScimResourceTypeExtension` | ResourceType ↔ Extension 스키마 (required 여부) 임베디드 연결 |
+| `ScimDynamicResource` | 런타임 등록된 리소스 타입의 실제 저장 (JSONB `attributes`) |
+| `IamUserExtension` / `ExtensionData` | User 확장 속성 JSONB 저장 |
+| `EnterpriseUserExtension` | `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User` 하드코딩 구현 |
+
+### 이 영역에서 편집 시 우선 체크할 것
+
+1. **RFC 7643 Section 2 준수** — `IamAttributeMeta` 가 아직 반영 안 한 RFC 필드:
+   - `caseExact` (string 속성용)
+   - `canonicalValues` (예: email `type` = work/home)
+   - `referenceTypes` (reference 속성용: "User"/"Group"/"external"/"uri")
+   - `subAttributes` 관계 — 현재 `parentName` 문자열로만 표현 (1-level 이상 중첩 대응 필요 여부 검토)
+2. **`/Schemas`, `/ResourceTypes`, `/ServiceProviderConfig` 디스커버리 응답**이 `IamAttributeMeta` / `ScimSchemaMeta` / `ScimResourceTypeMeta` 에서 **정확히 재구성**되는지
+3. **확장 속성 PATCH** 경로 (`"schemas"` 배열에 확장 URN 포함, 값 타겟팅 `urn:...:User:department` 형태)
+4. **동적 ResourceType CRUD** (`ScimDynamicResource`) 가 표준 `/scim/v2/{ResourceType}` 규약을 그대로 따르는지
+5. 고객사 확장 추가 시 **코드 변경 없이 DB 만으로** 가능한지 (현재 enterprise 확장은 하드코딩 엔티티 — 일반화 경로 검토)
+
+- 레퍼런스 스펙: [`SCIM.txt`](./SCIM.txt) (RFC 7643/7644 원문 사본)
+- 내부 계약: [`spec.md`](./spec.md) §6.6, §6.7 — 표준과 충돌 시 **표준 우선** 후 spec.md 갱신
 
 ### 최종 목표 (Eventually, 지금은 보류)
 
 궁극적 아키텍처 비전: [`archive/iam-architecture.docx`](./archive/iam-architecture.docx) — Universal Identity Fabric & Transformation Engine.
-현재는 이 그림을 그대로 만들지 않고 **SCIM 표준 준수 완성** 이후에 재검토. 관련 작업 제안 시 "이건 SCIM 표준 범위가 맞는가?" 를 먼저 확인.
+현재는 이 그림을 그대로 만들지 않고 **스키마 확장 기반이 안정화된 뒤** 재검토. 새 작업 제안 시 *"이게 스키마 확장 인프라를 고도화하는가, 아니면 벗어난 방향인가?"* 를 먼저 확인.
 
 ## 활성 모듈 맵 (✅ 현재 사용 / ⚠️ 레거시)
 
