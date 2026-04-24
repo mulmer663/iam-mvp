@@ -10,6 +10,19 @@
 - Antigravity 로 개발 중 중단된 토이 프로젝트 (개인 실험)
 - 상세 배경: [README.md](./README.md)
 
+## 🎯 현재 집중 영역 (Now)
+
+**SCIM 2.0 표준 스펙 충실 구현**. MSA 아키텍처, Groovy 룰 엔진, Envers 이력, UI 는 이미 뼈대가 잡혔으므로 **먼저 SCIM 2.0 프로토콜 적합성을 채우는 것이 우선 순위**입니다.
+
+- 작업 시 `iam-registry` 의 SCIM 엔드포인트 / 스키마 / ResourceType / Filter / PATCH 처리 등 **RFC 7643, 7644 준수 여부**를 우선 검증
+- 레퍼런스 스펙: 프로젝트 루트의 [`SCIM.txt`](./SCIM.txt) (RFC 원문 사본)
+- 도메인/API 내부 계약: [`spec.md`](./spec.md) — 단, spec.md 가 표준과 어긋나는 부분이 있다면 **SCIM 표준을 우선** 하고 spec.md 를 업데이트
+
+### 최종 목표 (Eventually, 지금은 보류)
+
+궁극적 아키텍처 비전: [`archive/iam-architecture.docx`](./archive/iam-architecture.docx) — Universal Identity Fabric & Transformation Engine.
+현재는 이 그림을 그대로 만들지 않고 **SCIM 표준 준수 완성** 이후에 재검토. 관련 작업 제안 시 "이건 SCIM 표준 범위가 맞는가?" 를 먼저 확인.
+
 ## 활성 모듈 맵 (✅ 현재 사용 / ⚠️ 레거시)
 
 | 모듈 | 역할 | 상태 | 포트(Docker) |
