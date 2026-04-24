@@ -17,6 +17,8 @@ export default defineConfig({
     },
   },
   server: {
+    // Dev proxy targets iam-registry (port 18081 per iam-registry/src/main/resources/application.yml).
+    // The legacy iam-core module runs on 8081; do NOT point this here — iam-core is being retired.
     proxy: {
       '/api': {
         target: 'http://localhost:18081',
