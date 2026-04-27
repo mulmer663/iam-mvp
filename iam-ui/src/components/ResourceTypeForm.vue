@@ -193,8 +193,8 @@ function cancelEdit() {
                </div>
 
                <div class="flex items-center space-x-2">
-                   <Checkbox :id="'req-'+idx" :checked="ext.required" 
-                             @update:checked="(v: boolean) => ext.required = v" 
+                   <Checkbox :id="'req-'+idx" :model-value="ext.required"
+                             @update:model-value="(v: any) => ext.required = !!v"
                              :disabled="!isEditMode || (isLocked && isStandardSchema(ext.schema))" />
                    <Label :for="'req-'+idx" class="text-xs">Required</Label>
                </div>

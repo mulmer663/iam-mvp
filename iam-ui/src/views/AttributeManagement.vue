@@ -399,7 +399,7 @@ async function onDelete(name: string, targetDomain: AttributeTargetDomain) {
                             </Button>
                         </div>
                         <div class="flex items-center gap-1">
-                            <Checkbox :id="'ext-req-'+idx" :checked="ext.required" @update:checked="(v: boolean) => ext.required = v" />
+                            <Checkbox :id="'ext-req-'+idx" :model-value="ext.required" @update:model-value="(v: any) => ext.required = !!v" />
                             <Label :for="'ext-req-'+idx" class="text-xs">Required</Label>
                         </div>
                     </div>
