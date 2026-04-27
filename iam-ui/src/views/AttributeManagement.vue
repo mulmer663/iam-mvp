@@ -261,7 +261,8 @@ async function onDelete(name: string, targetDomain: AttributeTargetDomain) {
                 Attributes
              </div>
             
-            <Button size="xs" class="bg-blue-600 text-white hover:bg-blue-700 font-bold flex gap-1 h-8 px-3 text-sm" @click="onCreate">
+            <Button v-if="!schemaUri || !isStandardSchema(schemaUri)"
+                size="xs" class="bg-blue-600 text-white hover:bg-blue-700 font-bold flex gap-1 h-8 px-3 text-sm" @click="onCreate">
                 <Plus class="size-4" /> Add
             </Button>
         </div>
