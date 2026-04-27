@@ -1,7 +1,6 @@
 import { request } from './client'
 import type { User } from '@/types'
 
-// SCIM Types from Backend (matching ScimListResponse & ScimUserResponse)
 interface ScimListResponse<T> {
     schemas: string[]
     totalResults: number
@@ -21,7 +20,7 @@ interface ScimUserResponse {
         formatted?: string
     }
     title?: string
-    emails: { value: string; primary: boolean }[]
+    emails: { value: string; primary?: boolean; type?: string }[]
     active: boolean
     meta: {
         resourceType: string
@@ -29,14 +28,17 @@ interface ScimUserResponse {
         lastModified: string
         location: string
     }
-    'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'?: {
-        department?: string
-        employeeNumber?: string
-        costCenter?: string
-        organization?: string
-        division?: string
-    }
+    [key: string]: any
 }
+
+export interface ScimPatchOp {
+    op: 'add' | 'replace' | 'remove'
+    path?: string
+    value?: any
+}
+
+const SCIM_PATCH_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:PatchOp'
+const SCIM_USER_SCHEMA = 'urn:ietf:params:scim:schemas:core:2.0:User'
 
 export const UserService = {
     async getUsers(): Promise<User[]> {
@@ -49,18 +51,49 @@ export const UserService = {
         return this.toUser(response)
     },
 
-    // Convert Backend SCIM Response to Frontend User Type
+    async createUser(payload: Record<string, any>): Promise<User> {
+        const schemas: string[] = [SCIM_USER_SCHEMA]
+        for (const key of Object.keys(payload)) {
+            if (key.startsWith('urn:') && !schemas.includes(key)) schemas.push(key)
+        }
+        const body = { schemas, ...payload }
+        const response = await request<ScimUserResponse>('/scim/v2/Users', {
+            method: 'POST',
+            body: JSON.stringify(body)
+        })
+        return this.toUser(response)
+    },
+
+    async patchUser(id: string, operations: ScimPatchOp[]): Promise<User> {
+        const body = {
+            schemas: [SCIM_PATCH_SCHEMA],
+            Operations: operations
+        }
+        const response = await request<ScimUserResponse>(`/scim/v2/Users/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(body)
+        })
+        return this.toUser(response)
+    },
+
+    async deleteUser(id: string): Promise<void> {
+        await request<void>(`/scim/v2/Users/${id}`, { method: 'DELETE' })
+    },
+
     toUser(scim: ScimUserResponse): User {
-        return {
+        const user: User = {
             id: scim.id,
             externalId: scim.externalId,
             userName: scim.userName,
             name: scim.name,
             title: scim.title || '',
             active: scim.active,
-            emails: scim.emails,
-            meta: scim.meta,
-            'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': scim['urn:ietf:params:scim:schemas:extension:enterprise:2.0:User']
+            emails: (scim.emails || []).map(e => ({ value: e.value, primary: e.primary ?? false })),
+            meta: scim.meta
         }
+        for (const key of Object.keys(scim)) {
+            if (key.startsWith('urn:')) user[key] = scim[key]
+        }
+        return user
     }
 }

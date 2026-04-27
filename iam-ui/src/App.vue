@@ -24,6 +24,7 @@ import ResourceTypeForm from '@/components/ResourceTypeForm.vue'
 import ResourceTypeDetailPane from '@/views/ResourceTypeDetailPane.vue'
 import ResourceTypeCreateForm from '@/views/ResourceTypeCreateForm.vue'
 import UserDetailPane from '@/components/UserDetailPane.vue'
+import UserCreatePane from '@/views/UserCreatePane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
 
 import {nextTick, ref, watch} from 'vue'
@@ -70,7 +71,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   ResourceTypeFormPane: ResourceTypeForm,
   ResourceTypeDetailPane,
   ResourceTypeCreatePane: ResourceTypeCreateForm,
-  UserDetail: UserDetailPane
+  UserDetail: UserDetailPane,
+  UserCreatePane
 }
 
 function closePane(index: number) {
