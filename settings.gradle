@@ -1,5 +1,4 @@
 rootProject.name = 'iam-mvp'
-include 'iam-core'
 include 'iam-eureka'
 include 'iam-registry'
 include 'iam-engine'

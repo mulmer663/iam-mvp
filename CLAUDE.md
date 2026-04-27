@@ -25,20 +25,17 @@
 | `ScimResourceTypeMeta` | ResourceType 정의 (id/endpoint/main schema + 확장 스키마 목록) |
 | `ScimResourceTypeExtension` | ResourceType ↔ Extension 스키마 (required 여부) 임베디드 연결 |
 | `ScimDynamicResource` | 런타임 등록된 리소스 타입의 실제 저장 (JSONB `attributes`) |
-| `IamUserExtension` / `ExtensionData` | User 확장 속성 JSONB 저장 |
-| `EnterpriseUserExtension` | `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User` 하드코딩 구현 |
+| `IamUserExtension` / `ExtensionData` | User 확장 속성 JSONB 저장 — Map<URN, ExtensionData> 형태로 임의 키/값 보관 (URN 별 typed 클래스 없음) |
 
 ### 이 영역에서 편집 시 우선 체크할 것
 
-1. **RFC 7643 Section 2 준수** — `IamAttributeMeta` 가 아직 반영 안 한 RFC 필드:
-   - `caseExact` (string 속성용)
-   - `canonicalValues` (예: email `type` = work/home)
-   - `referenceTypes` (reference 속성용: "User"/"Group"/"external"/"uri")
-   - `subAttributes` 관계 — 현재 `parentName` 문자열로만 표현 (1-level 이상 중첩 대응 필요 여부 검토)
+1. **RFC 7643 Section 2 준수** — `IamAttributeMeta` 의 핵심 필드 (`caseExact` / `canonicalValues` / `referenceTypes`) 는 추가 완료. 남은 갭:
+   - 시드된 sub-attribute 의 `canonicalValues` 가 비어 있음 (예: `emails.type` → 표준은 `["work","home","other","unknown"]`)
+   - `subAttributes` 관계가 `parentName` 문자열 기반 — 멀티 레벨 중첩 대응은 미검증
 2. **`/Schemas`, `/ResourceTypes`, `/ServiceProviderConfig` 디스커버리 응답**이 `IamAttributeMeta` / `ScimSchemaMeta` / `ScimResourceTypeMeta` 에서 **정확히 재구성**되는지
 3. **확장 속성 PATCH** 경로 (`"schemas"` 배열에 확장 URN 포함, 값 타겟팅 `urn:...:User:department` 형태)
 4. **동적 ResourceType CRUD** (`ScimDynamicResource`) 가 표준 `/scim/v2/{ResourceType}` 규약을 그대로 따르는지
-5. 고객사 확장 추가 시 **코드 변경 없이 DB 만으로** 가능한지 (현재 enterprise 확장은 하드코딩 엔티티 — 일반화 경로 검토)
+5. 고객사 확장 추가 시 **코드 변경 없이 DB 만으로** — `POST /api/schemas` + `POST /api/attributes` 만으로 `/scim/v2/Schemas` 에 즉시 반영됨이 검증 완료 (한국 가상 확장 E2E)
 
 - 레퍼런스 스펙: [`SCIM.txt`](./SCIM.txt) (RFC 7643/7644 원문 사본)
 - 내부 계약: [`spec.md`](./spec.md) §6.6, §6.7 — 표준과 충돌 시 **표준 우선** 후 spec.md 갱신
@@ -48,18 +45,17 @@
 궁극적 아키텍처 비전: [`archive/iam-architecture.docx`](./archive/iam-architecture.docx) — Universal Identity Fabric & Transformation Engine.
 현재는 이 그림을 그대로 만들지 않고 **스키마 확장 기반이 안정화된 뒤** 재검토. 새 작업 제안 시 *"이게 스키마 확장 인프라를 고도화하는가, 아니면 벗어난 방향인가?"* 를 먼저 확인.
 
-## 활성 모듈 맵 (✅ 현재 사용 / ⚠️ 레거시)
+## 활성 모듈 맵
 
-| 모듈 | 역할 | 상태 | 포트(Docker) |
-|---|---|---|---|
-| `iam-eureka` | Service Discovery (Spring Cloud Netflix) | ✅ | 8761 |
-| `iam-registry` | SCIM 2.0 Identity Registry (Golden Record, JPA + Envers) | ✅ | 18084→18081 |
-| `iam-engine` | Groovy 런타임 변환 엔진 (stateless, sandboxed) | ✅ | 18085→8080 |
-| `iam-adapter-db` | DB Connectivity Adapter (RabbitMQ in/out, 순수 JDBC) | ✅ | 18086→8080 |
-| `iam-ui` | Vue 3 + TS 프론트엔드 (Miller Columns UX) | ✅ | 15173→80 |
-| `iam-core` | **레거시 — `iam-registry` 로 대체 진행 중** | ⚠️ | 18081→8081 |
+| 모듈 | 역할 | 포트(Docker) |
+|---|---|---|
+| `iam-eureka` | Service Discovery (Spring Cloud Netflix) | 8761 |
+| `iam-registry` | SCIM 2.0 Identity Registry (Golden Record, JPA + Envers) | 18081 |
+| `iam-engine` | Groovy 런타임 변환 엔진 (stateless, sandboxed) | 18085→8080 |
+| `iam-adapter-db` | DB Connectivity Adapter (RabbitMQ in/out, 순수 JDBC) | 18086→8080 |
+| `iam-ui` | Vue 3 + TS 프론트엔드 (Miller Columns UX) | 15173→80 |
 
-> **주의:** `docker-compose.yml` 에는 존재하지 않는 `iam-connector-ad`, `iam-connector-hr` 서비스가 남아 있어 `docker-compose up` 실행 시 빌드 실패. 인프라만 띄우려면 `docker-compose.infra.yml` 사용.
+> 레거시 `iam-core` 모듈은 `settings.gradle` / `docker-compose.yml` 에서 제거되어 빌드/실행 라인에서 빠졌습니다 (소스 디렉터리는 참고용으로 보존). `iam-registry` 가 모든 SCIM 메타/스키마 책임을 가집니다.
 
 ## 기술 스택 (검증 완료)
 
@@ -97,7 +93,7 @@ pnpm run build                        # 빌드 (vue-tsc 타입 체크 포함)
 | 시나리오 | 명령 |
 |---|---|
 | **하이브리드 (권장)** — 인프라만 Docker, 앱은 IDE | `docker-compose -f docker-compose.infra.yml up -d` |
-| **풀 컨테이너** (현재 broken — phantom 모듈 있음) | `docker-compose up -d` |
+| **풀 컨테이너** | `docker-compose up -d` (모든 활성 모듈 + Postgres + RabbitMQ) |
 
 하이브리드 모드에서 앱은 `localhost:5432` (Postgres), `localhost:5672` (RabbitMQ), `localhost:8761` (Eureka) 에 자동 연결되도록 설정되어 있음.
 
@@ -127,7 +123,7 @@ HR DB ──> iam-adapter-db ──[RAW_INBOUND_DATA]──> iam-engine
 - `System.out.println` **금지** → SLF4J 로거 사용
 - 시크릿/DB 패스워드 **하드코딩 금지** → 환경 변수
 - 속성명/이벤트 타입/상태 코드는 **`AttributeConstants` / `ScimConstants`** 등 상수 사용
-- `iam-core` (또는 `iam-registry`) 는 커넥터 모듈에 **의존 금지** (단방향 이벤트만)
+- `iam-registry` 는 어댑터 모듈에 **의존 금지** (단방향 이벤트만)
 - 엔티티 직접 노출 금지 → DTO 사용
 - Groovy 스크립트 실행 시 **`SecureASTCustomizer` 필수**, `System` / `Runtime` / `ProcessBuilder` 화이트리스트 금지
 - 모든 `IamUser` / `SyncHistory` 변경은 **`traceId` 유지** (Envers `CustomRevisionEntity` 경유)
@@ -174,10 +170,10 @@ HR DB ──> iam-adapter-db ──[RAW_INBOUND_DATA]──> iam-engine
 
 ## 알려진 이슈 / 정리 대상
 
-1. **`iam-core` 와 `iam-registry` 의 도메인 중복** — 동일 엔티티(`IamUser`, `SyncHistory`, `TransMapping` 등)가 양쪽에 존재. `iam-core` 는 레거시로 분류되어 있으나 정리 미완.
-2. **`docker-compose.yml` phantom 서비스** — `iam-connector-ad`, `iam-connector-hr` 의 Dockerfile 이 없어 전체 빌드 실패.
-3. **`iam-ui/README.md`** 는 Vite 기본 템플릿 그대로 — 실제 내용 없음.
-4. **spec.md 의 Section 3 주석** — `iam-registry` 모듈 엔티티 참조 (정상) 이지만, `iam-core` 의 동일 엔티티와 혼동 주의.
-5. **Spring Boot 버전 표기 불일치** — 일부 문서에 `3.5.8` 로 기재되어 있으나 실제 `build.gradle` 은 `3.4.3`.
+1. **`iam-core/` 소스 디렉터리 잔존** — 빌드/실행 라인에서는 빠졌으나 디렉터리는 참고용으로 보존 중. 안전하게 제거할 시점이 되면 `git rm -r iam-core` 한 번으로 정리 가능.
+2. **`iam-ui/README.md`** 는 Vite 기본 템플릿 그대로 — 실제 내용 없음.
+3. **시드된 sub-attribute 의 `canonicalValues` 미설정** — `emails.type` / `phoneNumbers.type` 등에 RFC 권장값 없음. `ScimMetaInitializer` 갱신 후보.
+4. **`/scim/v2/Users` CRUD 미포팅** — 현 `iam-registry` 는 디스커버리/스키마/속성/동적 리소스만 담당. User 본체 CRUD 는 추후 작업.
+5. **FE Attribute 화면이 새 PUT/DELETE 경로를 쓰는지 미확인** — 복합 PK 변경 후 (`/api/attributes/{domain}/{name}`) 호출 측 정렬 필요.
 
 작업 시작 전 이 목록을 확인하고, 관련 영역 건드릴 때 함께 정리하는 것을 권장.

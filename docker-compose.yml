@@ -1,67 +1,4 @@
 services:
-  iam-core:
-    build:
-      context: .
-      dockerfile: iam-core/Dockerfile
-    image: iam-core:latest
-    container_name: iam-core
-    ports:
-      - "18081:8081"
-    depends_on:
-      - postgres
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
-      - SPRING_DATASOURCE_USERNAME=iam_user
-      - SPRING_DATASOURCE_PASSWORD=iam_password
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
-    networks:
-      - iam-network
-
-  iam-connector-ad:
-    build:
-      context: .
-      dockerfile: iam-connector-ad/Dockerfile
-    image: iam-connector-ad:latest
-    container_name: iam-connector-ad
-    ports:
-      - "18082:8082"
-    depends_on:
-      - postgres
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
-      - SPRING_DATASOURCE_USERNAME=iam_user
-      - SPRING_DATASOURCE_PASSWORD=iam_password
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
-    networks:
-      - iam-network
-
-  iam-connector-hr:
-    build:
-      context: .
-      dockerfile: iam-connector-hr/Dockerfile
-    image: iam-connector-hr:latest
-    container_name: iam-connector-hr
-    ports:
-      - "18083:8083"
-    depends_on:
-      - postgres
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
-      - SPRING_DATASOURCE_USERNAME=iam_user
-      - SPRING_DATASOURCE_PASSWORD=iam_password
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
-    networks:
-      - iam-network
-
   iam-ui:
     build:
       context: ./iam-ui
@@ -93,10 +30,11 @@ services:
     image: iam-registry:latest
     container_name: iam-registry
     ports:
-      - "18084:18081"
+      - "18081:18081"
     depends_on:
       - postgres
       - iam-eureka
+      - rabbitmq
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/iam_db
       - SPRING_DATASOURCE_USERNAME=iam_user

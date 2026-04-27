@@ -1,20 +1,18 @@
-# iam-core — Claude Code 컨텍스트 (⚠️ LEGACY)
+# iam-core — Claude Code 컨텍스트 (⚠️ RETIRED)
 
-> **이 모듈은 레거시입니다.** 신규 도메인 작업은 모두 [`iam-registry`](../iam-registry/CLAUDE.md) 에서 진행합니다.
->
-> `IamUser`, `SyncHistory`, `TransMapping` 등 주요 엔티티가 `iam-registry` 에 동일 이름으로 재구현되어 있으며, 향후 이 모듈은 정리 대상입니다.
+> **이 모듈은 은퇴 처리되었습니다.** `settings.gradle` 과 `docker-compose.yml` 에서 제거되어 더 이상 빌드되거나 실행되지 않습니다.
+> 소스 디렉터리는 마이그레이션 참고용으로만 보존 — 신규/수정 작업 모두 [`iam-registry`](../iam-registry/CLAUDE.md) 에서.
 
-- 상세(레거시) 규칙: [AGENTS.md](./AGENTS.md) — 시점상 현재 엔진처럼 기술되어 있으나 실질은 MSA 이전 구조
+- 과거 거버넌스 문서: [AGENTS.md](./AGENTS.md) — 시점상 현재 엔진처럼 기술되어 있으나 실질은 MSA 이전 구조
 - 루트 컨텍스트: [../CLAUDE.md](../CLAUDE.md)
 - 대체 모듈: [../iam-registry/CLAUDE.md](../iam-registry/CLAUDE.md)
 
-## 이 모듈을 건드려야 한다면
+## 이 디렉터리를 건드려야 한다면
 
-- 새 기능 추가는 **금지** — `iam-registry` 에 추가
-- 버그 수정이 불가피하면 **같은 내용을 `iam-registry` 에도 반영**할지 판단 필요
-- 제거 순서 검토:
-  1. `docker-compose.yml` 의 `iam-core` 서비스 정리
-  2. `settings.gradle` 에서 모듈 제외
-  3. 소스 삭제
+기본은 **건드리지 않는 것**. 굳이 필요한 경우라도:
 
-`AGENTS.md` 는 그대로 두되, 이 모듈의 규칙을 따라야 하는 경우는 "현상 유지 / 레거시 버그 수정" 에 한정.
+- 코드를 추가하지 마세요 — `iam-registry` 에 추가
+- 디렉터리 자체를 정리하려면 `git rm -r iam-core` 한 번이면 됩니다 (Gradle/Compose 에서 이미 빠짐)
+- 마이그레이션이 끝났는지 확인하려면 `iam-registry/src/main/java/com/iam/registry/` 와 `iam-core/src/main/java/com/iam/core/` 의 도메인을 비교
+
+`AGENTS.md` 의 규칙들은 historical reference 로만 유효합니다.
