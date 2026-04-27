@@ -21,6 +21,8 @@ import SchemaDetailPane from '@/views/SchemaDetailPane.vue'
 import SchemaCreateForm from '@/views/SchemaCreateForm.vue'
 import AttributeForm from '@/components/attribute/AttributeForm.vue'
 import ResourceTypeForm from '@/components/ResourceTypeForm.vue'
+import ResourceTypeDetailPane from '@/views/ResourceTypeDetailPane.vue'
+import ResourceTypeCreateForm from '@/views/ResourceTypeCreateForm.vue'
 import UserDetailPane from '@/components/UserDetailPane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
 
@@ -66,6 +68,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   SchemaCreatePane: SchemaCreateForm,
   AttributeFormPane: AttributeForm,
   ResourceTypeFormPane: ResourceTypeForm,
+  ResourceTypeDetailPane,
+  ResourceTypeCreatePane: ResourceTypeCreateForm,
   UserDetail: UserDetailPane
 }
 
