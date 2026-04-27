@@ -1,222 +1,208 @@
 <script setup lang="ts">
-import {computed, onMounted} from 'vue'
-import {Button} from '@/components/ui/button'
-import {Badge} from '@/components/ui/badge'
-import {Database, Lock, Plus, Settings, Trash2} from 'lucide-vue-next'
-import {useMillerStore} from '@/stores/miller'
-import {useAttributeStore} from '@/stores/attribute'
-import {useResourceTypeStore} from '@/stores/resourceType'
-import {toast} from '@/utils/toast'
+import { computed, onMounted } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Database, Layers, Lock, Plus, Trash2, ChevronRight } from 'lucide-vue-next'
+import { useMillerStore } from '@/stores/miller'
+import { useAttributeStore } from '@/stores/attribute'
+import { useResourceTypeStore } from '@/stores/resourceType'
+import { toast } from '@/utils/toast'
+import { getSchemaCategory, isStandardSchema, shortenUrn } from '@/types/scim'
+
+const props = defineProps<{ paneIndex?: number }>()
 
 const millerStore = useMillerStore()
-const attributeStore = useAttributeStore()
-const resourceTypeStore = useResourceTypeStore()
-const props = defineProps<{
-    paneIndex?: number
-}>()
+const attrStore = useAttributeStore()
+const rtStore = useResourceTypeStore()
 
-onMounted(() => {
-    attributeStore.fetchAttributes()
-    resourceTypeStore.fetchResourceTypes()
+onMounted(async () => {
+    await Promise.all([
+        rtStore.fetchSchemas(),
+        rtStore.fetchResourceTypes(),
+        attrStore.fetchAttributes(),
+        attrStore.fetchGroupAttributes(),
+    ])
 })
 
-const isStandardSchema = (uri?: string) => {
-    if (!uri) return false
-    return uri.startsWith('urn:ietf:params:scim:schemas:core:2.0:') || 
-           uri.startsWith('urn:ietf:params:scim:schemas:extension:enterprise:2.0:')
+// ── Enriched schema list ──────────────────────────────────────────────────────
+const allAttrs = computed(() => [...attrStore.userAttributes, ...attrStore.groupAttributes])
+
+function attrCount(schemaId: string): number {
+    const cat = getSchemaCategory(schemaId)
+    if (cat === 'extension') {
+        return allAttrs.value.filter(a => a.scimSchemaUri === schemaId).length
+    }
+    // Core: count CORE-category attrs for the right domain
+    const rt = rtStore.resourceTypes.find(r => r.schema === schemaId)
+    const domain = rt?.id === 'Group' ? 'GROUP' : 'USER'
+    return allAttrs.value.filter(a => a.category === 'CORE' && a.targetDomain === domain).length
 }
 
-// Group attributes by Schema URI and ensure all known schemas are included
-const schemas = computed(() => {
-    const groups: Record<string, { uri: string, count: number, fixed: boolean }> = {}
-    
-    // Initialize with all known schemas from store (Base + Extensions)
-    resourceTypeStore.resourceTypes.forEach(rt => {
-        // Base Schema
-        if (!groups[rt.schema]) {
-            groups[rt.schema] = { uri: rt.schema, count: 0, fixed: isStandardSchema(rt.schema) }
-        }
-        // Extensions
-        rt.schemaExtensions?.forEach(ext => {
-            if (!groups[ext.schema]) {
-                groups[ext.schema] = { uri: ext.schema, count: 0, fixed: isStandardSchema(ext.schema) }
-            }
-        })
-    })
-    
-    // Count attributes
-    attributeStore.attributes.forEach(attr => {
-        const uri = attr.scimSchemaUri || 'urn:ietf:params:scim:schemas:core:2.0:User'
-        if (!groups[uri]) {
-            groups[uri] = { uri: uri, count: 0, fixed: false }
-        }
-        groups[uri].count++
-    })
-    
-    const list = Object.values(groups).map(g => {
-        const rt = resourceTypeStore.resourceTypes.find(r => r.schema === g.uri)
-        return {
-            ...g,
-            displayName: rt ? rt.name : shortenUri(g.uri),
-            isExtension: g.uri.includes(':extension:')
-        }
-    })
+const coreSchemas = computed(() =>
+    rtStore.schemas.filter(s => getSchemaCategory(s.id) === 'core')
+)
 
-    return {
-        core: list.filter(s => !s.isExtension),
-        extension: list.filter(s => s.isExtension)
-    }
-})
+const extensionSchemas = computed(() =>
+    rtStore.schemas.filter(s => getSchemaCategory(s.id) === 'extension')
+)
 
-function shortenUri(uri: string): string {
-    if (!uri) return ''
-    const prefix = "urn:ietf:params:scim:schemas:"
-    if (uri.startsWith(prefix)) {
-        return uri.substring(prefix.length)
-    }
-    return uri
-}
-
-function openAttributePane(schemaUri: string, displayName: string) {
-    const paneId = `schema-${schemaUri.replace(/[:.]/g, '-')}`
-    
-    // Check if pane exists
-    const existingPane = millerStore.panes.find(p => p.id === paneId)
-    if (existingPane) {
+// ── Navigation ────────────────────────────────────────────────────────────────
+function openDetail(schemaId: string, schemaName: string) {
+    const paneId = `schema-${schemaId}`
+    if (millerStore.panes.find(p => p.id === paneId)) {
         millerStore.activePaneId = paneId
         return
     }
-
-    const pane = {
+    millerStore.setPane((props.paneIndex ?? 0) + 1, {
         id: paneId,
-        type: 'AttributeManagementPane', 
-        title: displayName,
-        data: { schemaUri: schemaUri }, // Pass schema context
-        width: '500px'
-    }
-    
-    // Add to stack
-    if (typeof props.paneIndex === 'number') {
-        millerStore.setPane(props.paneIndex + 1, pane)
-    } else {
-        millerStore.pushPane(pane)
-    }
+        type: 'SchemaDetailPane',
+        title: schemaName,
+        width: '560px',
+        data: { schemaId, paneIndex: (props.paneIndex ?? 0) + 1 }
+    })
 }
 
-function onCreate() {
-    const paneId = `create-rt-${Date.now()}`
-    const pane = {
+function openCreate() {
+    const paneId = `schema-create-${Date.now()}`
+    millerStore.setPane((props.paneIndex ?? 0) + 1, {
         id: paneId,
-        type: 'ResourceTypeFormPane',
-        title: 'New Resource Type',
-        data: { initialData: null, paneIndex: (props.paneIndex ?? 0) + 1 },
-        width: '500px'
-    }
-    
-    if (typeof props.paneIndex === 'number') {
-        millerStore.setPane(props.paneIndex + 1, pane)
-    } else {
-        millerStore.pushPane(pane)
-    }
+        type: 'SchemaCreatePane',
+        title: 'New Schema',
+        width: '440px',
+        data: { paneIndex: (props.paneIndex ?? 0) + 1 }
+    })
 }
 
-function openResourceTypeDetail(schemaUri: string, displayName: string) {
-    openAttributePane(schemaUri, displayName)
-}
-
-async function onDelete(schemaUri: string) {
-    const rt = resourceTypeStore.resourceTypes.find(r => r.schema === schemaUri)
-    if (!rt) return
-    if (!confirm(`Are you sure you want to delete resource type ${rt.name}?`)) return
-    
+async function onDelete(schemaId: string, schemaName: string) {
+    if (isStandardSchema(schemaId)) return
+    if (!confirm(`Delete schema "${schemaName}"?\nAll extension attributes under this schema will also be removed.`)) return
     try {
-        await resourceTypeStore.deleteResourceType(rt.id)
-        toast.success('Resource Type deleted')
-    } catch (e) {
-        toast.error('Failed to delete resource type')
+        await rtStore.deleteSchema(schemaId)
+        toast.success('Schema deleted')
+        // Close detail pane if open
+        const idx = millerStore.panes.findIndex(p => p.id === `schema-${schemaId}`)
+        if (idx !== -1) millerStore.removePane(idx)
+    } catch {
+        toast.error('Failed to delete schema')
     }
 }
 </script>
 
 <template>
-    <div class="h-full flex flex-col bg-white">
-        <!-- Toolbar -->
+    <div class="h-full flex flex-col bg-white text-[13px]">
+
+        <!-- Toolbar ─────────────────────────────────────────────────────────── -->
         <div class="h-10 border-b border-neutral-100 flex items-center px-3 justify-between shrink-0 bg-neutral-50/50">
-            <span class="font-bold text-sm text-neutral-700">Resource Types</span>
-            <Button size="xs" variant="outline" class="h-7 text-xs flex gap-1" @click="onCreate">
-                <Plus class="size-3" /> New Resource Type
+            <span class="font-bold text-sm text-neutral-700">Schema Registry</span>
+            <Button size="xs" variant="outline" class="h-7 text-xs flex gap-1" @click="openCreate">
+                <Plus class="size-3" /> New Schema
             </Button>
         </div>
 
-        <!-- List Grouped -->
-        <div class="flex-1 overflow-y-auto p-2 space-y-6">
-            <!-- Core Schemas -->
-            <div v-if="schemas.core.length > 0" class="space-y-2">
-                <div class="px-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Core Schemas</div>
-                <div v-for="schema in schemas.core" :key="schema.uri" 
-                     @click="openAttributePane(schema.uri, schema.displayName)"
-                     class="flex items-center justify-between p-3 border border-neutral-100 rounded-lg hover:bg-neutral-50 cursor-pointer group hover:border-neutral-300 transition-all shadow-sm"
-                >
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <div class="size-9 rounded-md bg-white border border-neutral-200 flex items-center justify-center text-blue-500 shrink-0">
-                            <Database class="size-4" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-sm text-neutral-800 truncate" :title="schema.displayName">{{ schema.displayName }}</span>
-                                <Badge variant="outline" class="text-[8px] px-1 h-3.5 font-bold uppercase tracking-tighter bg-blue-50 text-blue-600 border-blue-200">Core</Badge>
-                            </div>
-                            <div class="text-[10px] text-neutral-400 truncate" :title="schema.uri">{{ schema.uri }}</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                         <span class="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-medium">{{ schema.count }} Attrs</span>
-                         <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Button variant="ghost" size="icon" class="size-6 hover:bg-neutral-100" @click.stop="openResourceTypeDetail(schema.uri, schema.displayName)">
-                                <Settings class="size-3 text-neutral-400" />
-                            </Button>
-                         </div>
-                         <Lock v-if="schema.fixed" class="size-3 text-neutral-300" />
-                    </div>
-                </div>
+        <div class="flex-1 overflow-y-auto p-3 space-y-5">
+
+            <!-- Loading -->
+            <div v-if="rtStore.loading" class="flex items-center justify-center h-20 text-neutral-300 text-xs">
+                Loading schemas…
             </div>
 
-            <!-- Extension Schemas -->
-            <div v-if="schemas.extension.length > 0" class="space-y-2">
-                <div class="px-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Extension Schemas</div>
-                <div v-for="schema in schemas.extension" :key="schema.uri" 
-                     @click="openAttributePane(schema.uri, schema.displayName)"
-                     class="flex items-center justify-between p-3 border border-neutral-100 rounded-lg hover:bg-neutral-50 cursor-pointer group hover:border-neutral-300 transition-all shadow-sm"
-                >
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <div class="size-9 rounded-md bg-white border border-neutral-200 flex items-center justify-center text-purple-500 shrink-0">
-                            <Settings class="size-4" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-sm text-neutral-800 truncate" :title="schema.displayName">{{ schema.displayName }}</span>
-                                <Badge variant="outline" class="text-[8px] px-1 h-3.5 font-bold uppercase tracking-tighter bg-purple-50 text-purple-600 border-purple-200">Ext</Badge>
+            <template v-else>
+
+                <!-- Core Schemas ───────────────────────────────────────────── -->
+                <section v-if="coreSchemas.length">
+                    <div class="px-1 mb-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <Database class="size-3" /> Core Schemas
+                    </div>
+                    <div class="space-y-1.5">
+                        <div v-for="s in coreSchemas" :key="s.id"
+                            class="flex items-center gap-3 px-3 py-2.5 border border-neutral-100 rounded-lg hover:bg-blue-50/40 hover:border-blue-200 cursor-pointer group transition-all"
+                            @click="openDetail(s.id, s.name)">
+
+                            <div class="size-8 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                                <Database class="size-4 text-blue-500" />
                             </div>
-                            <div class="text-[10px] text-neutral-400 truncate" :title="schema.uri">{{ schema.uri }}</div>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-semibold text-neutral-800">{{ s.name }}</span>
+                                    <Badge variant="outline"
+                                        class="text-[8px] h-4 px-1.5 font-bold uppercase bg-blue-50 text-blue-600 border-blue-200">
+                                        Core
+                                    </Badge>
+                                    <Lock class="size-3 text-neutral-300" title="RFC standard" />
+                                </div>
+                                <div class="text-[10px] text-neutral-400 font-mono truncate mt-0.5" :title="s.id">
+                                    {{ shortenUrn(s.id) }}
+                                </div>
+                                <div v-if="s.description" class="text-[10px] text-neutral-500 mt-0.5 truncate">
+                                    {{ s.description }}
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-medium">
+                                    {{ attrCount(s.id) }} attrs
+                                </span>
+                                <ChevronRight class="size-4 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                         <span class="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-medium">{{ schema.count }} Attrs</span>
-                         <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Button variant="ghost" size="icon" class="size-6 hover:bg-neutral-100" @click.stop="openResourceTypeDetail(schema.uri, schema.displayName)">
-                                <Settings class="size-3 text-neutral-400" />
-                            </Button>
-                             <Button 
-                                 v-if="!schema.fixed"
-                                 variant="ghost" size="icon" class="size-6 hover:bg-red-50 hover:text-red-500"
-                                 @click.stop="onDelete(schema.uri)"
-                            >
-                                 <Trash2 class="size-3" />
-                             </Button>
-                         </div>
+                </section>
+
+                <!-- Extension Schemas ──────────────────────────────────────── -->
+                <section v-if="extensionSchemas.length || true">
+                    <div class="px-1 mb-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <Layers class="size-3" /> Extension Schemas
                     </div>
-                </div>
-            </div>
+
+                    <div v-if="extensionSchemas.length === 0"
+                        class="px-3 py-4 text-[11px] text-neutral-300 italic text-center border border-dashed border-neutral-200 rounded-lg">
+                        No custom extensions yet. Click "New Schema" to add one.
+                    </div>
+
+                    <div v-else class="space-y-1.5">
+                        <div v-for="s in extensionSchemas" :key="s.id"
+                            class="flex items-center gap-3 px-3 py-2.5 border border-neutral-100 rounded-lg hover:bg-purple-50/40 hover:border-purple-200 cursor-pointer group transition-all"
+                            @click="openDetail(s.id, s.name)">
+
+                            <div class="size-8 rounded-md bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+                                <Layers class="size-4 text-purple-500" />
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-semibold text-neutral-800">{{ s.name }}</span>
+                                    <Badge variant="outline"
+                                        class="text-[8px] h-4 px-1.5 font-bold uppercase bg-purple-50 text-purple-600 border-purple-200">
+                                        Extension
+                                    </Badge>
+                                    <Lock v-if="isStandardSchema(s.id)" class="size-3 text-neutral-300" title="RFC standard" />
+                                </div>
+                                <div class="text-[10px] text-neutral-400 font-mono truncate mt-0.5" :title="s.id">
+                                    {{ shortenUrn(s.id) }}
+                                </div>
+                                <div v-if="s.description" class="text-[10px] text-neutral-500 mt-0.5 truncate">
+                                    {{ s.description }}
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[10px] bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-500 font-medium">
+                                    {{ attrCount(s.id) }} attrs
+                                </span>
+                                <Button v-if="!isStandardSchema(s.id)"
+                                    variant="ghost" size="icon"
+                                    class="size-6 hover:bg-red-50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    @click.stop="onDelete(s.id, s.name)">
+                                    <Trash2 class="size-3" />
+                                </Button>
+                                <ChevronRight class="size-4 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </template>
         </div>
     </div>
 </template>

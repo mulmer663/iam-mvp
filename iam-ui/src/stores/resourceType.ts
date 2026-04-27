@@ -11,18 +11,43 @@ export const useResourceTypeStore = defineStore('resourceType', {
     }),
 
     actions: {
+        // ── Schema CRUD ──────────────────────────────────────────────────────
         async fetchSchemas() {
+            this.loading = true
             try {
                 const response = await axios.get<ScimSchemaDto[]>('/api/schemas')
                 this.schemas = response.data
             } catch (err: any) {
                 console.error('Failed to fetch schemas:', err)
+            } finally {
+                this.loading = false
             }
         },
 
+        async createSchema(dto: Pick<ScimSchemaDto, 'id' | 'name' | 'description'>) {
+            const response = await axios.post<ScimSchemaDto>('/api/schemas', { ...dto, attributes: [] })
+            this.schemas.push(response.data)
+            return response.data
+        },
+
+        async updateSchema(uri: string, dto: Pick<ScimSchemaDto, 'name' | 'description'>) {
+            const existing = this.schemas.find(s => s.id === uri)!
+            const response = await axios.put<ScimSchemaDto>(`/api/schemas/${encodeURIComponent(uri)}`, {
+                ...existing,
+                ...dto
+            })
+            const idx = this.schemas.findIndex(s => s.id === uri)
+            if (idx !== -1) this.schemas[idx] = response.data
+            return response.data
+        },
+
+        async deleteSchema(uri: string) {
+            await axios.delete(`/api/schemas/${encodeURIComponent(uri)}`)
+            this.schemas = this.schemas.filter(s => s.id !== uri)
+        },
+
+        // ── ResourceType CRUD ─────────────────────────────────────────────────
         async fetchResourceTypes() {
-            this.loading = true
-            this.error = null
             try {
                 const response = await axios.get<any[]>('/api/resource-types')
                 this.resourceTypes = response.data.map(rt => ({
@@ -34,56 +59,36 @@ export const useResourceTypeStore = defineStore('resourceType', {
             } catch (err: any) {
                 console.error('Failed to fetch resource types:', err)
                 this.error = err.message || 'Failed to fetch resource types'
-            } finally {
-                this.loading = false
             }
         },
 
         async createResourceType(resourceType: ScimResourceTypeDto) {
-            try {
-                const response = await axios.post<any>('/api/resource-types', resourceType)
-                const normalized = {
-                    ...response.data,
-                    schemaExtensions: (response.data.schemaExtensions || []).map((ext: any) =>
-                        typeof ext === 'string' ? { schema: ext, required: false } : ext
-                    )
-                }
-                this.resourceTypes.push(normalized)
-                return normalized
-            } catch (err: any) {
-                console.error('Failed to create resource type:', err)
-                throw err
-            }
+            const response = await axios.post<any>('/api/resource-types', resourceType)
+            const normalized = normalizeRt(response.data)
+            this.resourceTypes.push(normalized)
+            return normalized
         },
 
         async updateResourceType(resourceType: ScimResourceTypeDto) {
-            try {
-                const response = await axios.put<any>(`/api/resource-types/${resourceType.id}`, resourceType)
-                const normalized = {
-                    ...response.data,
-                    schemaExtensions: (response.data.schemaExtensions || []).map((ext: any) =>
-                        typeof ext === 'string' ? { schema: ext, required: false } : ext
-                    )
-                }
-                const index = this.resourceTypes.findIndex(r => r.id === resourceType.id)
-                if (index !== -1) {
-                    this.resourceTypes[index] = normalized
-                }
-                return normalized
-            } catch (err: any) {
-                console.error('Failed to update resource type:', err)
-                throw err
-            }
+            const response = await axios.put<any>(`/api/resource-types/${resourceType.id}`, resourceType)
+            const normalized = normalizeRt(response.data)
+            const idx = this.resourceTypes.findIndex(r => r.id === resourceType.id)
+            if (idx !== -1) this.resourceTypes[idx] = normalized
+            return normalized
         },
 
         async deleteResourceType(id: string) {
-            try {
-                await axios.delete(`/api/resource-types/${id}`)
-                this.resourceTypes = this.resourceTypes.filter(r => r.id !== id)
-            } catch (err: any) {
-                console.error('Failed to delete resource type:', err)
-                throw err
-            }
+            await axios.delete(`/api/resource-types/${id}`)
+            this.resourceTypes = this.resourceTypes.filter(r => r.id !== id)
         }
     }
 })
+
+function normalizeRt(rt: any): ScimResourceTypeDto {
+    return {
+        ...rt,
+        schemaExtensions: (rt.schemaExtensions || []).map((ext: any) =>
+            typeof ext === 'string' ? { schema: ext, required: false } : ext
+        )
+    }
+}
