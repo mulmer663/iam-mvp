@@ -55,6 +55,7 @@ public class IamAttributeMetaService {
                 .editLevel(dto.editLevel())
                 .encrypted(dto.encrypted())
                 .uiComponent(dto.uiComponent())
+                .display(dto.display())
                 .build();
 
         IamAttributeMeta saved = repository.save(entity);
@@ -97,6 +98,7 @@ public class IamAttributeMetaService {
         attribute.setEditLevel(updates.editLevel());
         attribute.setEncrypted(updates.encrypted());
         attribute.setUiComponent(updates.uiComponent());
+        attribute.setDisplay(updates.display());
         if (attribute.getCategory() == AttributeCategory.EXTENSION) {
             attribute.setScimSchemaUri(updates.scimSchemaUri());
         }
@@ -157,6 +159,7 @@ public class IamAttributeMetaService {
                 entity.getViewLevel(),
                 entity.getEditLevel(),
                 entity.isEncrypted(),
-                entity.getUiComponent());
+                entity.getUiComponent(),
+                entity.isDisplay());
     }
 }

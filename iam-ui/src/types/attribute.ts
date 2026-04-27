@@ -20,4 +20,5 @@ export interface IamAttributeMeta {
     editLevel: number
     encrypted: boolean
     uiComponent?: string
+    display?: boolean
 }
