@@ -2,7 +2,10 @@ package com.iam.registry.application.scim;
 
 import com.iam.registry.application.common.IamAttributeMetaDto;
 import com.iam.registry.domain.common.enums.AttributeCategory;
+import com.iam.registry.domain.common.enums.AttributeMutability;
+import com.iam.registry.domain.common.enums.AttributeReturned;
 import com.iam.registry.domain.common.enums.AttributeTargetDomain;
+import com.iam.registry.domain.common.enums.AttributeUniqueness;
 import com.iam.registry.domain.common.exception.ErrorCode;
 import com.iam.registry.domain.common.exception.IamBusinessException;
 import com.iam.registry.domain.scim.IamAttributeMeta;
@@ -41,9 +44,9 @@ public class IamAttributeMetaService {
                 .parentName(dto.parentName())
                 .description(dto.description())
                 .required(dto.required())
-                .mutability(dto.mutability())
-                .returned(dto.returned())
-                .uniqueness(dto.uniqueness())
+                .mutability(dto.mutability() != null ? dto.mutability() : AttributeMutability.READ_WRITE)
+                .returned(dto.returned() != null ? dto.returned() : AttributeReturned.DEFAULT)
+                .uniqueness(dto.uniqueness() != null ? dto.uniqueness() : AttributeUniqueness.NONE)
                 .caseExact(dto.caseExact())
                 .canonicalValues(dto.canonicalValues() == null ? new ArrayList<>() : new ArrayList<>(dto.canonicalValues()))
                 .referenceTypes(dto.referenceTypes() == null ? new ArrayList<>() : new ArrayList<>(dto.referenceTypes()))
@@ -82,10 +85,10 @@ public class IamAttributeMetaService {
         attribute.setDisplayName(updates.displayName());
         attribute.setDescription(updates.description());
         attribute.setRequired(updates.required());
-        attribute.setMutability(updates.mutability());
+        attribute.setMutability(updates.mutability() != null ? updates.mutability() : AttributeMutability.READ_WRITE);
         attribute.setMultiValued(updates.multiValued());
-        attribute.setReturned(updates.returned());
-        attribute.setUniqueness(updates.uniqueness());
+        attribute.setReturned(updates.returned() != null ? updates.returned() : AttributeReturned.DEFAULT);
+        attribute.setUniqueness(updates.uniqueness() != null ? updates.uniqueness() : AttributeUniqueness.NONE);
         attribute.setCaseExact(updates.caseExact());
         attribute.setCanonicalValues(updates.canonicalValues() == null ? new ArrayList<>() : new ArrayList<>(updates.canonicalValues()));
         attribute.setReferenceTypes(updates.referenceTypes() == null ? new ArrayList<>() : new ArrayList<>(updates.referenceTypes()));
