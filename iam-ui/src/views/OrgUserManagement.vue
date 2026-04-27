@@ -4,19 +4,35 @@ import UserTable from '@/components/UserTable.vue'
 import { Button } from '@/components/ui/button'
 import { ref } from 'vue'
 import { Search, Filter, Plus } from 'lucide-vue-next'
+import { useMillerStore } from '@/stores/miller'
 
 const props = defineProps<{
   paneIndex?: number
   initialDeptId?: string
 }>()
 
+const millerStore = useMillerStore()
 const selectedDeptId = ref<string>(props.initialDeptId || 'GLOBAL-IT')
 
 function onDeptSelect(id: string) {
   selectedDeptId.value = id
-  // Also push a UserList pane to the Miller stack if we want multi-pane navigation
-  // For MVP, we'll keep the list dynamic in this root pane, 
-  // but clicking a user will push a detail pane.
+}
+
+function openUserCreate() {
+  const paneId = `user-create-${Date.now()}`
+  const pane = {
+    id: paneId,
+    type: 'UserCreatePane',
+    title: 'New User',
+    data: { paneIndex: (props.paneIndex ?? 0) + 1 },
+    width: '560px',
+    maxWidth: '560px'
+  }
+  if (typeof props.paneIndex === 'number') {
+    millerStore.setPane(props.paneIndex + 1, pane)
+  } else {
+    millerStore.pushPane(pane)
+  }
 }
 </script>
 
@@ -35,7 +51,7 @@ function onDeptSelect(id: string) {
           <Button variant="outline" size="xs" class="bg-white border-neutral-200 hover:bg-neutral-50 flex items-center gap-1.5 h-6 text-[11px]">
              <Filter class="size-3 text-neutral-400" /> Filter
           </Button>
-          <Button size="xs" class="bg-blue-600 text-white hover:bg-blue-700 font-bold flex items-center gap-1 h-6 text-[11px]">
+          <Button size="xs" class="bg-blue-600 text-white hover:bg-blue-700 font-bold flex items-center gap-1 h-6 text-[11px]" @click="openUserCreate">
              <Plus class="size-3" /> REGISTER
           </Button>
        </div>
