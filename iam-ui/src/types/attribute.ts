@@ -21,4 +21,7 @@ export interface IamAttributeMeta {
     encrypted: boolean
     uiComponent?: string
     display?: boolean
+    canonicalValues?: string[]
+    referenceTypes?: string[]
+    caseExact?: boolean
 }
