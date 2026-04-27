@@ -9,7 +9,7 @@ import {Input} from '@/components/ui/input'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import {Label} from '@/components/ui/label'
 import {Checkbox} from '@/components/ui/checkbox'
-import type {IamAttributeMeta} from '@/types/attribute'
+import type {AttributeTargetDomain, IamAttributeMeta} from '@/types/attribute'
 import type {ScimResourceTypeDto} from '@/types/scim'
 
 import {useResourceTypeStore} from '@/stores/resourceType'
@@ -242,10 +242,10 @@ function openDetailForm(attr: IamAttributeMeta | null) {
     }
 }
 
-async function onDelete(name: String) {
-    if (!confirm(`Are you sure you want to delete attribute ${name}?`)) return;
+async function onDelete(name: string, targetDomain: AttributeTargetDomain) {
+    if (!confirm(`Are you sure you want to delete attribute ${name} (${targetDomain})?`)) return;
     try {
-        await store.deleteAttribute(name as string)
+        await store.deleteAttribute(name, targetDomain)
         toast.success('Attribute deleted')
     } catch (e) {
         toast.error('Failed to delete attribute')
@@ -440,7 +440,7 @@ async function onDelete(name: String) {
                         <Button 
                             variant="ghost" size="icon" 
                             class="size-6 hover:bg-red-50 hover:text-red-600"
-                            @click.stop="onDelete(attr.name)"
+                            @click.stop="onDelete(attr.name, attr.targetDomain)"
                         >
                             <Trash2 class="size-3" />
                         </Button>

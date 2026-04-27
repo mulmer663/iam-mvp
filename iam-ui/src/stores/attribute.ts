@@ -96,7 +96,11 @@ export const useAttributeStore = defineStore('attribute', {
 
         async updateAttribute(attribute: IamAttributeMeta) {
             try {
-                const response = await axios.put<IamAttributeMeta>(`/api/attributes/${attribute.name}`, attribute)
+                // Backend PK is composite (name, targetDomain) so the path mirrors that.
+                const response = await axios.put<IamAttributeMeta>(
+                    `/api/attributes/${attribute.targetDomain}/${attribute.name}`,
+                    attribute
+                )
 
                 // Update in local state
                 const index = this.attributes.findIndex(a => a.name === attribute.name)
@@ -123,15 +127,15 @@ export const useAttributeStore = defineStore('attribute', {
             }
         },
 
-        async deleteAttribute(name: string) {
+        async deleteAttribute(name: string, targetDomain: AttributeTargetDomain) {
             try {
-                await axios.delete(`/api/attributes/${name}`)
+                await axios.delete(`/api/attributes/${targetDomain}/${name}`)
 
-                // Remove from local state
-                this.attributes = this.attributes.filter(a => a.name !== name)
-                this.userAttributes = this.userAttributes.filter(a => a.name !== name)
-                this.deptAttributes = this.deptAttributes.filter(a => a.name !== name)
-                this.groupAttributes = this.groupAttributes.filter(a => a.name !== name)
+                const matches = (a: IamAttributeMeta) => !(a.name === name && a.targetDomain === targetDomain)
+                this.attributes = this.attributes.filter(matches)
+                this.userAttributes = this.userAttributes.filter(matches)
+                this.deptAttributes = this.deptAttributes.filter(matches)
+                this.groupAttributes = this.groupAttributes.filter(matches)
             } catch (err: any) {
                 console.error('Failed to delete attribute:', err)
                 throw err
