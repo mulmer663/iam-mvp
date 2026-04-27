@@ -17,6 +17,8 @@ import SyncHistory from '@/views/SyncHistory.vue'
 import UserChangeHistory from '@/views/UserChangeHistory.vue'
 import AttributeManagement from '@/views/AttributeManagement.vue'
 import ResourceManagement from '@/views/ResourceManagement.vue'
+import SchemaDetailPane from '@/views/SchemaDetailPane.vue'
+import SchemaCreateForm from '@/views/SchemaCreateForm.vue'
 import AttributeForm from '@/components/attribute/AttributeForm.vue'
 import ResourceTypeForm from '@/components/ResourceTypeForm.vue'
 import UserDetailPane from '@/components/UserDetailPane.vue'
@@ -60,6 +62,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   AttributeListPane: AttributeManagement, // NEW: Alias for recursive sub-attribute list
   ResourceManagement,
   GroupManagement,
+  SchemaDetailPane,
+  SchemaCreatePane: SchemaCreateForm,
   AttributeFormPane: AttributeForm,
   ResourceTypeFormPane: ResourceTypeForm,
   UserDetail: UserDetailPane
