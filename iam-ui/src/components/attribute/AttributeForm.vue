@@ -329,7 +329,7 @@ async function onSubmit() {
        <div v-if="formData.type === 'COMPLEX' && !isCreate" class="space-y-3 pt-4 border-t border-neutral-100">
             <div class="flex items-center justify-between">
                 <Label class="text-xs font-bold text-neutral-500 uppercase tracking-wider">Sub-Attributes</Label>
-                <Button size="xs" variant="outline" class="h-6 text-xs flex gap-1" @click="openSubAttribute(null)">
+                <Button v-if="formData.category !== 'CORE'" size="xs" variant="outline" class="h-6 text-xs flex gap-1" @click="openSubAttribute(null)">
                     <Plus class="size-3" /> Add Sub-Attribute
                 </Button>
             </div>
