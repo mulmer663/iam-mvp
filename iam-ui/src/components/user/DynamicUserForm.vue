@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import {
-    Select, SelectContent, SelectTrigger, SelectValue
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select'
 import { Plus, Trash2, Lock, ChevronDown, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
 import type { IamAttributeMeta } from '@/types/attribute'
@@ -134,6 +134,34 @@ function inputType(attr: IamAttributeMeta): string {
     }
 }
 
+// ── Sub-attribute layout helpers (multi-valued COMPLEX rows) ─────────────
+// Strip parent prefix so seed-data names like "emails.value" render as "value".
+function subShortName(sub: IamAttributeMeta): string {
+    const last = sub.name.split('.').pop() ?? sub.name
+    return sub.displayName && sub.displayName !== sub.name ? sub.displayName : last
+}
+
+function hasCanonical(sub: IamAttributeMeta): boolean {
+    return Array.isArray(sub.canonicalValues) && sub.canonicalValues.length > 0
+}
+
+// Returns a CSS column unit for one sub-attribute. Wider for free-form text
+// (value/display), narrower for selects/booleans/primary flag.
+function subColUnit(sub: IamAttributeMeta): string {
+    if (sub.type === 'BOOLEAN') return '90px'
+    if (hasCanonical(sub)) return 'minmax(110px, 1.2fr)'
+    const last = sub.name.split('.').pop() ?? sub.name
+    if (last === 'value') return 'minmax(180px, 3fr)'
+    if (last === 'primary') return '90px'
+    if (last === 'display') return 'minmax(140px, 2fr)'
+    return 'minmax(120px, 1.5fr)'
+}
+
+function gridCols(parent: IamAttributeMeta): string {
+    const subs = subAttrsOf(parent)
+    return subs.map(subColUnit).join(' ') + ' 32px'
+}
+
 const expanded = ref<Record<string, boolean>>({})
 function toggleSection(key: string) {
     expanded.value[key] = !(expanded.value[key] ?? true)
@@ -178,25 +206,38 @@ function isExpanded(key: string): boolean {
                             No {{ attr.name }} added.
                         </div>
                         <div v-for="(_row, idx) in getMultiArray(attr, 'core')" :key="idx"
-                            class="grid gap-1.5 p-2 border border-neutral-100 rounded bg-neutral-50/40 relative"
-                            :style="{ gridTemplateColumns: `repeat(${subAttrsOf(attr).length}, minmax(0,1fr)) 24px` }">
+                            class="grid gap-2 p-2.5 border border-neutral-100 rounded bg-neutral-50/40 relative items-end"
+                            :style="{ gridTemplateColumns: gridCols(attr) }">
                             <div v-for="sub in subAttrsOf(attr)" :key="sub.name" class="min-w-0">
-                                <div class="text-[9px] font-bold text-neutral-400 uppercase tracking-tighter mb-0.5">
-                                    {{ sub.displayName || sub.name }}
+                                <div class="text-[9px] font-bold text-neutral-400 uppercase tracking-tighter mb-1">
+                                    {{ subShortName(sub) }}
                                 </div>
-                                <Checkbox v-if="sub.type === 'BOOLEAN'"
-                                    :model-value="getMultiArray(attr, 'core')[idx][sub.name]"
+                                <div v-if="sub.type === 'BOOLEAN'" class="h-8 flex items-center">
+                                    <Checkbox
+                                        :model-value="!!getMultiArray(attr, 'core')[idx][sub.name]"
+                                        @update:model-value="(v: any) => getMultiArray(attr, 'core')[idx][sub.name] = !!v"
+                                        :disabled="isDisabled(attr) || isDisabled(sub)" />
+                                </div>
+                                <Select v-else-if="hasCanonical(sub)"
+                                    :model-value="getMultiArray(attr, 'core')[idx][sub.name] ?? ''"
                                     @update:model-value="(v: any) => getMultiArray(attr, 'core')[idx][sub.name] = v"
-                                    :disabled="isDisabled(attr) || isDisabled(sub)" />
+                                    :disabled="isDisabled(attr) || isDisabled(sub)">
+                                    <SelectTrigger class="h-8 text-[11px]">
+                                        <SelectValue placeholder="—" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem v-for="cv in (sub.canonicalValues ?? [])" :key="cv" :value="cv">{{ cv }}</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <Input v-else
                                     :model-value="getMultiArray(attr, 'core')[idx][sub.name]"
                                     @update:model-value="(v: any) => getMultiArray(attr, 'core')[idx][sub.name] = v"
                                     :type="inputType(sub)"
                                     :disabled="isDisabled(attr) || isDisabled(sub)"
-                                    class="h-7 text-[11px]" />
+                                    class="h-8 text-[11px]" />
                             </div>
                             <Button v-if="!isDisabled(attr)" type="button" size="icon" variant="ghost"
-                                class="size-6 self-end hover:bg-red-50 hover:text-red-500"
+                                class="size-7 hover:bg-red-50 hover:text-red-500"
                                 @click="removeMultiRow(attr, 'core', idx)">
                                 <Trash2 class="size-3" />
                             </Button>
@@ -302,25 +343,38 @@ function isExpanded(key: string): boolean {
                             No {{ attr.name }} added.
                         </div>
                         <div v-for="(_row, idx) in getMultiArray(attr, uri)" :key="idx"
-                            class="grid gap-1.5 p-2 border border-neutral-100 rounded bg-neutral-50/40"
-                            :style="{ gridTemplateColumns: `repeat(${subAttrsOf(attr).length}, minmax(0,1fr)) 24px` }">
+                            class="grid gap-2 p-2.5 border border-neutral-100 rounded bg-neutral-50/40 items-end"
+                            :style="{ gridTemplateColumns: gridCols(attr) }">
                             <div v-for="sub in subAttrsOf(attr)" :key="sub.name" class="min-w-0">
-                                <div class="text-[9px] font-bold text-neutral-400 uppercase tracking-tighter mb-0.5">
-                                    {{ sub.displayName || sub.name }}
+                                <div class="text-[9px] font-bold text-neutral-400 uppercase tracking-tighter mb-1">
+                                    {{ subShortName(sub) }}
                                 </div>
-                                <Checkbox v-if="sub.type === 'BOOLEAN'"
-                                    :model-value="getMultiArray(attr, uri)[idx][sub.name]"
+                                <div v-if="sub.type === 'BOOLEAN'" class="h-8 flex items-center">
+                                    <Checkbox
+                                        :model-value="!!getMultiArray(attr, uri)[idx][sub.name]"
+                                        @update:model-value="(v: any) => getMultiArray(attr, uri)[idx][sub.name] = !!v"
+                                        :disabled="isDisabled(attr) || isDisabled(sub)" />
+                                </div>
+                                <Select v-else-if="hasCanonical(sub)"
+                                    :model-value="getMultiArray(attr, uri)[idx][sub.name] ?? ''"
                                     @update:model-value="(v: any) => getMultiArray(attr, uri)[idx][sub.name] = v"
-                                    :disabled="isDisabled(attr) || isDisabled(sub)" />
+                                    :disabled="isDisabled(attr) || isDisabled(sub)">
+                                    <SelectTrigger class="h-8 text-[11px]">
+                                        <SelectValue placeholder="—" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem v-for="cv in (sub.canonicalValues ?? [])" :key="cv" :value="cv">{{ cv }}</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <Input v-else
                                     :model-value="getMultiArray(attr, uri)[idx][sub.name]"
                                     @update:model-value="(v: any) => getMultiArray(attr, uri)[idx][sub.name] = v"
                                     :type="inputType(sub)"
                                     :disabled="isDisabled(attr) || isDisabled(sub)"
-                                    class="h-7 text-[11px]" />
+                                    class="h-8 text-[11px]" />
                             </div>
                             <Button v-if="!isDisabled(attr)" type="button" size="icon" variant="ghost"
-                                class="size-6 self-end hover:bg-red-50 hover:text-red-500"
+                                class="size-7 hover:bg-red-50 hover:text-red-500"
                                 @click="removeMultiRow(attr, uri, idx)">
                                 <Trash2 class="size-3" />
                             </Button>
