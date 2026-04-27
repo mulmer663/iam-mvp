@@ -21,7 +21,7 @@
 | 엔티티 | 역할 |
 |---|---|
 | `ScimSchemaMeta` | 스키마 URN 레지스트리 (`urn:ietf:params:scim:schemas:core:2.0:User` 등). 속성 리스트 보유 |
-| `IamAttributeMeta` | 속성 단위 메타 — RFC 7643 특성(`mutability`/`returned`/`uniqueness`/`multiValued`/`required`) + 프로젝트 확장(`targetDomain`, `category`, `adminOnly`, `view/editLevel`, `encrypted`, `uiComponent`) |
+| `IamAttributeMeta` | 속성 단위 메타 — RFC 7643 특성(`mutability`/`returned`/`uniqueness`/`multiValued`/`required`) + 프로젝트 확장(`targetDomain`, `category`, `adminOnly`, `view/editLevel`, `encrypted`, `uiComponent`, `display`) |
 | `ScimResourceTypeMeta` | ResourceType 정의 (id/endpoint/main schema + 확장 스키마 목록) |
 | `ScimResourceTypeExtension` | ResourceType ↔ Extension 스키마 (required 여부) 임베디드 연결 |
 | `ScimDynamicResource` | 런타임 등록된 리소스 타입의 실제 저장 (JSONB `attributes`) |
@@ -29,7 +29,7 @@
 
 ### 이 영역에서 편집 시 우선 체크할 것
 
-1. **RFC 7643 Section 2 준수** — `IamAttributeMeta` 의 핵심 필드 (`caseExact` / `canonicalValues` / `referenceTypes`) 는 추가 완료. 남은 갭:
+1. **RFC 7643 Section 2 준수** — `IamAttributeMeta` 의 핵심 필드 (`caseExact` / `canonicalValues` / `referenceTypes` / `display`) 는 추가 완료. 남은 갭:
    - 시드된 sub-attribute 의 `canonicalValues` 가 비어 있음 (예: `emails.type` → 표준은 `["work","home","other","unknown"]`)
    - `subAttributes` 관계가 `parentName` 문자열 기반 — 멀티 레벨 중첩 대응은 미검증
 2. **`/Schemas`, `/ResourceTypes`, `/ServiceProviderConfig` 디스커버리 응답**이 `IamAttributeMeta` / `ScimSchemaMeta` / `ScimResourceTypeMeta` 에서 **정확히 재구성**되는지
@@ -149,8 +149,11 @@ HR DB ──> iam-adapter-db ──[RAW_INBOUND_DATA]──> iam-engine
 - [x] SCIM 2.0 표준 API (Users / Schemas / ResourceTypes)
 - [x] Core / Extension 하이브리드 스토리지
 - [x] Hibernate Envers 기반 이력 추적
+- [x] `/scim/v2/Users` CRUD (ScimUserController — POST/GET/PUT/PATCH/DELETE)
+- [x] UI 사용자 등록/수정 — `DynamicUserForm` (속성 메타 기반 동적 렌더링, `display` 플래그 반영)
+- [x] `IamAttributeMeta.display` 플래그 — UI 등록/수정 화면 노출 여부 제어
 - [ ] 프로비저닝 **아웃바운드** 파이프라인 (진행 중)
-- [ ] UI ↔ 백엔드 연동 완성
+- [ ] UI ↔ 백엔드 연동 완성 (사용자 목록·상세 조회, 부서 트리 실데이터 연결)
 
 작업 재개 시점 파악은 `git log --oneline` + 이 체크리스트 교차 확인.
 
@@ -172,8 +175,9 @@ HR DB ──> iam-adapter-db ──[RAW_INBOUND_DATA]──> iam-engine
 
 1. **`iam-core/` 소스 디렉터리 잔존** — 빌드/실행 라인에서는 빠졌으나 디렉터리는 참고용으로 보존 중. 안전하게 제거할 시점이 되면 `git rm -r iam-core` 한 번으로 정리 가능.
 2. **`iam-ui/README.md`** 는 Vite 기본 템플릿 그대로 — 실제 내용 없음.
-3. **시드된 sub-attribute 의 `canonicalValues` 미설정** — `emails.type` / `phoneNumbers.type` 등에 RFC 권장값 없음. `ScimMetaInitializer` 갱신 후보.
-4. **`/scim/v2/Users` CRUD 미포팅** — 현 `iam-registry` 는 디스커버리/스키마/속성/동적 리소스만 담당. User 본체 CRUD 는 추후 작업.
-5. **FE Attribute 화면이 새 PUT/DELETE 경로를 쓰는지 미확인** — 복합 PK 변경 후 (`/api/attributes/{domain}/{name}`) 호출 측 정렬 필요.
+3. **시드된 sub-attribute 의 `canonicalValues` 미설정** — `emails.type` / `phoneNumbers.type` 등에 RFC 권장값 없음 (표준: `["work","home","other","unknown"]`). `ScimMetaInitializer` 갱신 후보.
+4. **FE Attribute 화면이 새 PUT/DELETE 경로를 쓰는지 미확인** — 복합 PK 변경 후 (`/api/attributes/{domain}/{name}`) 호출 측 정렬 필요.
+5. **사용자 목록 `UserTable` 이 실데이터 미연결** — 현재 목 데이터 사용 중. `/scim/v2/Users?filter=...` 연결 필요.
+6. **부서 트리 `DeptTree` 이 실데이터 미연결** — `DepartmentService` API 호출로 교체 필요.
 
 작업 시작 전 이 목록을 확인하고, 관련 영역 건드릴 때 함께 정리하는 것을 권장.

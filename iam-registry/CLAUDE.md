@@ -20,16 +20,32 @@
 ```
 com.iam.registry
 ├── RegistryApplication
-├── application        (UserRegistryService 등)
+├── application
+│   ├── UserRegistryService
+│   ├── user/          (UserQueryService, IamUserUpdateService, IdentityCorrelationService)
+│   ├── scim/          (IamAttributeMetaService, ScimMetadataService, ScimSchemaService,
+│   │                   ScimResourceTypeService, ScimPatchService, ScimDynamicResourceService,
+│   │                   ScimResourceService, EntityAttributeBinder)
+│   └── common/        (DTOs: IamAttributeMetaDto, ScimUserResponse, ScimSchemaDto …)
 ├── domain
 │   ├── user           (IamUser, IamUserExtension, IdentityLink, EnterpriseUserExtension)
-│   ├── scim           (ScimSchemaMeta, ScimResourceTypeMeta, ScimDynamicResource, IamAttributeMeta)
+│   ├── scim           (ScimSchemaMeta, ScimResourceTypeMeta, ScimDynamicResource,
+│   │                   IamAttributeMeta — display/canonicalValues/referenceTypes/caseExact 포함)
 │   ├── sync           (SyncHistory, TransMapping, TransRuleMeta, TransCodeMeta/Value, SourceSystem)
 │   └── common         (ExtensionData, GenericExtension, 상수)
-├── infrastructure     (RabbitMQConfig)
+├── infrastructure     (RabbitMQConfig, ScimMetaInitializer)
 └── interfaces
     ├── messaging      (CdmDataListener)
-    └── rest           (UserRegistryController)
+    └── rest
+        ├── UserRegistryController     (/api/users — 내부 관리용)
+        ├── IamAttributeMetaController (/api/attributes)
+        └── scim/
+            ├── ScimUserController         (POST/GET/PUT/PATCH/DELETE /scim/v2/Users)
+            ├── ScimSchemaController       (GET /scim/v2/Schemas)
+            ├── ScimResourceTypeController (GET /scim/v2/ResourceTypes)
+            ├── ScimDiscoveryController    (GET /scim/v2/ServiceProviderConfig)
+            ├── ScimMetadataController     (/api/schemas, /api/attributes)
+            └── GenericScimController      (동적 ResourceType 라우팅)
 ```
 
 > `iam-core` 모듈에 동일 이름 엔티티가 있으나 **레거시**. 신규 작업은 모두 `iam-registry` 에서.
