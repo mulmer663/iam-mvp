@@ -12,8 +12,9 @@ import {useMillerStore} from '@/stores/miller'
 
 const props = defineProps<{
   initialData?: IamAttributeMeta | null
-  defaultSchemaUri?: string // Context for creation
-  parentAttributeName?: string // Context for sub-attribute creation
+  defaultSchemaUri?: string
+  defaultTargetDomain?: string
+  parentAttributeName?: string
   paneIndex?: number
 }>()
 
@@ -162,7 +163,7 @@ watch(() => props.initialData, (newVal) => {
         // Reset defaults
         formData.value = {
             name: props.parentAttributeName ? `${props.parentAttributeName}.` : '',
-            targetDomain: 'USER',
+            targetDomain: (props.defaultTargetDomain as any) || 'USER',
             category: 'EXTENSION',
             scimSchemaUri: props.defaultSchemaUri || 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User',
             displayName: '',

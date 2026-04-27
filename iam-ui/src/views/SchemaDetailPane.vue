@@ -82,13 +82,9 @@ function openAddAttribute() {
         title: 'New Attribute',
         width: '420px',
         data: {
-            initialData: {
-                name: '',
-                targetDomain: targetDomain.value,
-                category: 'EXTENSION',
-                scimSchemaUri: props.schemaId,
-                type: 'STRING',
-            },
+            initialData: null,
+            defaultSchemaUri: props.schemaId,
+            defaultTargetDomain: targetDomain.value,
             paneIndex: (props.paneIndex ?? 0) + 1
         }
     })
@@ -221,15 +217,14 @@ function typeColor(t: string) {
 
             <!-- Attribute rows -->
             <div v-for="attr in schemaAttributes" :key="`${attr.targetDomain}-${attr.name}`"
-                class="grid grid-cols-[1fr_80px_60px_90px_32px] gap-1 px-3 py-2 border-b border-neutral-50 hover:bg-neutral-50/70 group items-center transition-colors"
-                :class="{ 'cursor-pointer': isEditable }"
-                @click="isEditable ? openEditAttribute(attr) : undefined">
+                class="grid grid-cols-[1fr_80px_60px_90px_32px] gap-1 px-3 py-2 border-b border-neutral-50 hover:bg-neutral-50/70 group items-center transition-colors cursor-pointer"
+                @click="openEditAttribute(attr)">
 
                 <!-- Name + description -->
                 <div class="min-w-0">
                     <div class="flex items-center gap-1.5">
                         <span class="font-medium text-neutral-800 truncate" :title="attr.name">{{ attr.name }}</span>
-                        <ChevronRight v-if="isEditable"
+                        <ChevronRight
                             class="size-3 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </div>
                     <div v-if="attr.description" class="text-[10px] text-neutral-400 truncate">{{ attr.description }}</div>
