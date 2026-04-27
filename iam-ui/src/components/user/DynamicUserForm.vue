@@ -145,21 +145,28 @@ function hasCanonical(sub: IamAttributeMeta): boolean {
     return Array.isArray(sub.canonicalValues) && sub.canonicalValues.length > 0
 }
 
-// Returns a CSS column unit for one sub-attribute. Wider for free-form text
-// (value/display), narrower for selects/booleans/primary flag.
-function subColUnit(sub: IamAttributeMeta): string {
-    if (sub.type === 'BOOLEAN') return '90px'
-    if (hasCanonical(sub)) return 'minmax(110px, 1.2fr)'
+// Returns inline style for one sub-attribute cell in a multi-valued row.
+// Uses flex-basis + min-width so cells wrap to a new line when the row is
+// too narrow (instead of overflowing the pane).
+function subCellStyle(sub: IamAttributeMeta): Record<string, string> {
+    if (sub.type === 'BOOLEAN') {
+        return { flex: '0 0 80px', minWidth: '80px' }
+    }
+    if (hasCanonical(sub)) {
+        return { flex: '1 1 110px', minWidth: '100px' }
+    }
     const last = sub.name.split('.').pop() ?? sub.name
-    if (last === 'value') return 'minmax(180px, 3fr)'
-    if (last === 'primary') return '90px'
-    if (last === 'display') return 'minmax(140px, 2fr)'
-    return 'minmax(120px, 1.5fr)'
-}
-
-function gridCols(parent: IamAttributeMeta): string {
-    const subs = subAttrsOf(parent)
-    return subs.map(subColUnit).join(' ') + ' 32px'
+    if (last === 'primary') return { flex: '0 0 90px', minWidth: '80px' }
+    if (last === 'value' || last === 'streetAddress') {
+        return { flex: '3 1 200px', minWidth: '180px' }
+    }
+    if (last === 'formatted') {
+        // Address.formatted is a long readable string — give it the whole row.
+        return { flex: '1 1 100%', minWidth: '100%' }
+    }
+    if (last === 'display') return { flex: '2 1 140px', minWidth: '120px' }
+    if (last === 'postalCode') return { flex: '1 1 100px', minWidth: '90px' }
+    return { flex: '1 1 130px', minWidth: '110px' }
 }
 
 const expanded = ref<Record<string, boolean>>({})
@@ -206,9 +213,8 @@ function isExpanded(key: string): boolean {
                             No {{ attr.name }} added.
                         </div>
                         <div v-for="(_row, idx) in getMultiArray(attr, 'core')" :key="idx"
-                            class="grid gap-2 p-2.5 border border-neutral-100 rounded bg-neutral-50/40 relative items-end"
-                            :style="{ gridTemplateColumns: gridCols(attr) }">
-                            <div v-for="sub in subAttrsOf(attr)" :key="sub.name" class="min-w-0">
+                            class="flex flex-wrap gap-x-2 gap-y-2 p-2.5 border border-neutral-100 rounded bg-neutral-50/40 items-end">
+                            <div v-for="sub in subAttrsOf(attr)" :key="sub.name" :style="subCellStyle(sub)" class="min-w-0">
                                 <div class="text-[9px] font-bold text-neutral-400 uppercase tracking-tighter mb-1">
                                     {{ subShortName(sub) }}
                                 </div>
@@ -237,7 +243,7 @@ function isExpanded(key: string): boolean {
                                     class="h-8 text-[11px]" />
                             </div>
                             <Button v-if="!isDisabled(attr)" type="button" size="icon" variant="ghost"
-                                class="size-7 hover:bg-red-50 hover:text-red-500"
+                                class="size-7 hover:bg-red-50 hover:text-red-500 ml-auto shrink-0"
                                 @click="removeMultiRow(attr, 'core', idx)">
                                 <Trash2 class="size-3" />
                             </Button>
@@ -343,9 +349,8 @@ function isExpanded(key: string): boolean {
                             No {{ attr.name }} added.
                         </div>
                         <div v-for="(_row, idx) in getMultiArray(attr, uri)" :key="idx"
-                            class="grid gap-2 p-2.5 border border-neutral-100 rounded bg-neutral-50/40 items-end"
-                            :style="{ gridTemplateColumns: gridCols(attr) }">
-                            <div v-for="sub in subAttrsOf(attr)" :key="sub.name" class="min-w-0">
+                            class="flex flex-wrap gap-x-2 gap-y-2 p-2.5 border border-neutral-100 rounded bg-neutral-50/40 items-end">
+                            <div v-for="sub in subAttrsOf(attr)" :key="sub.name" :style="subCellStyle(sub)" class="min-w-0">
                                 <div class="text-[9px] font-bold text-neutral-400 uppercase tracking-tighter mb-1">
                                     {{ subShortName(sub) }}
                                 </div>
@@ -374,7 +379,7 @@ function isExpanded(key: string): boolean {
                                     class="h-8 text-[11px]" />
                             </div>
                             <Button v-if="!isDisabled(attr)" type="button" size="icon" variant="ghost"
-                                class="size-7 hover:bg-red-50 hover:text-red-500"
+                                class="size-7 hover:bg-red-50 hover:text-red-500 ml-auto shrink-0"
                                 @click="removeMultiRow(attr, uri, idx)">
                                 <Trash2 class="size-3" />
                             </Button>
