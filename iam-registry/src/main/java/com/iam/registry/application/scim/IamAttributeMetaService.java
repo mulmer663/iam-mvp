@@ -37,7 +37,7 @@ public class IamAttributeMetaService {
                 .name(dto.name())
                 .targetDomain(dto.targetDomain())
                 .category(dto.category())
-                .displayName(dto.displayName())
+                .displayName(dto.displayName() != null ? dto.displayName() : dto.name())
                 .type(dto.type())
                 .multiValued(dto.multiValued())
                 .scimSchemaUri(dto.scimSchemaUri())
@@ -82,7 +82,7 @@ public class IamAttributeMetaService {
                     "Cannot change Data Type");
         }
 
-        attribute.setDisplayName(updates.displayName());
+        attribute.setDisplayName(updates.displayName() != null ? updates.displayName() : attribute.getDisplayName());
         attribute.setDescription(updates.description());
         attribute.setRequired(updates.required());
         attribute.setMutability(updates.mutability() != null ? updates.mutability() : AttributeMutability.READ_WRITE);
