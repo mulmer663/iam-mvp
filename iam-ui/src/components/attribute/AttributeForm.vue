@@ -387,19 +387,19 @@ async function onSubmit() {
        <!-- Flags -->
        <div class="grid grid-cols-2 gap-4 bg-neutral-50 p-2 rounded">
            <div class="flex items-center space-x-2">
-               <Checkbox id="required" :checked="formData.required" @update:checked="(v: boolean) => formData.required = v" :disabled="!canEditField('required')" />
+               <Checkbox id="required" :model-value="formData.required" @update:model-value="(v: any) => formData.required = !!v" :disabled="!canEditField('required')" />
                <Label for="required">Required</Label>
            </div>
            <div class="flex items-center space-x-2">
-               <Checkbox id="encrypted" :checked="formData.encrypted" @update:checked="(v: boolean) => formData.encrypted = v" :disabled="!canEditField('encrypted')" />
+               <Checkbox id="encrypted" :model-value="formData.encrypted" @update:model-value="(v: any) => formData.encrypted = !!v" :disabled="!canEditField('encrypted')" />
                <Label for="encrypted">Encrypted Storage</Label>
            </div>
             <div class="flex items-center space-x-2">
-               <Checkbox id="adminOnly" :checked="formData.adminOnly" @update:checked="(v: boolean) => formData.adminOnly = v" :disabled="!canEditField('adminOnly')" />
+               <Checkbox id="adminOnly" :model-value="formData.adminOnly" @update:model-value="(v: any) => formData.adminOnly = !!v" :disabled="!canEditField('adminOnly')" />
                <Label for="adminOnly">Admin Only</Label>
            </div>
             <div class="flex items-center space-x-2">
-               <Checkbox id="display" :checked="formData.display ?? true" @update:checked="(v: boolean) => formData.display = v" :disabled="!canEditField('display')" />
+               <Checkbox id="display" :model-value="formData.display ?? true" @update:model-value="(v: any) => formData.display = !!v" :disabled="!canEditField('display')" />
                <Label for="display" title="Show this attribute in User Create/Edit forms">Display in Form</Label>
            </div>
        </div>
