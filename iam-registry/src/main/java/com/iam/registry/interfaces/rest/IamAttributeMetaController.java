@@ -25,13 +25,17 @@ public class IamAttributeMetaController {
         return service.createAttribute(dto);
     }
 
-    @PutMapping("/{name}")
-    public IamAttributeMetaDto updateAttribute(@PathVariable String name, @RequestBody IamAttributeMetaDto dto) {
-        return service.updateAttribute(name, dto);
+    // PK is composite (domain, name); the path mirrors that.
+    @PutMapping("/{domain}/{name}")
+    public IamAttributeMetaDto updateAttribute(@PathVariable AttributeTargetDomain domain,
+                                                @PathVariable String name,
+                                                @RequestBody IamAttributeMetaDto dto) {
+        return service.updateAttribute(name, domain, dto);
     }
 
-    @DeleteMapping("/{name}")
-    public void deleteAttribute(@PathVariable String name) {
-        service.deleteAttribute(name);
+    @DeleteMapping("/{domain}/{name}")
+    public void deleteAttribute(@PathVariable AttributeTargetDomain domain,
+                                 @PathVariable String name) {
+        service.deleteAttribute(name, domain);
     }
 }

@@ -12,6 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "iam_attribute_meta")
+@IdClass(IamAttributeMetaId.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,10 +21,14 @@ import java.util.List;
 @Builder
 public class IamAttributeMeta {
 
+    // Composite PK: (name, targetDomain). RFC 7643 allows the same SCIM
+    // attribute name across different resource types (e.g., User.displayName
+    // and Group.displayName) so the row identity must include the domain.
     @Id
     @Column(name = "attribute_code", nullable = false, length = 50)
     private String name;
 
+    @Id
     @Enumerated(EnumType.STRING)
     @Column(name = "target_domain", nullable = false, length = 20)
     private AttributeTargetDomain targetDomain;

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface IamAttributeMetaRepository extends JpaRepository<IamAttributeMeta, String> {
+public interface IamAttributeMetaRepository extends JpaRepository<IamAttributeMeta, IamAttributeMetaId> {
     List<IamAttributeMeta> findByTargetDomain(AttributeTargetDomain targetDomain);
 
     List<IamAttributeMeta> findByTargetDomainAndCategory(AttributeTargetDomain targetDomain,

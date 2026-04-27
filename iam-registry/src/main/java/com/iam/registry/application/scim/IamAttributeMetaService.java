@@ -6,6 +6,7 @@ import com.iam.registry.domain.common.enums.AttributeTargetDomain;
 import com.iam.registry.domain.common.exception.ErrorCode;
 import com.iam.registry.domain.common.exception.IamBusinessException;
 import com.iam.registry.domain.scim.IamAttributeMeta;
+import com.iam.registry.domain.scim.IamAttributeMetaId;
 import com.iam.registry.domain.scim.IamAttributeMetaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +24,10 @@ public class IamAttributeMetaService {
 
     @Transactional
     public IamAttributeMetaDto createAttribute(IamAttributeMetaDto dto) {
-        if (repository.existsById(dto.name())) {
+        IamAttributeMetaId pk = new IamAttributeMetaId(dto.name(), dto.targetDomain());
+        if (repository.existsById(pk)) {
             throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
-                    "Attribute name already exists: " + dto.name());
+                    "Attribute already exists: " + dto.targetDomain() + "." + dto.name());
         }
 
         IamAttributeMeta entity = IamAttributeMeta.builder()
@@ -57,12 +59,13 @@ public class IamAttributeMetaService {
     }
 
     @Transactional
-    public IamAttributeMetaDto updateAttribute(String name, IamAttributeMetaDto updates) {
-        IamAttributeMeta attribute = repository.findById(name)
+    public IamAttributeMetaDto updateAttribute(String name, AttributeTargetDomain domain, IamAttributeMetaDto updates) {
+        IamAttributeMeta attribute = repository.findById(new IamAttributeMetaId(name, domain))
                 .orElseThrow(() -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "INTERNAL",
-                        "Attribute not found: " + name));
+                        "Attribute not found: " + domain + "." + name));
 
-        // Immutable checks
+        // Immutable checks. targetDomain is part of the PK and may not be rebound;
+        // an explicit mismatch in the body is a client error, not a silent move.
         if (!attribute.getCategory().equals(updates.category())) {
             throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
                     "Cannot change Attribute Category");
@@ -99,10 +102,10 @@ public class IamAttributeMetaService {
     }
 
     @Transactional
-    public void deleteAttribute(String name) {
-        IamAttributeMeta attribute = repository.findById(name)
+    public void deleteAttribute(String name, AttributeTargetDomain domain) {
+        IamAttributeMeta attribute = repository.findById(new IamAttributeMetaId(name, domain))
                 .orElseThrow(() -> new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "INTERNAL",
-                        "Attribute not found: " + name));
+                        "Attribute not found: " + domain + "." + name));
 
         if (attribute.getCategory() == AttributeCategory.CORE) {
             throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "INTERNAL",
