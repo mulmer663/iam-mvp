@@ -255,6 +255,10 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                 null, List.of("external"));
                 enrichSubAttr(attributes, "addresses", "type", AttributeTargetDomain.USER,
                                 List.of("work", "home", "other"), null);
+                // addresses.formatted is a long, single-line/multi-line readable address.
+                // Hint the UI to render it as a full-width textarea cell.
+                setSubAttrUiComponent(attributes, "addresses", "formatted",
+                                AttributeTargetDomain.USER, "textarea");
                 enrichSubAttr(attributes, "groups", "type", AttributeTargetDomain.USER,
                                 List.of("direct", "indirect"), null);
                 enrichSubAttr(attributes, "groups", "$ref", AttributeTargetDomain.USER,
@@ -289,6 +293,23 @@ public class ScimMetaInitializer implements CommandLineRunner {
                         }
                 }
                 log.warn("[ScimMetaInitializer] enrichSubAttr: {} ({}) not found in seed", fullName, domain);
+        }
+
+        /**
+         * Set uiComponent metadata on a previously-seeded sub-attribute. The value
+         * is a free-form hint consumed by the frontend (e.g. "textarea" promotes
+         * the cell to a full-row text block in the dynamic User form).
+         */
+        private void setSubAttrUiComponent(List<IamAttributeMeta> seed, String parent, String subName,
+                        AttributeTargetDomain domain, String uiComponent) {
+                String fullName = parent + "." + subName;
+                for (IamAttributeMeta a : seed) {
+                        if (fullName.equals(a.getName()) && a.getTargetDomain() == domain) {
+                                a.setUiComponent(uiComponent);
+                                return;
+                        }
+                }
+                log.warn("[ScimMetaInitializer] setSubAttrUiComponent: {} ({}) not found in seed", fullName, domain);
         }
 
         private void addComplexAttribute(List<IamAttributeMeta> attributes, String parentName, String displayName,
