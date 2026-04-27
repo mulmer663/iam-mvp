@@ -1,11 +1,21 @@
 package com.iam.registry.application.common;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * SCIM User response shape per RFC 7644 §3.4. Top-level fields are the
+ * core User schema; extension URN-keyed objects are flattened from
+ * {@link #extensions()} via {@code @JsonAnyGetter} so the same response
+ * structure works for any registered customer extension URN — no
+ * Java-side per-extension fields.
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
 public record ScimUserResponse(
                 List<String> schemas,
@@ -17,10 +27,9 @@ public record ScimUserResponse(
                 List<MultiValue> emails,
                 List<MultiValue> phoneNumbers,
                 List<Address> addresses,
-                boolean active,
+                Boolean active,
                 Meta meta,
-                @JsonProperty("urn:ietf:params:scim:schemas:extension:enterprise:2.0:User") Map<String, Object> enterpriseExtension,
-                @JsonProperty("urn:ietf:params:scim:schemas:extension:custom:2.0:User") Map<String, Object> customExtension) {
+                @JsonAnyGetter Map<String, Map<String, Object>> extensions) {
         @Builder
         public record Name(
                         String familyName,
