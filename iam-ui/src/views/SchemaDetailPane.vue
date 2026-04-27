@@ -24,6 +24,7 @@ const schema = computed(() => rtStore.schemas.find(s => s.id === props.schemaId)
 const category = computed(() => getSchemaCategory(props.schemaId))
 const isStandard = computed(() => isStandardSchema(props.schemaId))
 const isExtension = computed(() => category.value === 'extension')
+const isEditable = computed(() => isExtension.value && !isStandard.value)
 
 // Infer target domain from ResourceType linkage
 const targetDomain = computed<AttributeTargetDomain>(() => {
@@ -191,11 +192,11 @@ function typeColor(t: string) {
 
         <!-- Toolbar ─────────────────────────────────────────────────────────── -->
         <div class="h-9 border-b border-neutral-100 flex items-center px-3 justify-between shrink-0 bg-neutral-50/30">
-            <span class="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+            <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                 Attributes
                 <span class="ml-1 text-neutral-400 font-normal">({{ schemaAttributes.length }})</span>
             </span>
-            <Button v-if="isExtension" size="xs" variant="outline"
+            <Button v-if="isEditable" size="xs" variant="outline"
                 class="h-6 text-xs flex gap-1" @click="openAddAttribute">
                 <Plus class="size-3" /> Add Attribute
             </Button>
@@ -221,14 +222,14 @@ function typeColor(t: string) {
             <!-- Attribute rows -->
             <div v-for="attr in schemaAttributes" :key="`${attr.targetDomain}-${attr.name}`"
                 class="grid grid-cols-[1fr_80px_60px_90px_32px] gap-1 px-3 py-2 border-b border-neutral-50 hover:bg-neutral-50/70 group items-center transition-colors"
-                :class="{ 'cursor-pointer': isExtension }"
-                @click="isExtension ? openEditAttribute(attr) : undefined">
+                :class="{ 'cursor-pointer': isEditable }"
+                @click="isEditable ? openEditAttribute(attr) : undefined">
 
                 <!-- Name + description -->
                 <div class="min-w-0">
                     <div class="flex items-center gap-1.5">
                         <span class="font-medium text-neutral-800 truncate" :title="attr.name">{{ attr.name }}</span>
-                        <ChevronRight v-if="isExtension"
+                        <ChevronRight v-if="isEditable"
                             class="size-3 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </div>
                     <div v-if="attr.description" class="text-[10px] text-neutral-400 truncate">{{ attr.description }}</div>
@@ -257,7 +258,7 @@ function typeColor(t: string) {
 
                 <!-- Actions (extension only) -->
                 <div class="flex items-center justify-end">
-                    <Button v-if="isExtension && attr.category !== 'CORE'"
+                    <Button v-if="isEditable && attr.category !== 'CORE'"
                         variant="ghost" size="icon"
                         class="size-5 hover:bg-red-50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                         @click.stop="deleteAttribute(attr.name)">
