@@ -33,13 +33,18 @@ watch(form, (val) => {
 }, { deep: true })
 
 // ── Attribute classification ───────────────────────────────────────────────
+// display === false hides the attribute from the dynamic form (sub-attrs follow
+// their parent's visibility — they are still rendered nested under a visible parent).
+const visible = (a: IamAttributeMeta) => a.display !== false
+
 const coreAttrs = computed(() =>
-    props.attributes.filter(a => a.category === 'CORE' && !a.parentName)
+    props.attributes.filter(a => a.category === 'CORE' && !a.parentName && visible(a))
 )
 const extensionsBySchema = computed(() => {
     const map = new Map<string, IamAttributeMeta[]>()
     for (const a of props.attributes) {
         if (a.category !== 'EXTENSION' || a.parentName) continue
+        if (!visible(a)) continue
         const uri = a.scimSchemaUri || 'urn:unknown'
         if (!map.has(uri)) map.set(uri, [])
         map.get(uri)!.push(a)

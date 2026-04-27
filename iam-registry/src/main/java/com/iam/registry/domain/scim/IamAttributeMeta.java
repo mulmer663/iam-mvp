@@ -70,6 +70,12 @@ public class IamAttributeMeta {
     @Column(name = "admin_only")
     private boolean adminOnly = false;
 
+    // UI hint: whether this attribute should appear in dynamic User CRUD forms.
+    // Defaults to true so existing/seeded attributes remain visible without migration.
+    @Builder.Default
+    @Column(name = "is_display", nullable = false, columnDefinition = "boolean default true")
+    private boolean display = true;
+
     // Permissions (0=Public, 9=Admin)
     @Builder.Default
     @Column(name = "view_level")

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Edit2, Check, X, Plus, Trash2, Lock, ChevronRight } from 'lucide-vue-next'
+import { Edit2, Check, X, Plus, Trash2, Lock, ChevronRight, EyeOff } from 'lucide-vue-next'
 import { useAttributeStore } from '@/stores/attribute'
 import { useResourceTypeStore } from '@/stores/resourceType'
 import { useMillerStore } from '@/stores/miller'
@@ -223,7 +223,10 @@ function typeColor(t: string) {
                 <!-- Name + description -->
                 <div class="min-w-0">
                     <div class="flex items-center gap-1.5">
-                        <span class="font-medium text-neutral-800 truncate" :title="attr.name">{{ attr.name }}</span>
+                        <span class="font-medium text-neutral-800 truncate" :title="attr.name"
+                            :class="{ 'opacity-50': attr.display === false }">{{ attr.name }}</span>
+                        <EyeOff v-if="attr.display === false" class="size-3 text-neutral-400 shrink-0"
+                            title="Hidden from User Create/Edit forms" />
                         <ChevronRight
                             class="size-3 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </div>

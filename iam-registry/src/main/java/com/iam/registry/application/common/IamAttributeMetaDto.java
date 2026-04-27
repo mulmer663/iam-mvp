@@ -25,5 +25,6 @@ public record IamAttributeMetaDto(
                 int viewLevel,
                 int editLevel,
                 boolean encrypted,
-                String uiComponent) {
+                String uiComponent,
+                boolean display) {
 }

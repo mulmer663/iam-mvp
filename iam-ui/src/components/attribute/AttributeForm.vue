@@ -88,7 +88,8 @@ const formData = ref<IamAttributeMeta>({
   viewLevel: 0,
   editLevel: 0,
   encrypted: false,
-  uiComponent: 'text-input'
+  uiComponent: 'text-input',
+  display: true
 })
 
 // Validation computed property
@@ -129,7 +130,7 @@ function canEditField(field: keyof IamAttributeMeta) {
 
     // If it's a CORE attribute, we strictly limit what can be edited
     if (formData.value.category === 'CORE') {
-        const allowedCoreFields: (keyof IamAttributeMeta)[] = ['displayName', 'description', 'uiComponent', 'viewLevel', 'editLevel', 'adminOnly', 'encrypted']
+        const allowedCoreFields: (keyof IamAttributeMeta)[] = ['displayName', 'description', 'uiComponent', 'viewLevel', 'editLevel', 'adminOnly', 'encrypted', 'display']
         return allowedCoreFields.includes(field)
     }
 
@@ -177,7 +178,8 @@ watch(() => props.initialData, (newVal) => {
             viewLevel: 0,
             editLevel: 0,
             encrypted: false,
-            uiComponent: 'text-input'
+            uiComponent: 'text-input',
+            display: true
         }
     }
 }, { immediate: true })
@@ -395,6 +397,10 @@ async function onSubmit() {
             <div class="flex items-center space-x-2">
                <Checkbox id="adminOnly" :checked="formData.adminOnly" @update:checked="(v: boolean) => formData.adminOnly = v" :disabled="!canEditField('adminOnly')" />
                <Label for="adminOnly">Admin Only</Label>
+           </div>
+            <div class="flex items-center space-x-2">
+               <Checkbox id="display" :checked="formData.display ?? true" @update:checked="(v: boolean) => formData.display = v" :disabled="!canEditField('display')" />
+               <Label for="display" title="Show this attribute in User Create/Edit forms">Display in Form</Label>
            </div>
        </div>
     </div>
