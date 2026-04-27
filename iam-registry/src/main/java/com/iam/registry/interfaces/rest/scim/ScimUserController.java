@@ -1,7 +1,9 @@
 package com.iam.registry.interfaces.rest.scim;
 
 import com.iam.registry.application.common.ScimListResponse;
+import com.iam.registry.application.common.ScimPatchRequest;
 import com.iam.registry.application.common.ScimUserResponse;
+import com.iam.registry.application.scim.ScimPatchService;
 import com.iam.registry.application.scim.ScimResourceService;
 import com.iam.registry.application.user.UserQueryService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ public class ScimUserController {
 
     private final UserQueryService userQueryService;
     private final ScimResourceService scimResourceService;
+    private final ScimPatchService scimPatchService;
 
     @GetMapping
     public ScimListResponse<ScimUserResponse> getUsers() {
@@ -37,6 +40,11 @@ public class ScimUserController {
     @PutMapping("/{id}")
     public ScimUserResponse updateUser(@PathVariable Long id, @RequestBody Map<String, Object> scimUser) {
         return scimResourceService.updateUser(id, scimUser);
+    }
+
+    @PatchMapping("/{id}")
+    public ScimUserResponse patchUser(@PathVariable Long id, @RequestBody ScimPatchRequest patch) {
+        return scimPatchService.patch(id, patch);
     }
 
     @DeleteMapping("/{id}")
