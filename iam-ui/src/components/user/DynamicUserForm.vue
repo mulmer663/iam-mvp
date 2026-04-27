@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select'
@@ -145,28 +146,20 @@ function hasCanonical(sub: IamAttributeMeta): boolean {
     return Array.isArray(sub.canonicalValues) && sub.canonicalValues.length > 0
 }
 
-// Returns inline style for one sub-attribute cell in a multi-valued row.
-// Uses flex-basis + min-width so cells wrap to a new line when the row is
-// too narrow (instead of overflowing the pane).
+// Decides the flex layout of one sub-attribute cell in a multi-valued row.
+// Pure metadata-driven (no per-name hardcoding):
+//   - BOOLEAN / NUMBER / DATE / canonicalValues  → fixed-width controls
+//   - uiComponent === 'textarea'                 → full-row text block
+//   - everything else (free-form STRING)         → flexible, equal weight
+// To make a specific attribute wider/full-row, set its uiComponent metadata
+// (e.g. addresses.formatted -> 'textarea') instead of editing this file.
 function subCellStyle(sub: IamAttributeMeta): Record<string, string> {
-    if (sub.type === 'BOOLEAN') {
-        return { flex: '0 0 80px', minWidth: '80px' }
-    }
-    if (hasCanonical(sub)) {
-        return { flex: '1 1 110px', minWidth: '100px' }
-    }
-    const last = sub.name.split('.').pop() ?? sub.name
-    if (last === 'primary') return { flex: '0 0 90px', minWidth: '80px' }
-    if (last === 'value' || last === 'streetAddress') {
-        return { flex: '3 1 200px', minWidth: '180px' }
-    }
-    if (last === 'formatted') {
-        // Address.formatted is a long readable string — give it the whole row.
-        return { flex: '1 1 100%', minWidth: '100%' }
-    }
-    if (last === 'display') return { flex: '2 1 140px', minWidth: '120px' }
-    if (last === 'postalCode') return { flex: '1 1 100px', minWidth: '90px' }
-    return { flex: '1 1 130px', minWidth: '110px' }
+    if (sub.type === 'BOOLEAN') return { flex: '0 0 80px', minWidth: '80px' }
+    if (sub.type === 'NUMBER')  return { flex: '0 0 120px', minWidth: '110px' }
+    if (sub.type === 'DATE')    return { flex: '0 0 150px', minWidth: '140px' }
+    if (hasCanonical(sub))      return { flex: '0 1 140px', minWidth: '110px' }
+    if (sub.uiComponent === 'textarea') return { flex: '1 1 100%', minWidth: '100%' }
+    return { flex: '1 1 160px', minWidth: '140px' }
 }
 
 const expanded = ref<Record<string, boolean>>({})
@@ -235,6 +228,12 @@ function isExpanded(key: string): boolean {
                                         <SelectItem v-for="cv in (sub.canonicalValues ?? [])" :key="cv" :value="cv">{{ cv }}</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <Textarea v-else-if="sub.uiComponent === 'textarea'"
+                                    :model-value="getMultiArray(attr, 'core')[idx][sub.name] ?? ''"
+                                    @update:model-value="(v: any) => getMultiArray(attr, 'core')[idx][sub.name] = v"
+                                    :disabled="isDisabled(attr) || isDisabled(sub)"
+                                    rows="2"
+                                    class="text-[11px] min-h-[56px]" />
                                 <Input v-else
                                     :model-value="getMultiArray(attr, 'core')[idx][sub.name]"
                                     @update:model-value="(v: any) => getMultiArray(attr, 'core')[idx][sub.name] = v"
@@ -371,6 +370,12 @@ function isExpanded(key: string): boolean {
                                         <SelectItem v-for="cv in (sub.canonicalValues ?? [])" :key="cv" :value="cv">{{ cv }}</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <Textarea v-else-if="sub.uiComponent === 'textarea'"
+                                    :model-value="getMultiArray(attr, uri)[idx][sub.name] ?? ''"
+                                    @update:model-value="(v: any) => getMultiArray(attr, uri)[idx][sub.name] = v"
+                                    :disabled="isDisabled(attr) || isDisabled(sub)"
+                                    rows="2"
+                                    class="text-[11px] min-h-[56px]" />
                                 <Input v-else
                                     :model-value="getMultiArray(attr, uri)[idx][sub.name]"
                                     @update:model-value="(v: any) => getMultiArray(attr, uri)[idx][sub.name] = v"
