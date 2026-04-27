@@ -172,6 +172,7 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                 AttributeDataType.COMPLEX, "urn:ietf:params:scim:schemas:core:2.0:User",
                                 "Physical addresses", false, AttributeMutability.READ_WRITE, "multi-input", true));
                 attributes.addAll(createSubAttrs("addresses", "urn:ietf:params:scim:schemas:core:2.0:User",
+                                AttributeTargetDomain.USER,
                                 "formatted", "streetAddress", "locality", "region", "postalCode", "country", "type",
                                 "primary"));
 
@@ -180,6 +181,7 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                 AttributeDataType.COMPLEX, "urn:ietf:params:scim:schemas:core:2.0:User",
                                 "User groups (Read-only)", false, AttributeMutability.READ_ONLY, "list-view", true));
                 attributes.addAll(createSubAttrs("groups", "urn:ietf:params:scim:schemas:core:2.0:User",
+                                AttributeTargetDomain.USER,
                                 "value", "$ref", "display", "type"));
 
                 // EXTENSION Attributes - Enterprise User
@@ -236,10 +238,57 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                 AttributeDataType.COMPLEX, "urn:ietf:params:scim:schemas:core:2.0:Group",
                                 "Group members", false, AttributeMutability.READ_WRITE, "multi-input", true));
                 attributes.addAll(createSubAttrs("members", "urn:ietf:params:scim:schemas:core:2.0:Group",
+                                AttributeTargetDomain.GROUP,
                                 "value", "$ref", "display", "type"));
+
+                // RFC 7643 §4.1/4.2: enrich type sub-attributes with canonical values
+                // and reference sub-attributes with referenceTypes.
+                enrichSubAttr(attributes, "emails", "type", AttributeTargetDomain.USER,
+                                List.of("work", "home", "other"), null);
+                enrichSubAttr(attributes, "phoneNumbers", "type", AttributeTargetDomain.USER,
+                                List.of("work", "home", "mobile", "fax", "pager", "other"), null);
+                enrichSubAttr(attributes, "ims", "type", AttributeTargetDomain.USER,
+                                List.of("aim", "gtalk", "icq", "xmpp", "msn", "skype", "qq", "yahoo"), null);
+                enrichSubAttr(attributes, "photos", "type", AttributeTargetDomain.USER,
+                                List.of("photo", "thumbnail"), null);
+                enrichSubAttr(attributes, "photos", "value", AttributeTargetDomain.USER,
+                                null, List.of("external"));
+                enrichSubAttr(attributes, "addresses", "type", AttributeTargetDomain.USER,
+                                List.of("work", "home", "other"), null);
+                enrichSubAttr(attributes, "groups", "type", AttributeTargetDomain.USER,
+                                List.of("direct", "indirect"), null);
+                enrichSubAttr(attributes, "groups", "$ref", AttributeTargetDomain.USER,
+                                null, List.of("Group"));
+                enrichSubAttr(attributes, "members", "type", AttributeTargetDomain.GROUP,
+                                List.of("User", "Group"), null);
+                enrichSubAttr(attributes, "members", "$ref", AttributeTargetDomain.GROUP,
+                                null, List.of("User", "Group"));
 
                 attributeMetaRepository.saveAll(attributes);
                 log.info("[ScimMetaInitializer] Seeded {} attribute metas.", attributes.size());
+        }
+
+        /**
+         * Apply RFC 7643 canonicalValues / referenceTypes onto a previously-seeded
+         * sub-attribute identified by (parent.subName, domain). Pass null for
+         * either list to leave that field untouched.
+         */
+        private void enrichSubAttr(List<IamAttributeMeta> seed, String parent, String subName,
+                        AttributeTargetDomain domain,
+                        List<String> canonicalValues, List<String> referenceTypes) {
+                String fullName = parent + "." + subName;
+                for (IamAttributeMeta a : seed) {
+                        if (fullName.equals(a.getName()) && a.getTargetDomain() == domain) {
+                                if (canonicalValues != null) {
+                                        a.setCanonicalValues(new ArrayList<>(canonicalValues));
+                                }
+                                if (referenceTypes != null) {
+                                        a.setReferenceTypes(new ArrayList<>(referenceTypes));
+                                }
+                                return;
+                        }
+                }
+                log.warn("[ScimMetaInitializer] enrichSubAttr: {} ({}) not found in seed", fullName, domain);
         }
 
         private void addComplexAttribute(List<IamAttributeMeta> attributes, String parentName, String displayName,
@@ -248,20 +297,21 @@ public class ScimMetaInitializer implements CommandLineRunner {
                 attributes.add(createAttr(parentName, AttributeTargetDomain.USER, AttributeCategory.CORE, displayName,
                                 AttributeDataType.COMPLEX, schema, desc, required, AttributeMutability.READ_WRITE,
                                 "multi-input", true));
-                attributes.addAll(createSubAttrs(parentName, schema, subAttributeNames));
+                attributes.addAll(createSubAttrs(parentName, schema, AttributeTargetDomain.USER, subAttributeNames));
         }
 
-        private List<IamAttributeMeta> createSubAttrs(String parentName, String schema, String... subNames) {
+        private List<IamAttributeMeta> createSubAttrs(String parentName, String schema,
+                        AttributeTargetDomain domain, String... subNames) {
                 // Persisted id is parent.child to keep each sub-attribute row unique
-                // (IamAttributeMeta's @Id is `name`). ScimSchemaService strips the prefix
-                // when emitting the SCIM-shaped attribute name.
+                // ((name, targetDomain) is the composite @Id on IamAttributeMeta).
+                // ScimSchemaService strips the prefix when emitting the SCIM-shaped name.
                 List<IamAttributeMeta> subs = new ArrayList<>();
                 for (String subName : subNames) {
                         String id = parentName + "." + subName;
                         subs.add(IamAttributeMeta.builder()
                                         .name(id)
                                         .parentName(parentName)
-                                        .targetDomain(AttributeTargetDomain.USER)
+                                        .targetDomain(domain)
                                         .category(AttributeCategory.CORE)
                                         .displayName(subName)
                                         .type(AttributeDataType.STRING)
