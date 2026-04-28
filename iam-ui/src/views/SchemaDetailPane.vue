@@ -192,10 +192,10 @@ function typeColor(t: string) {
         </div>
 
         <!-- Toolbar ─────────────────────────────────────────────────────────── -->
-        <div class="h-9 border-b border-neutral-100 flex items-center px-3 justify-between shrink-0 bg-neutral-50/30">
+        <div class="h-9 border-b border-neutral-100 flex items-center px-3 justify-between shrink-0 bg-neutral-50/30" data-testid="attr-section-toolbar">
             <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                 Attributes
-                <span class="ml-1 text-neutral-400 font-normal">({{ schemaAttributes.length }})</span>
+                <span class="ml-1 text-neutral-400 font-normal" data-testid="attr-count">({{ schemaAttributes.length }})</span>
             </span>
             <Button v-if="isEditable" size="xs" variant="outline"
                 class="h-6 text-xs flex gap-1" @click="openAddAttribute">

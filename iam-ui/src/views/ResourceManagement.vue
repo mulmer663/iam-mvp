@@ -21,12 +21,17 @@ onMounted(async () => {
         rtStore.fetchSchemas(),
         rtStore.fetchResourceTypes(),
         attrStore.fetchAttributes(),
-        attrStore.fetchGroupAttributes(),
     ])
 })
 
 // ── Enriched schema list ──────────────────────────────────────────────────────
-const allAttrs = computed(() => [...attrStore.userAttributes, ...attrStore.groupAttributes])
+const allAttrs = computed(() => attrStore.attributes)
+
+const RT_DOMAIN_MAP: Record<string, string> = {
+    User: 'USER',
+    Group: 'GROUP',
+    Department: 'DEPARTMENT',
+}
 
 function attrCount(schemaId: string): number {
     const cat = getSchemaCategory(schemaId)
@@ -34,7 +39,7 @@ function attrCount(schemaId: string): number {
         return allAttrs.value.filter(a => a.scimSchemaUri === schemaId).length
     }
     const rt = rtStore.resourceTypes.find(r => r.schema === schemaId)
-    const domain = rt?.id === 'Group' ? 'GROUP' : 'USER'
+    const domain = RT_DOMAIN_MAP[rt?.id ?? ''] ?? 'USER'
     return allAttrs.value.filter(a => a.category === 'CORE' && a.targetDomain === domain).length
 }
 
