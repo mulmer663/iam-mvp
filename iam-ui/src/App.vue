@@ -29,6 +29,8 @@ import UserDetailPane from '@/components/UserDetailPane.vue'
 import UserCreatePane from '@/views/UserCreatePane.vue'
 import DeptMembersPane from '@/views/DeptMembersPane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
+import GroupDetailPane from '@/views/GroupDetailPane.vue'
+import GroupCreatePane from '@/views/GroupCreatePane.vue'
 
 import {nextTick, ref, watch} from 'vue'
 import { useMillerSizes } from '@/composables/useMillerSizes'
@@ -70,6 +72,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   AttributeListPane: AttributeManagement, // NEW: Alias for recursive sub-attribute list
   ResourceManagement,
   GroupManagement,
+  GroupDetailPane,
+  GroupCreatePane,
   SchemaDetailPane,
   SchemaCreatePane: SchemaCreateForm,
   AttributeFormPane: AttributeForm,
