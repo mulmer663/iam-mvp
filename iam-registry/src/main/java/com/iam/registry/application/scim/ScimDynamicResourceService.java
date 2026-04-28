@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,6 +20,18 @@ import java.util.UUID;
 public class ScimDynamicResourceService {
 
     private final ScimDynamicResourceRepository resourceRepository;
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> listResources(String resourceType) {
+        List<Map<String, Object>> items = resourceRepository.findAllByResourceType(resourceType)
+                .stream().map(this::toScimResponse).toList();
+        return Map.of(
+                "schemas", List.of("urn:ietf:params:scim:api:messages:2.0:ListResponse"),
+                "totalResults", items.size(),
+                "startIndex", 1,
+                "itemsPerPage", items.size(),
+                "Resources", items);
+    }
 
     @Transactional(readOnly = true)
     public Map<String, Object> getResource(String resourceType, String scimId) {

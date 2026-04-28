@@ -12,4 +12,6 @@ public interface ScimDynamicResourceRepository extends JpaRepository<ScimDynamic
     Optional<ScimDynamicResource> findByExternalIdAndResourceType(String externalId, String resourceType);
 
     void deleteByScimIdAndResourceType(String scimId, String resourceType);
+
+    java.util.List<ScimDynamicResource> findAllByResourceType(String resourceType);
 }

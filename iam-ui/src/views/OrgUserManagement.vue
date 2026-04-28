@@ -2,9 +2,11 @@
 import DeptTree from '@/components/DeptTree.vue'
 import UserTable from '@/components/UserTable.vue'
 import { Button } from '@/components/ui/button'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Search, Filter, Plus } from 'lucide-vue-next'
 import { useMillerStore } from '@/stores/miller'
+import { DepartmentService } from '@/api/DepartmentService'
+import type { Department } from '@/types'
 
 const props = defineProps<{
   paneIndex?: number
@@ -12,7 +14,16 @@ const props = defineProps<{
 }>()
 
 const millerStore = useMillerStore()
-const selectedDeptId = ref<string>(props.initialDeptId || 'GLOBAL-IT')
+const departments = ref<Department[]>([])
+const selectedDeptId = ref<string>(props.initialDeptId || '')
+
+onMounted(async () => {
+  departments.value = await DepartmentService.getDepartments()
+  if (!selectedDeptId.value && departments.value.length > 0) {
+    const root = departments.value.find(d => !d.parentId)
+    if (root) selectedDeptId.value = root.id
+  }
+})
 
 function onDeptSelect(id: string) {
   selectedDeptId.value = id
@@ -70,7 +81,7 @@ function openUserCreate() {
                 class="w-full h-8 bg-neutral-50 border border-neutral-100 rounded-sm pl-7 text-[11px] focus:border-blue-300 focus:bg-white"
               />
            </div>
-           <DeptTree :parent-id="null" :selected-id="selectedDeptId" @select="onDeptSelect" />
+           <DeptTree :departments="departments" :parent-id="null" :selected-id="selectedDeptId" @select="onDeptSelect" />
         </div>
       </div>
 
