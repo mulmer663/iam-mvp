@@ -7,6 +7,7 @@ import { useResourceTypeStore } from '@/stores/resourceType'
 import { useMillerStore } from '@/stores/miller'
 import { toast } from '@/utils/toast'
 import { shortenUrn } from '@/types/scim'
+import { isStandardResourceType, resourceTypeCapabilities } from '@/utils/scim-permissions'
 
 const props = defineProps<{
     resourceTypeId: string
@@ -17,7 +18,8 @@ const rtStore = useResourceTypeStore()
 const millerStore = useMillerStore()
 
 const rt = computed(() => rtStore.resourceTypes.find(r => r.id === props.resourceTypeId))
-const isStandardRt = computed(() => props.resourceTypeId === 'User' || props.resourceTypeId === 'Group')
+const isStandardRt = computed(() => isStandardResourceType(props.resourceTypeId))
+const caps = computed(() => resourceTypeCapabilities(props.resourceTypeId))
 
 // ── Inline edit ──────────────────────────────────────────────────────────────
 const editing = ref(false)
@@ -120,11 +122,11 @@ onMounted(async () => {
                     <Lock class="size-2.5" />
                     <span>RFC standard — only schema extensions are editable</span>
                 </div>
-                <input v-model="editName" placeholder="Name" :disabled="isStandardRt"
+                <input v-model="editName" placeholder="Name" :disabled="!caps.canEditMeta"
                     class="w-full text-sm font-bold border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed" />
-                <input v-model="editDesc" placeholder="Description" :disabled="isStandardRt"
+                <input v-model="editDesc" placeholder="Description" :disabled="!caps.canEditMeta"
                     class="w-full text-xs border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed" />
-                <input v-model="editEndpoint" placeholder="Endpoint (e.g. /Users)" :disabled="isStandardRt"
+                <input v-model="editEndpoint" placeholder="Endpoint (e.g. /Users)" :disabled="!caps.canEditMeta"
                     class="w-full text-xs font-mono border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed" />
                 <div class="flex gap-1.5 pt-1">
                     <Button size="xs" class="h-6 text-xs px-2" @click="saveEdit" :disabled="saving">

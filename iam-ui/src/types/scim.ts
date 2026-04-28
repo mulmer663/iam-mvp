@@ -40,10 +40,7 @@ export function getSchemaCategory(id: string): SchemaCategory {
     return id.includes(':extension:') ? 'extension' : 'core';
 }
 
-export function isStandardSchema(id: string): boolean {
-    return id.startsWith('urn:ietf:params:scim:schemas:core:2.0:') ||
-        id.startsWith('urn:ietf:params:scim:schemas:extension:enterprise:2.0:');
-}
+// isStandardSchema → moved to @/utils/scim-permissions.ts (single source of truth)
 
 export function shortenUrn(urn: string): string {
     const prefix = 'urn:ietf:params:scim:schemas:';

@@ -7,7 +7,8 @@ import { useAttributeStore } from '@/stores/attribute'
 import { useResourceTypeStore } from '@/stores/resourceType'
 import { useMillerStore } from '@/stores/miller'
 import { toast } from '@/utils/toast'
-import { getSchemaCategory, isStandardSchema } from '@/types/scim'
+import { getSchemaCategory } from '@/types/scim'
+import { isStandardSchema, schemaCapabilities } from '@/utils/scim-permissions'
 import type { AttributeTargetDomain } from '@/types/attribute'
 
 const props = defineProps<{
@@ -24,7 +25,8 @@ const schema = computed(() => rtStore.schemas.find(s => s.id === props.schemaId)
 const category = computed(() => getSchemaCategory(props.schemaId))
 const isStandard = computed(() => isStandardSchema(props.schemaId))
 const isExtension = computed(() => category.value === 'extension')
-const isEditable = computed(() => isExtension.value && !isStandard.value)
+const caps = computed(() => schemaCapabilities(props.schemaId))
+const isEditable = computed(() => caps.value.canEditMeta)
 
 // ResourceType id → AttributeTargetDomain
 const RT_DOMAIN_MAP: Record<string, AttributeTargetDomain> = {

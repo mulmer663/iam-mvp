@@ -14,6 +14,7 @@ import type {ScimResourceTypeDto} from '@/types/scim'
 
 import {useResourceTypeStore} from '@/stores/resourceType'
 import {toast} from '@/utils/toast'
+import {isStandardSchema} from '@/utils/scim-permissions'
 
 const props = defineProps<{
     paneIndex?: number
@@ -151,12 +152,6 @@ const isCreating = ref(false)
 function onCreate() {
     isCreating.value = true
     openDetailForm({ scimSchemaUri: props.schemaUri } as any) 
-}
-
-const isStandardSchema = (uri?: string) => {
-    if (!uri) return false
-    return uri.startsWith('urn:ietf:params:scim:schemas:core:2.0:') || 
-           uri.startsWith('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
 }
 
 function shortenUri(uri: string): string {

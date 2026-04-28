@@ -7,7 +7,8 @@ import { useMillerStore } from '@/stores/miller'
 import { useAttributeStore } from '@/stores/attribute'
 import { useResourceTypeStore } from '@/stores/resourceType'
 import { toast } from '@/utils/toast'
-import { getSchemaCategory, isStandardSchema, shortenUrn } from '@/types/scim'
+import { getSchemaCategory, shortenUrn } from '@/types/scim'
+import { isStandardSchema, isStandardResourceType } from '@/utils/scim-permissions'
 import type { ScimResourceTypeDto } from '@/types/scim'
 
 const props = defineProps<{ paneIndex?: number }>()
@@ -52,10 +53,8 @@ const extensionSchemas = computed(() =>
 )
 
 // ── ResourceType helpers ──────────────────────────────────────────────────────
-const standardRtIds = new Set(['User', 'Group'])
-
 function isStandardRt(rt: ScimResourceTypeDto): boolean {
-    return standardRtIds.has(rt.id)
+    return isStandardResourceType(rt.id)
 }
 
 // ── Navigation — Schemas ─────────────────────────────────────────────────────
