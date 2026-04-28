@@ -65,6 +65,7 @@ docker-compose -f docker-compose.infra.yml up -d
 | Java 코드 스타일 | [.agent/rules/java-code-style-guide.md](./.agent/rules/java-code-style-guide.md) |
 | Vue 코드 스타일 | [.agent/rules/vue-code-style-guide.md](./.agent/rules/vue-code-style-guide.md) |
 | DynamicUserForm 패턴 | [.agent/rules/dynamic-form-guide.md](./.agent/rules/dynamic-form-guide.md) |
+| Miller Columns 패턴 & 너비 토큰 | [.agent/rules/miller-columns-guide.md](./.agent/rules/miller-columns-guide.md) |
 | 하이브리드 개발 워크플로우 | [.agent/workflows/hybrid-dev.md](./.agent/workflows/hybrid-dev.md) |
 | EAM 모델 설계 메모 | [.agent/design/eam-model.md](./.agent/design/eam-model.md) |
 | RFC 7643/7644 원문 | [SCIM.txt](./SCIM.txt) |
