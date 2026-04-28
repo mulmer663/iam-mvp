@@ -92,8 +92,9 @@ async function deleteSchema(schemaId: string, schemaName: string) {
         toast.success('Schema deleted')
         const idx = millerStore.panes.findIndex(p => p.id === `schema-${schemaId}`)
         if (idx !== -1) millerStore.removePane(idx)
-    } catch {
-        toast.error('Failed to delete schema')
+    } catch (e: any) {
+        const msg = e?.response?.data?.message ?? e?.message ?? 'Failed to delete schema'
+        toast.error(msg)
     }
 }
 

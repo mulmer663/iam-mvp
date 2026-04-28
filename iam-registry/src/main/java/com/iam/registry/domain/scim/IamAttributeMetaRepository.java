@@ -13,4 +13,6 @@ public interface IamAttributeMetaRepository extends JpaRepository<IamAttributeMe
 
     List<IamAttributeMeta> findByTargetDomainAndCategory(AttributeTargetDomain targetDomain,
             AttributeCategory category);
+
+    List<IamAttributeMeta> findByScimSchemaUri(String scimSchemaUri);
 }
