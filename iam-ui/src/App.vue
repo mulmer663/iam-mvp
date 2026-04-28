@@ -27,6 +27,7 @@ import ResourceTypeDetailPane from '@/views/ResourceTypeDetailPane.vue'
 import ResourceTypeCreateForm from '@/views/ResourceTypeCreateForm.vue'
 import UserDetailPane from '@/components/UserDetailPane.vue'
 import UserCreatePane from '@/views/UserCreatePane.vue'
+import DeptMembersPane from '@/views/DeptMembersPane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
 
 import {nextTick, ref, watch} from 'vue'
@@ -76,7 +77,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   ResourceTypeDetailPane,
   ResourceTypeCreatePane: ResourceTypeCreateForm,
   UserDetail: UserDetailPane,
-  UserCreatePane
+  UserCreatePane,
+  DeptMembersPane
 }
 
 function closePane(index: number) {
@@ -137,7 +139,7 @@ function activatePane(id: string) {
         </header>
 
         <!-- Miller Columns container -->
-        <main ref="scrollContainer" class="flex-1 overflow-x-auto overflow-y-hidden p-2">
+        <main ref="scrollContainer" class="flex-1 overflow-x-auto overflow-y-hidden p-2 bg-neutral-200/60">
           <div class="h-full flex gap-2 w-max">
              <TransitionGroup name="pane">
                <div 

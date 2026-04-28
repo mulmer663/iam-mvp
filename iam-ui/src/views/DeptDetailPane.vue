@@ -100,10 +100,10 @@ function openMembers() {
     if (!dept.value) return
     millerStore.setPane((props.paneIndex ?? 0) + 1, {
         id: `dept-users-${dept.value.id}`,
-        type: 'OrgUserManagement',
-        title: `${dept.value.displayName} Members`,
-        data: { initialDeptId: dept.value.id },
-        width: 'w3'
+        type: 'DeptMembersPane',
+        title: `${dept.value.displayName} — Members`,
+        data: { deptId: dept.value.id, deptName: dept.value.displayName },
+        width: 'w2'
     })
 }
 
