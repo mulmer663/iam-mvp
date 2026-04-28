@@ -30,8 +30,7 @@ function openCreate() {
         type: 'DeptCreatePane',
         title: 'New Department',
         data: { paneIndex: (props.paneIndex ?? 0) + 1 },
-        width: '480px',
-        maxWidth: '480px'
+        width: 'w1'
     })
 }
 </script>

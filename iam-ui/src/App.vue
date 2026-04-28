@@ -30,11 +30,11 @@ import UserCreatePane from '@/views/UserCreatePane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
 
 import {nextTick, ref, watch} from 'vue'
-
-// ... existing imports
+import { useMillerSizes } from '@/composables/useMillerSizes'
 
 const millerStore = useMillerStore()
 const scrollContainer = ref<HTMLElement | null>(null)
+const { resolveWidth } = useMillerSizes(scrollContainer)
 
 // Auto-scroll logic for active pane
 watch(
@@ -145,7 +145,7 @@ function activatePane(id: string) {
                  :key="index"
                  :id="`pane-${pane.id}`"
                  class="h-full shrink-0 transition-all duration-300 ease-out pane-enter-active pane-leave-active"
-                 :style="{ width: pane.width || '500px', maxWidth: pane.maxWidth || '500px' }"
+                 :style="{ width: resolveWidth(pane.width), maxWidth: resolveWidth(pane.width) }"
                  @click.capture="activatePane(pane.id)"
                >
                  <Transition name="pane-content" mode="out-in">

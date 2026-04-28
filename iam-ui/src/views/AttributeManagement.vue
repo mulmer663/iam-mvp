@@ -183,7 +183,7 @@ function openAttributePane(schemaUri: string, displayName: string) {
         type: 'AttributeManagementPane', 
         title: displayName,
         data: { schemaUri: schemaUri }, // Pass schema context
-        width: '500px'
+        width: 'w1'
     }
     
     // Add to stack
@@ -231,7 +231,7 @@ function openDetailForm(attr: IamAttributeMeta | null) {
             defaultSchemaUri: props.schemaUri, 
             paneIndex: (props.paneIndex ?? 0) + 1 
         },
-        width: '500px'
+        width: 'w1'
     }
     
     // Add to stack

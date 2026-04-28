@@ -74,7 +74,7 @@ function openSchema(schemaId: string) {
         id: paneId,
         type: 'SchemaDetailPane',
         title: schemaId.split(':').slice(-1)[0] ?? schemaId,
-        width: '560px',
+        width: 'w1',
         data: { schemaId, paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }

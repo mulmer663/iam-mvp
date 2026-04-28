@@ -39,8 +39,7 @@ function pushChildPane(type: string, title: string, data: any = {}, width?: stri
         type,
         title,
         data,
-        width: width || '500px',
-        maxWidth: width || '500px'
+        width: width || 'w1'
     }
     millerStore.setPane(props.paneIndex + 1, nextPane)
 }
@@ -183,7 +182,7 @@ async function saveEdit() {
                     <section>
                         <div class="grid grid-cols-1 gap-2">
                             <Button
-                                @click="pushChildPane('SyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + currentUser.name?.givenName, { userId: currentUser.id, userName: currentUser.userName, type: 'SOURCE' }, '800px')"
+                                @click="pushChildPane('SyncHistory', SYSTEM_THEMES.SOURCE.label + ': ' + currentUser.name?.givenName, { userId: currentUser.id, userName: currentUser.userName, type: 'SOURCE' }, 'w2')"
                                 variant="outline" size="xs"
                                 class="justify-between group/btn text-neutral-600 bg-neutral-50/50">
                                 <span class="flex items-center gap-2">
@@ -193,7 +192,7 @@ async function saveEdit() {
                                 <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                             </Button>
                             <Button
-                                @click="pushChildPane('SyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + currentUser.name?.givenName, { userId: currentUser.id, userName: currentUser.userName, type: 'INTEGRATION' }, '800px')"
+                                @click="pushChildPane('SyncHistory', SYSTEM_THEMES.INTEGRATION.label + ': ' + currentUser.name?.givenName, { userId: currentUser.id, userName: currentUser.userName, type: 'INTEGRATION' }, 'w2')"
                                 variant="outline" size="xs"
                                 class="justify-between group/btn text-neutral-600 bg-neutral-50/50">
                                 <span class="flex items-center gap-2">
@@ -203,7 +202,7 @@ async function saveEdit() {
                                 <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                             </Button>
                             <Button
-                                @click="pushChildPane('UserChangeHistory', SYSTEM_THEMES.AUDIT.label + ': ' + currentUser.name?.givenName, { userId: currentUser.id, userName: currentUser.userName }, '800px')"
+                                @click="pushChildPane('UserChangeHistory', SYSTEM_THEMES.AUDIT.label + ': ' + currentUser.name?.givenName, { userId: currentUser.id, userName: currentUser.userName }, 'w2')"
                                 variant="outline" size="xs"
                                 class="justify-between group/btn text-neutral-600 bg-neutral-50/50">
                                 <span class="flex items-center gap-2">

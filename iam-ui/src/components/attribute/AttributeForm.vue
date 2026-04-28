@@ -50,7 +50,7 @@ function openSubAttribute(attr: IamAttributeMeta | null) {
             parentAttributeName: formData.value.name, // Pass current attribute as parent context
             paneIndex: (props.paneIndex ?? 0) + 1 
         },
-        width: '500px'
+        width: 'w1'
     }
     
     if (typeof props.paneIndex === 'number') {

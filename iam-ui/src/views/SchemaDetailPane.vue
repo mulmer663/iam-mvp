@@ -86,7 +86,7 @@ function openAddAttribute() {
         id: paneId,
         type: 'AttributeFormPane',
         title: 'New Attribute',
-        width: '420px',
+        width: 'w1',
         data: {
             initialData: null,
             defaultSchemaUri: props.schemaId,
@@ -102,7 +102,7 @@ function openEditAttribute(attr: any) {
         id: paneId,
         type: 'AttributeFormPane',
         title: `Edit: ${attr.name}`,
-        width: '420px',
+        width: 'w1',
         data: { initialData: attr, paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }

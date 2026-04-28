@@ -69,7 +69,7 @@ function openSchemaDetail(schemaId: string, schemaName: string) {
         id: paneId,
         type: 'SchemaDetailPane',
         title: schemaName,
-        width: '560px',
+        width: 'w1',
         data: { schemaId, paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }
@@ -80,7 +80,7 @@ function openSchemaCreate() {
         id: paneId,
         type: 'SchemaCreatePane',
         title: 'New Schema',
-        width: '440px',
+        width: 'w1',
         data: { paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }
@@ -109,7 +109,7 @@ function openRtDetail(rt: ScimResourceTypeDto) {
         id: paneId,
         type: 'ResourceTypeDetailPane',
         title: rt.name,
-        width: '480px',
+        width: 'w1',
         data: { resourceTypeId: rt.id, paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }
@@ -120,7 +120,7 @@ function openRtCreate() {
         id: paneId,
         type: 'ResourceTypeCreatePane',
         title: 'New Resource Type',
-        width: '440px',
+        width: 'w1',
         data: { paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }

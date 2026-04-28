@@ -82,8 +82,7 @@ async function save() {
                 type: 'UserDetail',
                 title: `User: ${created.name?.givenName ?? ''} ${created.name?.familyName ?? ''}`,
                 data: { user: created },
-                width: '800px',
-                maxWidth: '800px'
+                width: 'w1'
             })
         }
     } catch (e: any) {

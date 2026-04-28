@@ -103,8 +103,7 @@ function openMembers() {
         type: 'OrgUserManagement',
         title: `${dept.value.displayName} Members`,
         data: { initialDeptId: dept.value.id },
-        width: '800px',
-        maxWidth: '800px'
+        width: 'w3'
     })
 }
 

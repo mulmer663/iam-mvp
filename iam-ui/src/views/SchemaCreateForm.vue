@@ -35,7 +35,7 @@ async function onSubmit() {
             id: `schema-${id.value}`,
             type: 'SchemaDetailPane',
             title: name.value,
-            width: '560px',
+            width: 'w1',
             data: { schemaId: id.value, paneIndex: props.paneIndex ?? 0 }
         })
     } catch (e: any) {
