@@ -16,6 +16,9 @@ export const useAttributeStore = defineStore('attribute', {
         getAttributeByCode: (state) => (name: string) => {
             return state.attributes.find(attr => attr.name === name)
         },
+        getAttributeByCodeAndDomain: (state) => (name: string, domain: AttributeTargetDomain) => {
+            return state.attributes.find(a => a.name === name && a.targetDomain === domain)
+        },
         coreAttributes: (state) => {
             return state.attributes.filter(attr => attr.category === 'CORE')
         },

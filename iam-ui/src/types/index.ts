@@ -1,15 +1,13 @@
 export interface Department {
     id: string
     externalId?: string
-    displayName: string
-    description?: string
-    active: boolean
-    parentId: string | null
+    schemas?: string[]
     meta?: {
         resourceType: string
         created: string
         lastModified: string
     }
+    [key: string]: any  // domain attrs are IamAttributeMeta-driven, not hardcoded
 }
 
 export interface User {

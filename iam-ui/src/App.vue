@@ -13,6 +13,7 @@ import 'vue-sonner/style.css'
 // Dynamic View Components
 import OrgUserManagement from '@/views/OrgUserManagement.vue'
 import DeptManagement from '@/views/DeptManagement.vue'
+import DeptDetailPane from '@/views/DeptDetailPane.vue'
 import SyncHistory from '@/views/SyncHistory.vue'
 import UserChangeHistory from '@/views/UserChangeHistory.vue'
 import AttributeManagement from '@/views/AttributeManagement.vue'
@@ -58,6 +59,7 @@ watch(
 const VIEW_COMPONENTS: Record<string, any> = {
   OrgUserManagement,
   DeptManagement,
+  DeptDetailPane,
   SyncHistory,
   UserChangeHistory,
   AttributeManagement,

@@ -6,35 +6,12 @@ interface ScimListResponse<T> {
     Resources: T[]
 }
 
-interface ScimDepartmentResponse {
-    id: string
-    externalId?: string
-    displayName: string
-    description?: string
-    active: boolean
-    parentId: string | null
-    meta?: { resourceType: string; created: string; lastModified: string }
-}
-
-function toDepartment(d: ScimDepartmentResponse): Department {
-    return {
-        id: d.id,
-        externalId: d.externalId,
-        displayName: d.displayName,
-        description: d.description,
-        active: d.active,
-        parentId: d.parentId ?? null,
-        meta: d.meta
-    }
-}
-
-// Module-level cache — invalidated on page reload (create-drop DB는 어차피 재시작마다 리셋)
 let _cache: Department[] | null = null
 
 async function fetchAll(): Promise<Department[]> {
     if (_cache) return _cache
-    const res = await request<ScimListResponse<ScimDepartmentResponse>>('/scim/v2/Departments')
-    _cache = res.Resources.map(toDepartment)
+    const res = await request<ScimListResponse<Department>>('/scim/v2/Departments')
+    _cache = res.Resources
     return _cache
 }
 
@@ -50,7 +27,7 @@ export const DepartmentService = {
 
     async getSubDepartments(parentId: string | null): Promise<Department[]> {
         const all = await fetchAll()
-        return all.filter(d => d.parentId === parentId)
+        return all.filter(d => (d.parentId ?? null) === parentId)
     },
 
     invalidateCache() {

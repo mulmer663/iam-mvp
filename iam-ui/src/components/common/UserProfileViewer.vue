@@ -19,6 +19,7 @@ const props = defineProps<{
   changes?: Array<{ field: string, old: string, new: string }>
   title?: string
   loading?: boolean
+  domain?: string  // optional: 'USER' | 'DEPARTMENT' | 'GROUP' — narrows attr meta lookup
 }>()
 
 const searchQuery = ref('')
@@ -91,15 +92,12 @@ const extensions = computed(() => {
 
 // --- Meta-driven Helpers ---
 const getMeta = (key: string) => {
-   // Try direct match first
-   let meta = attributeStore.getAttributeByCode(key)
-   if (!meta) {
-       // Try mapping from key parts for flattened structure (e.g. name.familyName)
-       // Or handle extension prefixes
-       const code = key.split('.').pop() || key
-       meta = attributeStore.getAttributeByCode(code)
+   const code = key.split('.').pop() || key
+   if (props.domain) {
+       return attributeStore.getAttributeByCodeAndDomain(code, props.domain as any)
+           ?? attributeStore.getAttributeByCode(code)
    }
-   return meta
+   return attributeStore.getAttributeByCode(key) ?? attributeStore.getAttributeByCode(code)
 }
 
 const getLabel = (key: string) => {
