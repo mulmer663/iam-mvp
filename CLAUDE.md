@@ -62,6 +62,7 @@ docker-compose -f docker-compose.infra.yml up -d
 | AI 에이전트 거버넌스 | [AGENTS.md](./AGENTS.md) |
 | **⚠️ SCIM API 경계 원칙 (Golden Rule)** | [.agent/rules/scim-api-boundary-rule.md](./.agent/rules/scim-api-boundary-rule.md) |
 | SCIM 스키마 확장 가이드 | [.agent/rules/scim-schema-guide.md](./.agent/rules/scim-schema-guide.md) |
+| **SCIM 편집 가능성 매트릭스 (Editability)** | [.agent/rules/scim-permissions-guide.md](./.agent/rules/scim-permissions-guide.md) |
 | Java 코드 스타일 | [.agent/rules/java-code-style-guide.md](./.agent/rules/java-code-style-guide.md) |
 | Vue 코드 스타일 | [.agent/rules/vue-code-style-guide.md](./.agent/rules/vue-code-style-guide.md) |
 | DynamicUserForm 패턴 | [.agent/rules/dynamic-form-guide.md](./.agent/rules/dynamic-form-guide.md) |
