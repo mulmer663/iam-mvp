@@ -46,8 +46,9 @@ function handleItemClick(item: any) {
       type: item.view,
       title: item.title,
       data: item.data || {},
-      width: item.view === 'ResourceManagement' || item.view === 'DeptManagement' || item.view === 'GroupManagement' ? '500px' : '800px',
-      maxWidth: item.view === 'ResourceManagement' || item.view === 'DeptManagement' || item.view === 'GroupManagement' ? '500px' : '800px'
+      width: item.view === 'OrgUserManagement' ? 'w3'
+           : (item.view === 'SyncHistory' || item.view === 'UserChangeHistory') ? 'w2'
+           : 'w1'
     })
 }
 </script>

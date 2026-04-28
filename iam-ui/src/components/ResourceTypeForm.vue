@@ -8,6 +8,7 @@ import {Checkbox} from '@/components/ui/checkbox'
 import type {ScimResourceTypeDto} from '@/types/scim'
 import {useResourceTypeStore} from '@/stores/resourceType'
 import {useMillerStore} from '@/stores/miller'
+import {isStandardSchema} from '@/utils/scim-permissions'
 
 const props = defineProps<{
   initialData?: ScimResourceTypeDto | null
@@ -19,12 +20,6 @@ const store = useResourceTypeStore()
 const millerStore = useMillerStore()
 const isEditMode = ref(false)
 const isCreate = computed(() => !props.initialData)
-
-const isStandardSchema = (uri?: string) => {
-    if (!uri) return false
-    return uri.startsWith('urn:ietf:params:scim:schemas:core:2.0:') || 
-           uri.startsWith('urn:ietf:params:scim:schemas:extension:enterprise:2.0:')
-}
 
 const isLocked = computed(() => {
     if (isCreate.value) return false

@@ -7,6 +7,7 @@ import { useResourceTypeStore } from '@/stores/resourceType'
 import { useMillerStore } from '@/stores/miller'
 import { toast } from '@/utils/toast'
 import { shortenUrn } from '@/types/scim'
+import { isStandardResourceType, resourceTypeCapabilities } from '@/utils/scim-permissions'
 
 const props = defineProps<{
     resourceTypeId: string
@@ -17,7 +18,8 @@ const rtStore = useResourceTypeStore()
 const millerStore = useMillerStore()
 
 const rt = computed(() => rtStore.resourceTypes.find(r => r.id === props.resourceTypeId))
-const isStandardRt = computed(() => props.resourceTypeId === 'User' || props.resourceTypeId === 'Group')
+const isStandardRt = computed(() => isStandardResourceType(props.resourceTypeId))
+const caps = computed(() => resourceTypeCapabilities(props.resourceTypeId))
 
 // ── Inline edit ──────────────────────────────────────────────────────────────
 const editing = ref(false)
@@ -74,7 +76,7 @@ function openSchema(schemaId: string) {
         id: paneId,
         type: 'SchemaDetailPane',
         title: schemaId.split(':').slice(-1)[0] ?? schemaId,
-        width: '560px',
+        width: 'w1',
         data: { schemaId, paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }
@@ -108,20 +110,24 @@ onMounted(async () => {
                     </div>
                     <div v-if="rt?.description" class="text-[11px] text-neutral-500 mt-1">{{ rt.description }}</div>
                 </div>
-                <Button v-if="!isStandardRt"
-                    variant="ghost" size="icon" class="size-7 shrink-0 hover:bg-neutral-100" @click="startEdit">
+                <Button variant="ghost" size="icon" class="size-7 shrink-0 hover:bg-neutral-100" @click="startEdit"
+                    :title="isStandardRt ? 'Edit extensions only (RFC fields are locked)' : 'Edit'">
                     <Edit2 class="size-3.5 text-neutral-400" />
                 </Button>
             </div>
 
             <!-- Inline edit mode -->
             <div v-else class="space-y-2">
-                <input v-model="editName" placeholder="Name"
-                    class="w-full text-sm font-bold border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400" />
-                <input v-model="editDesc" placeholder="Description"
-                    class="w-full text-xs border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400" />
-                <input v-model="editEndpoint" placeholder="Endpoint (e.g. /Users)"
-                    class="w-full text-xs font-mono border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400" />
+                <div v-if="isStandardRt" class="flex items-center gap-1.5 text-[10px] text-amber-600 bg-amber-50 border border-amber-100 rounded px-2 py-1">
+                    <Lock class="size-2.5" />
+                    <span>RFC standard — only schema extensions are editable</span>
+                </div>
+                <input v-model="editName" placeholder="Name" :disabled="!caps.canEditMeta"
+                    class="w-full text-sm font-bold border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed" />
+                <input v-model="editDesc" placeholder="Description" :disabled="!caps.canEditMeta"
+                    class="w-full text-xs border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed" />
+                <input v-model="editEndpoint" placeholder="Endpoint (e.g. /Users)" :disabled="!caps.canEditMeta"
+                    class="w-full text-xs font-mono border border-neutral-200 rounded px-2 py-1 outline-none focus:border-blue-400 disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed" />
                 <div class="flex gap-1.5 pt-1">
                     <Button size="xs" class="h-6 text-xs px-2" @click="saveEdit" :disabled="saving">
                         <Check class="size-3 mr-1" /> Save

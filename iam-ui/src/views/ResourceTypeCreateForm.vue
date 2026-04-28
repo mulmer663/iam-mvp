@@ -53,7 +53,7 @@ async function onSubmit() {
             id: `rt-${id.value}`,
             type: 'ResourceTypeDetailPane',
             title: name.value,
-            width: '480px',
+            width: 'w1',
             data: { resourceTypeId: id.value, paneIndex: props.paneIndex ?? 0 }
         })
     } catch (e: any) {

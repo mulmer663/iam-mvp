@@ -14,6 +14,7 @@ import type {ScimResourceTypeDto} from '@/types/scim'
 
 import {useResourceTypeStore} from '@/stores/resourceType'
 import {toast} from '@/utils/toast'
+import {isStandardSchema} from '@/utils/scim-permissions'
 
 const props = defineProps<{
     paneIndex?: number
@@ -153,12 +154,6 @@ function onCreate() {
     openDetailForm({ scimSchemaUri: props.schemaUri } as any) 
 }
 
-const isStandardSchema = (uri?: string) => {
-    if (!uri) return false
-    return uri.startsWith('urn:ietf:params:scim:schemas:core:2.0:') || 
-           uri.startsWith('urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
-}
-
 function shortenUri(uri: string): string {
     if (!uri) return ''
     const prefix = "urn:ietf:params:scim:schemas:"
@@ -183,7 +178,7 @@ function openAttributePane(schemaUri: string, displayName: string) {
         type: 'AttributeManagementPane', 
         title: displayName,
         data: { schemaUri: schemaUri }, // Pass schema context
-        width: '500px'
+        width: 'w1'
     }
     
     // Add to stack
@@ -231,7 +226,7 @@ function openDetailForm(attr: IamAttributeMeta | null) {
             defaultSchemaUri: props.schemaUri, 
             paneIndex: (props.paneIndex ?? 0) + 1 
         },
-        width: '500px'
+        width: 'w1'
     }
     
     // Add to stack

@@ -59,8 +59,7 @@ function openUserDetail(user: User) {
     type: 'UserDetail',
     title: `User: ${user.name.givenName} ${user.name.familyName}`,
     data: { user },
-    width: '800px',
-    maxWidth: '800px'
+    width: 'w1'
   }
 
   // If this component is in a Miller Pane (paneIndex defined), replace the NEXT pane

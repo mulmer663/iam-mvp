@@ -7,7 +7,8 @@ import { useMillerStore } from '@/stores/miller'
 import { useAttributeStore } from '@/stores/attribute'
 import { useResourceTypeStore } from '@/stores/resourceType'
 import { toast } from '@/utils/toast'
-import { getSchemaCategory, isStandardSchema, shortenUrn } from '@/types/scim'
+import { getSchemaCategory, shortenUrn } from '@/types/scim'
+import { isStandardSchema, isStandardResourceType } from '@/utils/scim-permissions'
 import type { ScimResourceTypeDto } from '@/types/scim'
 
 const props = defineProps<{ paneIndex?: number }>()
@@ -52,10 +53,8 @@ const extensionSchemas = computed(() =>
 )
 
 // ── ResourceType helpers ──────────────────────────────────────────────────────
-const standardRtIds = new Set(['User', 'Group'])
-
 function isStandardRt(rt: ScimResourceTypeDto): boolean {
-    return standardRtIds.has(rt.id)
+    return isStandardResourceType(rt.id)
 }
 
 // ── Navigation — Schemas ─────────────────────────────────────────────────────
@@ -69,7 +68,7 @@ function openSchemaDetail(schemaId: string, schemaName: string) {
         id: paneId,
         type: 'SchemaDetailPane',
         title: schemaName,
-        width: '560px',
+        width: 'w1',
         data: { schemaId, paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }
@@ -80,7 +79,7 @@ function openSchemaCreate() {
         id: paneId,
         type: 'SchemaCreatePane',
         title: 'New Schema',
-        width: '440px',
+        width: 'w1',
         data: { paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }
@@ -93,8 +92,9 @@ async function deleteSchema(schemaId: string, schemaName: string) {
         toast.success('Schema deleted')
         const idx = millerStore.panes.findIndex(p => p.id === `schema-${schemaId}`)
         if (idx !== -1) millerStore.removePane(idx)
-    } catch {
-        toast.error('Failed to delete schema')
+    } catch (e: any) {
+        const msg = e?.response?.data?.message ?? e?.message ?? 'Failed to delete schema'
+        toast.error(msg)
     }
 }
 
@@ -109,7 +109,7 @@ function openRtDetail(rt: ScimResourceTypeDto) {
         id: paneId,
         type: 'ResourceTypeDetailPane',
         title: rt.name,
-        width: '480px',
+        width: 'w1',
         data: { resourceTypeId: rt.id, paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }
@@ -120,7 +120,7 @@ function openRtCreate() {
         id: paneId,
         type: 'ResourceTypeCreatePane',
         title: 'New Resource Type',
-        width: '440px',
+        width: 'w1',
         data: { paneIndex: (props.paneIndex ?? 0) + 1 }
     })
 }

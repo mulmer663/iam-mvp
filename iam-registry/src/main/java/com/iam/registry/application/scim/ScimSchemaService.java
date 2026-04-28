@@ -4,19 +4,34 @@ import com.iam.registry.application.common.ScimSchemaDto;
 import com.iam.registry.domain.common.exception.ErrorCode;
 import com.iam.registry.domain.common.exception.IamBusinessException;
 import com.iam.registry.domain.scim.IamAttributeMeta;
+import com.iam.registry.domain.scim.IamAttributeMetaRepository;
+import com.iam.registry.domain.scim.ScimResourceTypeMeta;
+import com.iam.registry.domain.scim.ScimResourceTypeMetaRepository;
 import com.iam.registry.domain.scim.ScimSchemaMeta;
 import com.iam.registry.domain.scim.ScimSchemaMetaRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ScimSchemaService {
 
     private final ScimSchemaMetaRepository repository;
+    private final IamAttributeMetaRepository attributeRepository;
+    private final ScimResourceTypeMetaRepository resourceTypeRepository;
+
+    private static final List<String> RFC_STANDARD_PREFIXES = List.of(
+            "urn:ietf:params:scim:schemas:core:2.0:",
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:");
+
+    private boolean isRfcStandardSchema(String uri) {
+        return uri != null && RFC_STANDARD_PREFIXES.stream().anyMatch(uri::startsWith);
+    }
 
     @Transactional(readOnly = true)
     public List<ScimSchemaDto> getAllSchemas() {
@@ -66,7 +81,31 @@ public class ScimSchemaService {
         if (!repository.existsById(uri)) {
             throw new IamBusinessException(ErrorCode.RESOURCE_NOT_FOUND, "SCIM", "Schema not found: " + uri);
         }
+        if (isRfcStandardSchema(uri)) {
+            throw new IamBusinessException(ErrorCode.VALIDATION_FAILED, "SCIM",
+                    "Cannot delete RFC standard schema: " + uri);
+        }
+
+        // 1. Detach this schema from any ResourceType.schemaExtensions
+        List<ScimResourceTypeMeta> rts = resourceTypeRepository.findAll();
+        for (ScimResourceTypeMeta rt : rts) {
+            boolean removed = rt.getSchemaExtensions().removeIf(ext -> uri.equals(ext.getSchema()));
+            if (removed) {
+                resourceTypeRepository.save(rt);
+                log.info("Detached schema {} from ResourceType {}", uri, rt.getId());
+            }
+        }
+
+        // 2. Cascade-delete attributes belonging to this schema
+        List<IamAttributeMeta> orphaned = attributeRepository.findByScimSchemaUri(uri);
+        if (!orphaned.isEmpty()) {
+            attributeRepository.deleteAllInBatch(orphaned);
+            log.info("Cascade-deleted {} attributes for schema {}", orphaned.size(), uri);
+        }
+
+        // 3. Delete the schema itself
         repository.deleteById(uri);
+        log.info("Deleted schema {}", uri);
     }
 
     public ScimSchemaDto mapToDto(ScimSchemaMeta entity) {

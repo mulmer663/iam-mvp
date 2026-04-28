@@ -36,8 +36,7 @@ function openUserCreate() {
     type: 'UserCreatePane',
     title: 'New User',
     data: { paneIndex: (props.paneIndex ?? 0) + 1 },
-    width: '720px',
-    maxWidth: '720px'
+    width: 'w1'
   }
   if (typeof props.paneIndex === 'number') {
     millerStore.setPane(props.paneIndex + 1, pane)

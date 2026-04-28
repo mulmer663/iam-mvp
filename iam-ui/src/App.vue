@@ -27,14 +27,18 @@ import ResourceTypeDetailPane from '@/views/ResourceTypeDetailPane.vue'
 import ResourceTypeCreateForm from '@/views/ResourceTypeCreateForm.vue'
 import UserDetailPane from '@/components/UserDetailPane.vue'
 import UserCreatePane from '@/views/UserCreatePane.vue'
+import DeptMembersPane from '@/views/DeptMembersPane.vue'
 import GroupManagement from '@/views/GroupManagement.vue'
+import GroupDetailPane from '@/views/GroupDetailPane.vue'
+import GroupCreatePane from '@/views/GroupCreatePane.vue'
+import GroupMembersPane from '@/views/GroupMembersPane.vue'
 
 import {nextTick, ref, watch} from 'vue'
-
-// ... existing imports
+import { useMillerSizes } from '@/composables/useMillerSizes'
 
 const millerStore = useMillerStore()
 const scrollContainer = ref<HTMLElement | null>(null)
+const { resolveWidth } = useMillerSizes(scrollContainer)
 
 // Auto-scroll logic for active pane
 watch(
@@ -69,6 +73,9 @@ const VIEW_COMPONENTS: Record<string, any> = {
   AttributeListPane: AttributeManagement, // NEW: Alias for recursive sub-attribute list
   ResourceManagement,
   GroupManagement,
+  GroupDetailPane,
+  GroupCreatePane,
+  GroupMembersPane,
   SchemaDetailPane,
   SchemaCreatePane: SchemaCreateForm,
   AttributeFormPane: AttributeForm,
@@ -76,7 +83,8 @@ const VIEW_COMPONENTS: Record<string, any> = {
   ResourceTypeDetailPane,
   ResourceTypeCreatePane: ResourceTypeCreateForm,
   UserDetail: UserDetailPane,
-  UserCreatePane
+  UserCreatePane,
+  DeptMembersPane
 }
 
 function closePane(index: number) {
@@ -137,7 +145,7 @@ function activatePane(id: string) {
         </header>
 
         <!-- Miller Columns container -->
-        <main ref="scrollContainer" class="flex-1 overflow-x-auto overflow-y-hidden p-2">
+        <main ref="scrollContainer" class="flex-1 overflow-x-auto overflow-y-hidden p-2 bg-neutral-200/60">
           <div class="h-full flex gap-2 w-max">
              <TransitionGroup name="pane">
                <div 
@@ -145,7 +153,7 @@ function activatePane(id: string) {
                  :key="index"
                  :id="`pane-${pane.id}`"
                  class="h-full shrink-0 transition-all duration-300 ease-out pane-enter-active pane-leave-active"
-                 :style="{ width: pane.width || '500px', maxWidth: pane.maxWidth || '500px' }"
+                 :style="{ width: resolveWidth(pane.width), maxWidth: resolveWidth(pane.width) }"
                  @click.capture="activatePane(pane.id)"
                >
                  <Transition name="pane-content" mode="out-in">
