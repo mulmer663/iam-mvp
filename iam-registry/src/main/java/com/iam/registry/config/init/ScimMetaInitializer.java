@@ -288,6 +288,10 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                 AttributeCategory.CORE, "Display Name", AttributeDataType.STRING,
                                 deptSchema, "Department name", true,
                                 AttributeMutability.READ_WRITE, "text-input", false));
+                attributes.add(createAttr("deptCode", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Department Code", AttributeDataType.STRING,
+                                deptSchema, "Unique short code for the department", true,
+                                AttributeMutability.IMMUTABLE, "text-input", false));
                 attributes.add(createAttr("description", AttributeTargetDomain.DEPARTMENT,
                                 AttributeCategory.CORE, "Description", AttributeDataType.STRING,
                                 deptSchema, "Department description", false,
@@ -299,6 +303,34 @@ public class ScimMetaInitializer implements CommandLineRunner {
                 attributes.add(createAttr("parentId", AttributeTargetDomain.DEPARTMENT,
                                 AttributeCategory.CORE, "Parent Department ID", AttributeDataType.STRING,
                                 deptSchema, "ID of the parent department", false,
+                                AttributeMutability.READ_WRITE, "text-input", false));
+                attributes.add(createAttr("level", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Hierarchy Level", AttributeDataType.INTEGER,
+                                deptSchema, "Depth in the org hierarchy (0 = root)", false,
+                                AttributeMutability.READ_ONLY, "text-input", false));
+                attributes.add(createAttr("managerId", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Manager ID", AttributeDataType.STRING,
+                                deptSchema, "Employee number of the department head", false,
+                                AttributeMutability.READ_WRITE, "text-input", false));
+                attributes.add(createAttr("managerDisplayName", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Manager Name", AttributeDataType.STRING,
+                                deptSchema, "Display name of the department head (read-only)", false,
+                                AttributeMutability.READ_ONLY, "text-input", false));
+                attributes.add(createAttr("costCenter", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Cost Center", AttributeDataType.STRING,
+                                deptSchema, "Finance cost center code", false,
+                                AttributeMutability.READ_WRITE, "text-input", false));
+                attributes.add(createAttr("email", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Department Email", AttributeDataType.STRING,
+                                deptSchema, "Shared mailbox or distribution list address", false,
+                                AttributeMutability.READ_WRITE, "text-input", false));
+                attributes.add(createAttr("phoneNumber", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Phone Number", AttributeDataType.STRING,
+                                deptSchema, "Department representative phone number", false,
+                                AttributeMutability.READ_WRITE, "text-input", false));
+                attributes.add(createAttr("location", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Location", AttributeDataType.STRING,
+                                deptSchema, "Office building or floor (e.g. HQ-3F)", false,
                                 AttributeMutability.READ_WRITE, "text-input", false));
 
                 attributeMetaRepository.saveAll(attributes);
