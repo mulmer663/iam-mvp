@@ -10,8 +10,8 @@ public class ScimEndpointConstants {
     public static final String SYSTEMS = "System";
     public static final String RESOURCES = "Resource";
 
-    public static final Set<String> CORE_TYPES = Set.of(
-            USERS, GROUPS, DEPARTMENTS, ROLES, SYSTEMS, RESOURCES);
+    // Only types with dedicated static controllers (ScimUserController, etc.)
+    public static final Set<String> CORE_TYPES = Set.of(USERS, GROUPS);
 
     public static boolean isCoreType(String resourceType) {
         return CORE_TYPES.contains(resourceType);

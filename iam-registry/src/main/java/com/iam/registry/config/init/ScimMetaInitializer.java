@@ -68,6 +68,13 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                                 .description("Core Group Schema")
                                                 .build()));
 
+                String deptSchemaUri = "urn:iam:params:scim:schemas:2.0:Department";
+                scimSchemaMetaRepository.save(ScimSchemaMeta.builder()
+                                .id(deptSchemaUri)
+                                .name("Department")
+                                .description("Organizational Department")
+                                .build());
+
                 scimResourceTypeMetaRepository.saveAll(List.of(
                                 ScimResourceTypeMeta.builder()
                                                 .id(ScimEndpointConstants.USERS)
@@ -87,6 +94,13 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                                 .description("Group")
                                                 .endpoint("/Groups")
                                                 .schema(groupSchemaUri)
+                                                .build(),
+                                ScimResourceTypeMeta.builder()
+                                                .id(ScimEndpointConstants.DEPARTMENTS)
+                                                .name("Department")
+                                                .description("Organizational Department")
+                                                .endpoint("/Departments")
+                                                .schema(deptSchemaUri)
                                                 .build()));
 
                 log.info("[ScimMetaInitializer] SCIM metadata seeded.");
@@ -267,6 +281,25 @@ public class ScimMetaInitializer implements CommandLineRunner {
                                 List.of("User", "Group"), null);
                 enrichSubAttr(attributes, "members", "$ref", AttributeTargetDomain.GROUP,
                                 null, List.of("User", "Group"));
+
+                // CORE Attributes - Department
+                String deptSchema = "urn:iam:params:scim:schemas:2.0:Department";
+                attributes.add(createAttr("displayName", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Display Name", AttributeDataType.STRING,
+                                deptSchema, "Department name", true,
+                                AttributeMutability.READ_WRITE, "text-input", false));
+                attributes.add(createAttr("description", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Description", AttributeDataType.STRING,
+                                deptSchema, "Department description", false,
+                                AttributeMutability.READ_WRITE, "textarea", false));
+                attributes.add(createAttr("active", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Active", AttributeDataType.BOOLEAN,
+                                deptSchema, "Department status", true,
+                                AttributeMutability.READ_WRITE, "toggle", false));
+                attributes.add(createAttr("parentId", AttributeTargetDomain.DEPARTMENT,
+                                AttributeCategory.CORE, "Parent Department ID", AttributeDataType.STRING,
+                                deptSchema, "ID of the parent department", false,
+                                AttributeMutability.READ_WRITE, "text-input", false));
 
                 attributeMetaRepository.saveAll(attributes);
                 log.info("[ScimMetaInitializer] Seeded {} attribute metas.", attributes.size());

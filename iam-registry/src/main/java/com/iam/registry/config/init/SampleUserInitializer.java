@@ -37,25 +37,25 @@ public class SampleUserInitializer implements CommandLineRunner {
 
     private static final List<Map<String, Object>> SAMPLE_USERS = List.of(
             user("michael.kim", "Kim", "Michael", "IT Director", true,
-                    "michael.kim@corp.example", "EMP-0001", "Global IT", "FTE"),
+                    "michael.kim@corp.example", "EMP-0001", "GLOBAL-IT", "FTE"),
             user("jane.lee", "Lee", "Jane", "Security Engineer", true,
-                    "jane.lee@corp.example", "EMP-0002", "Cyber Security", "FTE"),
+                    "jane.lee@corp.example", "EMP-0002", "IT-SEC", "FTE"),
             user("tom.park", "Park", "Tom", "Infrastructure Lead", true,
-                    "tom.park@corp.example", "EMP-0003", "Infrastructure", "FTE"),
+                    "tom.park@corp.example", "EMP-0003", "IT-INFRA", "FTE"),
             user("sarah.choi", "Choi", "Sarah", "Business Analyst", true,
-                    "sarah.choi@corp.example", "EMP-0004", "Business Applications", "FTE"),
+                    "sarah.choi@corp.example", "EMP-0004", "IT-APPS", "FTE"),
             user("james.yoon", "Yoon", "James", "DevOps Engineer", true,
-                    "james.yoon@corp.example", "EMP-0005", "Infrastructure", "FTE"),
+                    "james.yoon@corp.example", "EMP-0005", "IT-INFRA", "FTE"),
             user("emily.han", "Han", "Emily", "IAM Engineer", true,
-                    "emily.han@corp.example", "EMP-0006", "Cyber Security", "FTE"),
+                    "emily.han@corp.example", "EMP-0006", "IT-SEC", "FTE"),
             user("david.jung", "Jung", "David", "Internal Auditor", true,
-                    "david.jung@corp.example", "EMP-0007", "Internal Audit", "FTE"),
+                    "david.jung@corp.example", "EMP-0007", "AUDIT-01", "FTE"),
             user("lisa.oh", "Oh", "Lisa", "SAP HR Specialist", true,
-                    "lisa.oh@corp.example", "EMP-0008", "SAP HR Division", "FTE"),
+                    "lisa.oh@corp.example", "EMP-0008", "HR-DIV", "FTE"),
             user("kevin.shin", "Shin", "Kevin", "Security Operations", true,
-                    "kevin.shin@corp.example", "EMP-0009", "Security Operations", "FTE"),
+                    "kevin.shin@corp.example", "EMP-0009", "IT-SECOPS", "FTE"),
             user("grace.lim", "Lim", "Grace", "Vendor Manager", false,
-                    "grace.lim@vendor.example", "VND-0001", "External Vendors", "CONTRACTOR")
+                    "grace.lim@vendor.example", "VND-0001", "EXT-VND", "CONTRACTOR")
     );
 
     private static Map<String, Object> user(

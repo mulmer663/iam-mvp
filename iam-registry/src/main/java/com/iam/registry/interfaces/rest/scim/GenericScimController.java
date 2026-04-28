@@ -30,7 +30,7 @@ public class GenericScimController {
         log.info("Dynamic SCIM Request: {} {} (Type: {}, ID: {})", method, uri, resourceType, id);
 
         return switch (method) {
-            case "GET" -> id == null ? ResponseEntity.ok(Map.of("totalResults", 0, "Resources", List.of()))
+            case "GET" -> id == null ? ResponseEntity.ok(resourceService.listResources(resourceType))
                     : ResponseEntity.ok(resourceService.getResource(resourceType, id));
             case "POST" -> ResponseEntity.status(201).body(resourceService.createResource(resourceType, body));
             case "PUT" -> ResponseEntity.ok(resourceService.updateResource(resourceType, id, body));
