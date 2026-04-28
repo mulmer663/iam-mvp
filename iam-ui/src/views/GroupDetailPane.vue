@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Users as UsersIcon, Lock, Edit2, Save, X, Trash2 } from 'lucide-vue-next'
+import { Users as UsersIcon, Lock, Edit2, Save, X, Trash2, ChevronRight } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useMillerStore } from '@/stores/miller'
 import { useAttributeStore } from '@/stores/attribute'
@@ -110,6 +110,17 @@ async function doDelete() {
     }
 }
 
+function openMembers() {
+    if (!group.value) return
+    millerStore.setPane((props.paneIndex ?? 0) + 1, {
+        id: `group-members-${group.value.id}`,
+        type: 'GroupMembersPane',
+        title: `${group.value.displayName} — Members`,
+        data: { groupId: group.value.id, groupName: group.value.displayName },
+        width: 'w2'
+    })
+}
+
 function inputType(meta: IamAttributeMeta): string {
     if (meta.type === 'INTEGER' || meta.type === 'NUMBER') return 'number'
     return 'text'
@@ -199,6 +210,19 @@ function inputType(meta: IamAttributeMeta): string {
                             </span>
                         </div>
                     </div>
+                </div>
+
+                <!-- VIEW MEMBERS -->
+                <div class="border-t border-neutral-100 mx-3 mt-4 pt-4 pb-4">
+                    <Button @click="openMembers" variant="outline" size="xs"
+                        class="w-full justify-between group/btn text-neutral-600 bg-neutral-50/50">
+                        <span class="flex items-center gap-2">
+                            <UsersIcon class="size-3 text-neutral-400" />
+                            VIEW MEMBERS
+                            <span class="text-neutral-400 font-normal">({{ group.members?.length ?? 0 }})</span>
+                        </span>
+                        <ChevronRight class="size-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                    </Button>
                 </div>
             </div>
 
