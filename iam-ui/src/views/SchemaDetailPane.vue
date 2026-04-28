@@ -26,6 +26,13 @@ const isStandard = computed(() => isStandardSchema(props.schemaId))
 const isExtension = computed(() => category.value === 'extension')
 const isEditable = computed(() => isExtension.value && !isStandard.value)
 
+// ResourceType id → AttributeTargetDomain
+const RT_DOMAIN_MAP: Record<string, AttributeTargetDomain> = {
+    User: 'USER',
+    Group: 'GROUP',
+    Department: 'DEPARTMENT',
+}
+
 // Infer target domain from ResourceType linkage
 const targetDomain = computed<AttributeTargetDomain>(() => {
     const rt = rtStore.resourceTypes.find(
@@ -33,16 +40,15 @@ const targetDomain = computed<AttributeTargetDomain>(() => {
              r.schemaExtensions?.some(e => e.schema === props.schemaId)
     )
     if (!rt) return 'USER'
-    return rt.schema === props.schemaId || rt.id === 'User' ? 'USER' : 'GROUP'
+    return RT_DOMAIN_MAP[rt.id] ?? 'USER'
 })
 
 // ── Attribute list for this schema ──────────────────────────────────────────
 const schemaAttributes = computed(() => {
-    const allAttrs = [...attrStore.userAttributes, ...attrStore.groupAttributes]
+    const allAttrs = attrStore.attributes   // all domains
     if (isExtension.value) {
         return allAttrs.filter(a => a.scimSchemaUri === props.schemaId)
     }
-    // Core schema: show CORE category attrs for the right domain
     const domain = targetDomain.value
     return allAttrs.filter(a => a.category === 'CORE' && a.targetDomain === domain)
 })
@@ -114,8 +120,7 @@ async function deleteAttribute(name: string) {
 onMounted(async () => {
     if (rtStore.schemas.length === 0) await rtStore.fetchSchemas()
     if (rtStore.resourceTypes.length === 0) await rtStore.fetchResourceTypes()
-    await attrStore.fetchAttributes()
-    await attrStore.fetchGroupAttributes()
+    await attrStore.fetchAttributes()   // 도메인 없이 전체 fetch
 })
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
