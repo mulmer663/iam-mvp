@@ -1,5 +1,5 @@
 export type AttributeCategory = 'CORE' | 'EXTENSION'
-export type AttributeDataType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'CODE' | 'COMPLEX'
+export type AttributeDataType = 'STRING' | 'NUMBER' | 'INTEGER' | 'DECIMAL' | 'BOOLEAN' | 'DATE' | 'DATE_TIME' | 'CODE' | 'COMPLEX' | 'REFERENCE' | 'BINARY'
 export type AttributeMutability = 'READ_ONLY' | 'READ_WRITE' | 'WRITE_ONCE' | 'IMMUTABLE'
 export type AttributeTargetDomain = 'USER' | 'DEPARTMENT' | 'GROUP'
 

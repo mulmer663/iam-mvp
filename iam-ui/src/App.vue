@@ -14,6 +14,7 @@ import 'vue-sonner/style.css'
 import OrgUserManagement from '@/views/OrgUserManagement.vue'
 import DeptManagement from '@/views/DeptManagement.vue'
 import DeptDetailPane from '@/views/DeptDetailPane.vue'
+import DeptCreatePane from '@/views/DeptCreatePane.vue'
 import SyncHistory from '@/views/SyncHistory.vue'
 import UserChangeHistory from '@/views/UserChangeHistory.vue'
 import AttributeManagement from '@/views/AttributeManagement.vue'
@@ -60,6 +61,7 @@ const VIEW_COMPONENTS: Record<string, any> = {
   OrgUserManagement,
   DeptManagement,
   DeptDetailPane,
+  DeptCreatePane,
   SyncHistory,
   UserChangeHistory,
   AttributeManagement,
