@@ -110,7 +110,7 @@ function cancel() {
                 <UserPlus class="size-3.5 text-blue-500" />
             </div>
             <div class="min-w-0">
-                <div class="font-bold text-neutral-800 text-[13px]">New User</div>
+                <div class="font-bold text-neutral-800 text-[13px]" data-testid="user-create-title">New User</div>
                 <div class="text-[10px] text-neutral-400">Fields are derived from User Attribute Schema</div>
             </div>
         </div>

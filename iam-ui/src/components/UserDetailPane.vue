@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, User as UserIcon, Edit2, Save, X } from 'lucide-vue-next'
+import { ChevronRight, User as UserIcon, Edit2, Save, X, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useMillerStore } from '@/stores/miller'
 import { useAttributeStore } from '@/stores/attribute'
@@ -21,6 +21,7 @@ const attrStore = useAttributeStore()
 
 const editing = ref(false)
 const saving = ref(false)
+const confirmDelete = ref(false)
 const formData = ref<Record<string, any>>({})
 const currentUser = ref<User>(props.user)
 
@@ -71,6 +72,20 @@ function buildPatchOps(original: Record<string, any>, current: Record<string, an
     return ops
 }
 
+async function doDelete() {
+    saving.value = true
+    try {
+        await UserService.deleteUser(currentUser.value.id)
+        toast.success(`Deleted: ${currentUser.value.userName}`)
+        millerStore.removePane(props.paneIndex)
+    } catch (e: any) {
+        toast.error(e?.message || 'Failed to delete user')
+        confirmDelete.value = false
+    } finally {
+        saving.value = false
+    }
+}
+
 async function saveEdit() {
     saving.value = true
     try {
@@ -109,10 +124,16 @@ async function saveEdit() {
                 </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-                <Button v-if="!editing" size="xs" variant="outline" class="h-7 text-[11px]" @click="startEdit">
-                    <Edit2 class="size-3 mr-1" /> Edit
-                </Button>
-                <template v-else>
+                <template v-if="!editing && !confirmDelete">
+                    <Button size="xs" variant="outline" class="h-7 text-[11px]" @click="startEdit">
+                        <Edit2 class="size-3 mr-1" /> Edit
+                    </Button>
+                    <Button size="xs" variant="outline" class="h-7 text-[11px] border-red-200 text-red-500 hover:bg-red-50"
+                        data-testid="user-delete-btn" @click="confirmDelete = true">
+                        <Trash2 class="size-3" />
+                    </Button>
+                </template>
+                <template v-else-if="editing">
                     <Button size="xs" variant="ghost" class="h-7 text-[11px]" @click="cancelEdit" :disabled="saving">
                         <X class="size-3 mr-1" /> Cancel
                     </Button>
@@ -129,8 +150,23 @@ async function saveEdit() {
             <DynamicUserForm v-model="formData" :attributes="userAttributes" mode="edit" />
         </div>
 
+        <!-- Delete confirmation overlay -->
+        <div v-if="confirmDelete" class="absolute inset-0 bg-white/95 flex flex-col items-center justify-center gap-3 z-10 p-6 text-center">
+            <Trash2 class="size-8 text-red-400" />
+            <div class="text-sm font-bold text-neutral-800">Delete "{{ currentUser.userName }}"?</div>
+            <div class="text-[11px] text-neutral-400">This action cannot be undone.</div>
+            <div class="flex gap-2 mt-1">
+                <Button variant="outline" size="xs" class="h-7 text-[11px]" @click="confirmDelete = false" :disabled="saving">
+                    Cancel
+                </Button>
+                <Button size="xs" class="h-7 text-[11px] bg-red-600 text-white hover:bg-red-700" @click="doDelete" :disabled="saving">
+                    <Trash2 class="size-3 mr-1" /> {{ saving ? 'Deleting…' : 'Delete' }}
+                </Button>
+            </div>
+        </div>
+
         <!-- Body — View mode -->
-        <div v-else class="flex-1 p-4 overflow-y-auto">
+        <div v-else-if="!editing" class="flex-1 p-4 overflow-y-auto">
             <UserProfileViewer :data="currentUser" :title="'Core Attributes'">
                 <template #footer>
                     <section class="opacity-50 pointer-events-none mb-4">
