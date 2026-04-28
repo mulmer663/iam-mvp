@@ -43,6 +43,13 @@ async function loadData() {
 onMounted(loadData)
 watch(() => props.deptId, loadData)
 
+// id/meta는 헤더에 이미 표시 — UserProfileViewer에는 비즈니스 필드만 전달
+const deptDisplayData = computed(() => {
+  if (!currentDept.value) return {}
+  const { displayName, description, active, parentId, externalId } = currentDept.value
+  return { displayName, description, active, parentId, externalId }
+})
+
 function openSubDept(dept: Department) {
   const detailPaneId = `dept-${dept.id}`
   const detailPane = {
@@ -83,7 +90,7 @@ function openMemberSync() {
 <template>
   <div class="h-full flex flex-col bg-white overflow-hidden">
     <!-- Department Detail Header (Only if deptId exists) -->
-    <div v-if="currentDept" class="p-4 bg-neutral-50/50 border-b border-neutral-100 shrink-0">
+    <div v-if="currentDept" class="p-4 bg-neutral-50/50 border-b border-neutral-100 overflow-y-auto max-h-[60vh] shrink-0">
         <div class="flex items-start justify-between">
             <div class="flex items-center gap-3">
                 <div class="size-10 bg-white border border-neutral-200 rounded-lg flex items-center justify-center text-blue-600 shadow-sm">
@@ -121,9 +128,9 @@ function openMemberSync() {
 
         <!-- SCIM Attributes Section -->
         <div class="mt-4">
-            <UserProfileViewer 
-                :data="currentDept" 
-                title="Department Attributes (SCIM)" 
+            <UserProfileViewer
+                :data="deptDisplayData"
+                title="Department Attributes (SCIM)"
             />
         </div>
 
