@@ -1,6 +1,19 @@
 import { request } from './client'
 import type { User } from '@/types'
 
+export interface ScimQueryParams {
+    filter?: string
+    startIndex?: number
+    count?: number
+}
+
+export interface ScimPageResult<T> {
+    items: T[]
+    totalResults: number
+    startIndex: number
+    itemsPerPage: number
+}
+
 interface ScimListResponse<T> {
     schemas: string[]
     totalResults: number
@@ -40,10 +53,25 @@ export interface ScimPatchOp {
 const SCIM_PATCH_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:PatchOp'
 const SCIM_USER_SCHEMA = 'urn:ietf:params:scim:schemas:core:2.0:User'
 
+function buildQuery(params: ScimQueryParams): string {
+    const q = new URLSearchParams()
+    if (params.filter)     q.set('filter',     params.filter)
+    if (params.startIndex) q.set('startIndex', String(params.startIndex))
+    if (params.count !== undefined) q.set('count', String(params.count))
+    const str = q.toString()
+    return str ? `?${str}` : ''
+}
+
 export const UserService = {
-    async getUsers(): Promise<User[]> {
-        const response = await request<ScimListResponse<ScimUserResponse>>('/scim/v2/Users')
-        return response.Resources.map(this.toUser)
+    async getUsers(params: ScimQueryParams = {}): Promise<ScimPageResult<User>> {
+        const query = buildQuery({ startIndex: 1, count: 100, ...params })
+        const response = await request<ScimListResponse<ScimUserResponse>>(`/scim/v2/Users${query}`)
+        return {
+            items: (response.Resources ?? []).map(this.toUser),
+            totalResults: response.totalResults,
+            startIndex: response.startIndex,
+            itemsPerPage: response.itemsPerPage,
+        }
     },
 
     async getUser(id: string): Promise<User> {

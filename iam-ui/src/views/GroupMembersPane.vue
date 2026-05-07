@@ -37,12 +37,12 @@ const filteredUsers = computed(() => {
 onMounted(async () => {
     loading.value = true
     try {
-        const [g, users] = await Promise.all([
+        const [g, result] = await Promise.all([
             GroupService.getGroup(props.groupId),
-            UserService.getUsers()
+            UserService.getUsers({ count: 200 })
         ])
         group.value = g
-        allUsers.value = users
+        allUsers.value = result.items
     } finally {
         loading.value = false
     }
