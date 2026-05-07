@@ -16,6 +16,7 @@ const props = defineProps<{
 const millerStore = useMillerStore()
 const departments = ref<Department[]>([])
 const selectedDeptId = ref<string>(props.initialDeptId || '')
+const totalResults = ref(0)
 
 onMounted(async () => {
   departments.value = await DepartmentService.getDepartments()
@@ -93,10 +94,10 @@ function openUserCreate() {
                  {{ selectedDeptId }}
               </span>
            </div>
-           <span class="text-neutral-400">Total: 128 entries</span>
+           <span class="text-neutral-400">Total: {{ totalResults }} entries</span>
         </div>
         <div class="flex-1 p-3">
-           <UserTable :dept-id="selectedDeptId" :pane-index="props.paneIndex" />
+           <UserTable :dept-id="selectedDeptId" :pane-index="props.paneIndex" @total-results="totalResults = $event" />
         </div>
       </div>
     </div>
