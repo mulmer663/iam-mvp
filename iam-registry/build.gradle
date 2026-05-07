@@ -33,7 +33,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.hibernate.orm:hibernate-envers'
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
-    
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'com.unboundid.product.scim2:scim2-sdk-common:3.1.0'
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'

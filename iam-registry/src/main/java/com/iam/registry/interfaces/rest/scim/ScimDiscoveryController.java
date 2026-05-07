@@ -17,7 +17,11 @@ public class ScimDiscoveryController {
                 "schemas", List.of("urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig"),
                 "patch", Map.of("supported", true),
                 "bulk", Map.of("supported", false, "maxOperations", 1000, "maxPayloadSize", 1048576),
-                "filter", Map.of("supported", true, "maxResults", 200),
+                // Phase A: eq ne pr co sw ew and or not. gt ge lt le 및 복합값 path는 미지원(Phase B).
+                "filter", Map.of(
+                        "supported", true,
+                        "maxResults", 200,
+                        "supportedOperators", List.of("eq", "ne", "pr", "co", "sw", "ew", "and", "or", "not")),
                 "changePassword", Map.of("supported", false),
                 "sort", Map.of("supported", false),
                 "etag", Map.of("supported", false),

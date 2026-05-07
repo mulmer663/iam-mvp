@@ -1,6 +1,7 @@
 package com.iam.registry.interfaces.rest.scim;
 
 import com.iam.registry.application.scim.ScimDynamicResourceService;
+import com.iam.registry.application.scim.ScimSearchRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -30,16 +30,36 @@ public class GenericScimController {
         log.info("Dynamic SCIM Request: {} {} (Type: {}, ID: {})", method, uri, resourceType, id);
 
         return switch (method) {
-            case "GET" -> id == null ? ResponseEntity.ok(resourceService.listResources(resourceType))
+            case "GET" -> id == null
+                    ? ResponseEntity.ok(resourceService.listResources(resourceType, buildSearchRequest(request)))
                     : ResponseEntity.ok(resourceService.getResource(resourceType, id));
-            case "POST" -> ResponseEntity.status(201).body(resourceService.createResource(resourceType, body));
-            case "PUT" -> ResponseEntity.ok(resourceService.updateResource(resourceType, id, body));
+            case "POST"   -> ResponseEntity.status(201).body(resourceService.createResource(resourceType, body));
+            case "PUT"    -> ResponseEntity.ok(resourceService.updateResource(resourceType, id, body));
             case "DELETE" -> {
                 resourceService.deleteResource(resourceType, id);
                 yield ResponseEntity.noContent().build();
             }
             default -> ResponseEntity.status(405).build();
         };
+    }
+
+    private ScimSearchRequest buildSearchRequest(HttpServletRequest request) {
+        String filter = request.getParameter("filter");
+        String startIndexParam = request.getParameter("startIndex");
+        String countParam = request.getParameter("count");
+
+        Integer startIndex = startIndexParam != null ? parseIntSafe(startIndexParam) : null;
+        Integer count = countParam != null ? parseIntSafe(countParam) : null;
+
+        return ScimSearchRequest.of(filter, startIndex, count);
+    }
+
+    private Integer parseIntSafe(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private String extractPluralType(String uri) {

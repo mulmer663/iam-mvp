@@ -1,6 +1,7 @@
 package com.iam.registry.interfaces.rest.scim;
 
 import com.iam.registry.application.scim.ScimDynamicResourceService;
+import com.iam.registry.application.scim.ScimSearchRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +18,11 @@ public class ScimGroupController {
     private final ScimDynamicResourceService resourceService;
 
     @GetMapping
-    public Map<String, Object> getGroups() {
-        return resourceService.listResources(RESOURCE_TYPE);
+    public Map<String, Object> getGroups(
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) Integer startIndex,
+            @RequestParam(required = false) Integer count) {
+        return resourceService.listResources(RESOURCE_TYPE, ScimSearchRequest.of(filter, startIndex, count));
     }
 
     @GetMapping("/{id}")
