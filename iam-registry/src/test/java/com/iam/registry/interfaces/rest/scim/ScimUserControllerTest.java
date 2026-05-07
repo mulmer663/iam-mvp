@@ -166,22 +166,19 @@ class ScimUserControllerTest {
     class Fail {
 
         @Test
-        @DisplayName("잘못된 SCIM filter → IamBusinessException 컨트롤러 밖으로 전파")
-        void getUsers_invalidFilter_propagatesException() throws Exception {
-            // 글로벌 @RestControllerAdvice 미구성 → MockMvc가 ServletException으로 래핑하여 throw
-            // 실제 운영에서는 @RestControllerAdvice 로 400 매핑 필요
+        @DisplayName("잘못된 SCIM filter → 400 + RFC 7644 §3.12 에러 형식")
+        void getUsers_invalidFilter_returns400ScimError() throws Exception {
             when(userQueryService.getUsers(any()))
                     .thenThrow(new IamBusinessException(
                             ErrorCode.INVALID_SCIM_FILTER, "TEST", "잘못된 필터"));
 
-            Exception caught = null;
-            try {
-                mockMvc.perform(get(BASE_URL).param("filter", "INVALID_FILTER")).andReturn();
-            } catch (Exception e) {
-                caught = e;
-            }
-            assertThat(caught).isNotNull();
-            assertThat(caught.getCause()).isInstanceOf(IamBusinessException.class);
+            mockMvc.perform(get(BASE_URL).param("filter", "INVALID_FILTER"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.schemas[0]")
+                            .value("urn:ietf:params:scim:api:messages:2.0:Error"))
+                    .andExpect(jsonPath("$.scimType").value("invalidFilter"))
+                    .andExpect(jsonPath("$.status").value("400"))
+                    .andExpect(jsonPath("$.detail").value("잘못된 필터"));
         }
     }
 }
