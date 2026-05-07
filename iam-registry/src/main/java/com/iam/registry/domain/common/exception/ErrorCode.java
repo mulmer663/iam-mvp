@@ -12,6 +12,7 @@ public enum ErrorCode {
     VALIDATION_FAILED("IAM-4000", "입력 값 검증에 실패했습니다", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST_FORMAT("IAM-4001", "요청 형식이 올바르지 않습니다", HttpStatus.BAD_REQUEST),
     MISSING_REQUIRED_FIELD("IAM-4002", "필수 필드가 누락되었습니다", HttpStatus.BAD_REQUEST),
+    INVALID_SCIM_FILTER("IAM-4003", "SCIM 필터 표현식이 올바르지 않습니다", HttpStatus.BAD_REQUEST),
 
     // === Business Logic Errors (4100~4199) ===
     USER_NOT_FOUND("IAM-4100", "사용자를 찾을 수 없습니다", HttpStatus.NOT_FOUND),

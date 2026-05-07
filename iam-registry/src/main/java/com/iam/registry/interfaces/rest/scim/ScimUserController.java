@@ -5,6 +5,7 @@ import com.iam.registry.application.common.ScimPatchRequest;
 import com.iam.registry.application.common.ScimUserResponse;
 import com.iam.registry.application.scim.ScimPatchService;
 import com.iam.registry.application.scim.ScimResourceService;
+import com.iam.registry.application.scim.ScimSearchRequest;
 import com.iam.registry.application.user.UserQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,8 +23,11 @@ public class ScimUserController {
     private final ScimPatchService scimPatchService;
 
     @GetMapping
-    public ScimListResponse<ScimUserResponse> getUsers() {
-        return userQueryService.getAllUsers();
+    public ScimListResponse<ScimUserResponse> getUsers(
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) Integer startIndex,
+            @RequestParam(required = false) Integer count) {
+        return userQueryService.getUsers(ScimSearchRequest.of(filter, startIndex, count));
     }
 
     @GetMapping("/{id}")

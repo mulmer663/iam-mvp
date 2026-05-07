@@ -10,16 +10,19 @@ spring:
     password: iam_password
     driver-class-name: org.postgresql.Driver
   jpa:
-    # Pilot phase: drop & recreate schema on every boot so ScimMetaInitializer
-    # always seeds against a clean DB. Switch to 'update' (or migrations via
-    # Flyway/Liquibase) once the schema stabilizes and real data needs to persist.
     hibernate:
-      ddl-auto: create-drop
+      # Flyway가 메인 스키마를 관리. Hibernate는 Envers 감사 테이블 및 schema drift만 보완.
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
 
 eureka:
   client:

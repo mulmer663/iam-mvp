@@ -1,9 +1,14 @@
 package com.iam.registry.application.scim;
 
+import com.iam.registry.application.scim.filter.DynamicResourceFilterQuery;
+import com.iam.registry.application.scim.filter.ScimFilterParser;
 import com.iam.registry.domain.common.exception.ErrorCode;
 import com.iam.registry.domain.common.exception.IamBusinessException;
 import com.iam.registry.domain.scim.ScimDynamicResource;
 import com.iam.registry.domain.scim.ScimDynamicResourceRepository;
+import com.unboundid.scim2.common.filters.Filter;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,17 +25,54 @@ import java.util.UUID;
 public class ScimDynamicResourceService {
 
     private final ScimDynamicResourceRepository resourceRepository;
+    private final ScimFilterParser filterParser;
+    private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
-    public Map<String, Object> listResources(String resourceType) {
-        List<Map<String, Object>> items = resourceRepository.findAllByResourceType(resourceType)
-                .stream().map(this::toScimResponse).toList();
-        return Map.of(
-                "schemas", List.of("urn:ietf:params:scim:api:messages:2.0:ListResponse"),
-                "totalResults", items.size(),
-                "startIndex", 1,
-                "itemsPerPage", items.size(),
-                "Resources", items);
+    public Map<String, Object> listResources(String resourceType, ScimSearchRequest request) {
+        Filter filter = filterParser.parse(request.filter());
+
+        String baseWhere = "WHERE r.resource_type = :resourceType";
+        Map<String, Object> params = new HashMap<>();
+        params.put("resourceType", resourceType);
+
+        if (filter != null) {
+            // DynamicResourceFilterQuery는 상태를 가지므로 매 호출마다 새 인스턴스 사용
+            DynamicResourceFilterQuery queryBuilder = new DynamicResourceFilterQuery();
+            Map<String, Object> filterParams = queryBuilder.build(filter);
+            baseWhere += " AND " + queryBuilder.getWhereClause();
+            params.putAll(filterParams);
+        }
+
+        // totalResults 조회
+        String countSql = "SELECT COUNT(*) FROM scim_dynamic_resource r " + baseWhere;
+        Query countQuery = entityManager.createNativeQuery(countSql);
+        params.forEach(countQuery::setParameter);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        // count=0: 카운트만 반환
+        if (request.isCountOnly()) {
+            return buildListResponse(List.of(), (int) total, request.startIndex(), 0);
+        }
+
+        // 리소스 조회
+        String dataSql = "SELECT r.id, r.scim_id, r.resource_type, r.external_id, "
+                + "r.attributes, r.created_at, r.last_modified, r.version "
+                + "FROM scim_dynamic_resource r "
+                + baseWhere
+                + " ORDER BY r.created_at DESC, r.id ASC"
+                + " LIMIT :limit OFFSET :offset";
+
+        Query dataQuery = entityManager.createNativeQuery(dataSql, ScimDynamicResource.class);
+        params.forEach(dataQuery::setParameter);
+        dataQuery.setParameter("limit", request.count());
+        dataQuery.setParameter("offset", request.offset());
+
+        @SuppressWarnings("unchecked")
+        List<ScimDynamicResource> resources = dataQuery.getResultList();
+        List<Map<String, Object>> items = resources.stream().map(this::toScimResponse).toList();
+
+        return buildListResponse(items, (int) total, request.startIndex(), items.size());
     }
 
     @Transactional(readOnly = true)
@@ -43,8 +85,6 @@ public class ScimDynamicResourceService {
 
     @Transactional
     public Map<String, Object> createResource(String resourceType, Map<String, Object> payload) {
-        // TODO: Validate attributes using IamAttributeMeta (simplified for now)
-
         String scimId = (String) payload.get("id");
         if (scimId == null) {
             scimId = UUID.randomUUID().toString();
@@ -87,6 +127,16 @@ public class ScimDynamicResourceService {
                         UUID.randomUUID().toString().substring(0, 8), "Resource not found: " + scimId));
         resourceRepository.delete(resource);
         log.info("Deleted dynamic resource: {}/{}", resourceType, scimId);
+    }
+
+    private Map<String, Object> buildListResponse(
+            List<Map<String, Object>> items, int total, int startIndex, int itemsPerPage) {
+        return Map.of(
+                "schemas",      List.of("urn:ietf:params:scim:api:messages:2.0:ListResponse"),
+                "totalResults", total,
+                "startIndex",   startIndex,
+                "itemsPerPage", itemsPerPage,
+                "Resources",    items);
     }
 
     private Map<String, Object> toScimResponse(ScimDynamicResource resource) {

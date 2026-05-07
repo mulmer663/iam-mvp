@@ -1,13 +1,20 @@
 package com.iam.registry.application.user;
 
+import com.iam.registry.application.common.OffsetBasedPageable;
 import com.iam.registry.application.common.ScimListResponse;
 import com.iam.registry.application.common.ScimUserResponse;
+import com.iam.registry.application.scim.ScimSearchRequest;
+import com.iam.registry.application.scim.filter.ScimFilterParser;
+import com.iam.registry.application.scim.filter.UserFilterSpecification;
 import com.iam.registry.domain.common.ExtensionData;
 import com.iam.registry.domain.common.exception.ErrorCode;
 import com.iam.registry.domain.common.exception.IamBusinessException;
 import com.iam.registry.domain.user.IamUser;
 import com.iam.registry.domain.user.IamUserRepository;
+import com.unboundid.scim2.common.filters.Filter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Read-side service for User. Builds {@link ScimUserResponse} from
- * {@link IamUser}. Extension URNs other than the core User schema are
- * surfaced via {@link ScimUserResponse#extensions()} so any registered
- * customer extension is rendered without per-URN code branches.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -32,12 +33,31 @@ public class UserQueryService {
     private static final String USER_CORE_URN = "urn:ietf:params:scim:schemas:core:2.0:User";
 
     private final IamUserRepository iamUserRepository;
+    private final ScimFilterParser filterParser;
+    private final UserFilterSpecification filterSpecification;
 
-    public ScimListResponse<ScimUserResponse> getAllUsers() {
-        List<ScimUserResponse> scimUsers = iamUserRepository.findAll().stream()
+    public ScimListResponse<ScimUserResponse> getUsers(ScimSearchRequest request) {
+        Filter filter = filterParser.parse(request.filter());
+
+        Specification<IamUser> spec = (filter != null)
+                ? filterSpecification.from(filter)
+                : Specification.where(null);
+
+        // count=0: totalResults만 반환
+        if (request.isCountOnly()) {
+            long total = iamUserRepository.count(spec);
+            return ScimListResponse.countOnly((int) total, request.startIndex());
+        }
+
+        Page<IamUser> page = iamUserRepository.findAll(
+                spec,
+                OffsetBasedPageable.of(request.offset(), request.count()));
+
+        List<ScimUserResponse> resources = page.getContent().stream()
                 .map(this::toScimUser)
                 .toList();
-        return new ScimListResponse<>(scimUsers);
+
+        return ScimListResponse.paged(resources, (int) page.getTotalElements(), request.startIndex());
     }
 
     public ScimUserResponse getUserById(Long id) {
@@ -48,8 +68,6 @@ public class UserQueryService {
     }
 
     private ScimUserResponse toScimUser(IamUser user) {
-        // Build the schemas list: always the core User schema, plus any
-        // extension URNs that have non-empty data on this user.
         List<String> schemas = new ArrayList<>();
         schemas.add(USER_CORE_URN);
 
